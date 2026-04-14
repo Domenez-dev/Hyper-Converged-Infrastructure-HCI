@@ -1,0 +1,16 @@
+- 3 serveurs
+- installation proxmox
+- configuration lan
+- gateway laptop (connection internet)
+- installation OVS
+- Creation des VxLAN 
+- applique corosync, live migration,
+- installation CEPH
+- monitors - MGR - OSD - POOL\
+\...
+- router vm
+- firewall
+- ansible
+- drs
+- sona web
+- sona vms
