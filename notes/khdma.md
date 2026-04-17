@@ -6,11 +6,17 @@
 - Creation des VxLAN 
 - applique corosync, live migration,
 - installation CEPH
-- monitors - MGR - OSD - POOL\
-\...
+- monitors - MGR - OSD - POOL
 - router vm
-- firewall
-- ansible
+\...
+- HA 
 - drs
+- firewall 
+- test vms
+- ansible
 - sona web
 - sona vms
+
+
+
+256 * 2 (no 600gb disk)
