@@ -256,3 +256,9 @@ I recommend next:
 
 If you want, I can:
 👉 design your **DMZ reverse proxy architecture (clean + realistic)**
+
+
+
+approve merchant
+is_verified in the response
+merchant status
