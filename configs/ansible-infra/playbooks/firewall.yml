@@ -1,0 +1,155 @@
+---
+# This playbook manages TWO firewall layers:
+# 1. Proxmox cluster firewall (controls VM/node traffic at hypervisor level)
+# 2. Host-level iptables on each PVE node (last line of defense)
+
+- name: Configure Proxmox cluster firewall rules
+  hosts: pve-01 # cluster firewall config only needs to run on one node
+  vars_files:
+    - ../secrets.yml
+
+  vars:
+    # Define your rules here as data, tasks below apply them via API
+    # Action: ACCEPT or DROP
+    # Proto: tcp udp icmp
+    cluster_firewall_rules:
+      - {
+          action: ACCEPT,
+          proto: tcp,
+          dport: 8006,
+          source: "192.168.10.0/24",
+          comment: "PVE web UI from management",
+        }
+      - {
+          action: ACCEPT,
+          proto: tcp,
+          dport: 22,
+          source: "192.168.10.0/24",
+          comment: "SSH from management",
+        }
+      - {
+          action: ACCEPT,
+          proto: tcp,
+          dport: 5900,
+          source: "192.168.10.0/24",
+          comment: "VNC console from management",
+        }
+      - {
+          action: ACCEPT,
+          proto: udp,
+          dport: 5404,
+          source: "192.168.20.0/24",
+          comment: "Corosync multicast",
+        }
+      - {
+          action: ACCEPT,
+          proto: udp,
+          dport: 5405,
+          source: "192.168.20.0/24",
+          comment: "Corosync unicast",
+        }
+      - {
+          action: ACCEPT,
+          proto: tcp,
+          dport: 3300,
+          source: "10.10.30.0/24",
+          comment: "Ceph MON cluster network",
+        }
+      - {
+          action: ACCEPT,
+          proto: tcp,
+          dport: 6789,
+          source: "10.10.40.0/24",
+          comment: "Ceph MON public network",
+        }
+      # ADD MORE RULES HERE LATER
+
+  tasks:
+    - name: Enable datacenter firewall
+      uri:
+        url: "https://127.0.0.1:8006/api2/json/cluster/firewall/options"
+        method: PUT
+        headers:
+          Authorization: "PVEAPIToken={{ pve_api_token_id }}={{ pve_api_token_secret }}"
+        body_format: json
+        body:
+          enable: 1
+        validate_certs: false
+
+    - name: Apply cluster firewall rules
+      uri:
+        url: "https://127.0.0.1:8006/api2/json/cluster/firewall/rules"
+        method: POST
+        headers:
+          Authorization: "PVEAPIToken={{ pve_api_token_id }}={{ pve_api_token_secret }}"
+        body_format: json
+        body:
+          action: "{{ item.action }}"
+          type: "in"
+          proto: "{{ item.proto }}"
+          dport: "{{ item.dport }}"
+          source: "{{ item.source }}"
+          comment: "{{ item.comment }}"
+          enable: 1
+        validate_certs: false
+        status_code: [200, 201]
+      loop: "{{ cluster_firewall_rules }}"
+
+- name: Harden host firewall on PVE nodes
+  hosts: proxmox_nodes
+  vars_files:
+    - ../secrets.yml
+
+  tasks:
+    - name: Install iptables-persistent
+      apt:
+        name: iptables-persistent
+        state: present
+
+    - name: Allow established connections
+      iptables:
+        chain: INPUT
+        ctstate: [ESTABLISHED, RELATED]
+        jump: ACCEPT
+
+    - name: Allow loopback
+      iptables:
+        chain: INPUT
+        in_interface: lo
+        jump: ACCEPT
+
+    - name: Allow SSH from management VLAN only
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        source: "192.168.10.0/24"
+        destination_port: "22"
+        jump: ACCEPT
+
+    - name: Allow Proxmox web UI from management VLAN only
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        source: "192.168.10.0/24"
+        destination_port: "8006"
+        jump: ACCEPT
+
+    - name: Allow Ceph cluster traffic
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        source: "10.10.30.0/24"
+        destination_port: "3300:6800"
+        jump: ACCEPT
+
+    - name: Allow Corosync
+      iptables:
+        chain: INPUT
+        protocol: udp
+        source: "192.168.20.0/24"
+        destination_port: "5404:5412"
+        jump: ACCEPT
+
+    - name: Save iptables rules
+      command: netfilter-persistent save
+      changed_when: false

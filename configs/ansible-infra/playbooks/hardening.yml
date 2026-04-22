@@ -1,0 +1,40 @@
+---
+- name: Harden all Proxmox nodes
+  hosts: proxmox_nodes
+
+  tasks:
+    - name: Install useful tools
+      apt:
+        name:
+          - vim
+          - fastfetch
+          - curl
+          - htop
+          - tcpdump
+          - net-tools
+        state: present
+        update_cache: true
+
+    - name: Disable SSH password auth
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?PasswordAuthentication"
+        line: "PasswordAuthentication no"
+      notify: restart ssh
+
+    - name: Set swappiness low (better for Ceph)
+      sysctl:
+        name: vm.swappiness
+        value: "10"
+        state: present
+        reload: true
+
+    - name: Set correct timezone
+      timezone:
+        name: "{{ ntp_timezone }}"
+
+  handlers:
+    - name: restart ssh
+      service:
+        name: ssh
+        state: restarted

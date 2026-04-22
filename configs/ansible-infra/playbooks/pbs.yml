@@ -1,0 +1,66 @@
+---
+- name: Install and configure Proxmox Backup Server
+  hosts: pbs
+  vars_files:
+    - ../secrets.yml
+
+  tasks:
+    - name: Add PBS repo key
+      apt_key:
+        url: https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg
+        state: present
+
+    - name: Add PBS no-subscription repo
+      apt_repository:
+        repo: "deb http://download.proxmox.com/debian/pbs bookworm pbs-no-subscription"
+        state: present
+        filename: pbs
+
+    - name: Install proxmox-backup-server
+      apt:
+        name: proxmox-backup-server
+        state: present
+        update_cache: true
+
+    - name: Ensure PBS service is running
+      service:
+        name: proxmox-backup
+        state: started
+        enabled: true
+
+    - name: Create backup datastore directory
+      file:
+        path: /mnt/pbs-datastore
+        state: directory
+        mode: "0750"
+
+    - name: Create datastore (skip if exists)
+      command: proxmox-backup-manager datastore create main /mnt/pbs-datastore
+      register: ds_result
+      failed_when:
+        - ds_result.rc != 0
+        - "'already exists' not in ds_result.stderr"
+      changed_when: ds_result.rc == 0
+
+    - name: Set retention policy
+      command: >
+        proxmox-backup-manager datastore update main
+        --keep-daily 7
+        --keep-weekly 4
+        --keep-monthly 3
+      changed_when: false
+
+    - name: Register PBS storage in Proxmox cluster
+      delegate_to: pve-01
+      command: >
+        pvesm add pbs pbs-main
+        --server {{ ansible_host }}
+        --datastore main
+        --username admin@pbs
+        --password {{ pbs_admin_password }}
+        --fingerprint {{ pbs_fingerprint }}
+      register: pvesm_result
+      failed_when:
+        - pvesm_result.rc != 0
+        - "'already exists' not in pvesm_result.stderr"
+      changed_when: pvesm_result.rc == 0

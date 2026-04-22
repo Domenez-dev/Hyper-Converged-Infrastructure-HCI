@@ -1,0 +1,105 @@
+---
+# Play 1: install Telegraf on every PVE node and point it at InfluxDB
+- name: Deploy Telegraf on Proxmox nodes
+  hosts: proxmox_nodes
+  vars_files:
+    - ../secrets.yml
+
+  tasks:
+    - name: Add InfluxDB apt key
+      apt_key:
+        url: https://repos.influxdata.com/influxdata-archive_compat.key
+        state: present
+
+    - name: Add InfluxDB apt repo
+      apt_repository:
+        repo: "deb https://repos.influxdata.com/debian stable main"
+        state: present
+        filename: influxdb
+
+    - name: Install Telegraf
+      apt:
+        name: telegraf
+        state: present
+        update_cache: true
+
+    - name: Write Telegraf config
+      copy:
+        dest: /etc/telegraf/telegraf.conf
+        content: |
+          [agent]
+            interval = "10s"
+            hostname = ""
+
+          [[outputs.influxdb_v2]]
+            urls = ["{{ influxdb_url }}"]
+            token = "{{ influxdb_admin_token }}"
+            organization = "{{ influxdb_org }}"
+            bucket = "{{ influxdb_bucket }}"
+
+          [[inputs.cpu]]
+            percpu = false
+            totalcpu = true
+
+          [[inputs.mem]]
+
+          [[inputs.disk]]
+            ignore_fs = ["tmpfs", "devtmpfs"]
+
+          [[inputs.diskio]]
+
+          [[inputs.net]]
+
+          [[inputs.system]]
+
+          [[inputs.ceph]]
+            interval = "1m"
+            gather_cluster_stats = true
+      notify: restart telegraf
+
+    - name: Enable and start Telegraf
+      service:
+        name: telegraf
+        state: started
+        enabled: true
+
+  handlers:
+    - name: restart telegraf
+      service:
+        name: telegraf
+        state: restarted
+
+# Play 2: configure Grafana datasource on the monitoring container
+- name: Configure Grafana datasource
+  hosts: monitoring
+  vars_files:
+    - ../secrets.yml
+
+  tasks:
+    - name: Wait for Grafana to be ready
+      uri:
+        url: "http://localhost:3000/api/health"
+        status_code: 200
+      retries: 10
+      delay: 5
+
+    - name: Add InfluxDB as Grafana datasource
+      uri:
+        url: "http://localhost:3000/api/datasources"
+        method: POST
+        user: admin
+        password: "{{ grafana_admin_password }}"
+        force_basic_auth: true
+        body_format: json
+        body:
+          name: "InfluxDB-Proxmox"
+          type: "influxdb"
+          url: "http://localhost:8086"
+          access: "proxy"
+          jsonData:
+            version: "Flux"
+            organization: "proxmox-lab"
+            defaultBucket: "proxmox-metrics"
+          secureJsonData:
+            token: "{{ influxdb_admin_token }}"
+        status_code: [200, 409] # 409 means already exists, that is fine

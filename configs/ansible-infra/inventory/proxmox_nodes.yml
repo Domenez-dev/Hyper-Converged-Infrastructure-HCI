@@ -1,0 +1,3 @@
+influxdb_url: "http://192.168.10.99:8086"
+influxdb_bucket: "proxmox-metrics"
+influxdb_org: "proxmox-lab"
