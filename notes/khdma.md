@@ -8,15 +8,16 @@
 - installation CEPH
 - monitors - MGR - OSD - POOL
 - router vm
-\...
 - HA 
+- monitoring
+- test vms 
+
+\...
 - drs
-- firewall 
-- test vms
-- ansible
 - sona web
 - sona vms
-
+- firewall %
+- ansible %
 
 
 256 * 2 (no 600gb disk)
