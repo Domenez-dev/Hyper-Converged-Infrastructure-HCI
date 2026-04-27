@@ -1,23 +1,22 @@
-- 3 serveurs
-- installation proxmox
-- configuration lan
-- gateway laptop (connection internet)
-- installation OVS
-- Creation des VxLAN 
-- applique corosync, live migration,
-- installation CEPH
-- monitors - MGR - OSD - POOL
-- router vm
-- HA 
-- monitoring
-- test vms 
+- [x] 3 serveurs
+- [x] installation proxmox
+- [x] configuration lan
+- [x] gateway laptop (connection internet)
+- [x] installation OVS
+- [x] Creation des VxLAN
+- [x] applique corosync, live migration,
+- [x] installation CEPH
+- [x] monitors - MGR - OSD - POOL
+- [x] router vm
+- [x] HA
+- [x] monitoring
+- [x] test vms
+- [ ] drs
+- [ ] sona web
+- [ ] sona vms
+- [ ] firewall %
+- [ ] ansible %
+- [ ] scalability
 
-\...
-- drs
-- sona web
-- sona vms
-- firewall %
-- ansible %
+256 \* 2 (no 600gb disk)
 
-
-256 * 2 (no 600gb disk)
