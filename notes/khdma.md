@@ -11,12 +11,12 @@
 - [x] HA
 - [x] monitoring
 - [x] test vms
-- [ ] drs
+- [x] CLBS
+- [ ] dhcp - prom MGR
+- [ ] sona vms %
 - [ ] sona web
-- [ ] sona vms
 - [ ] firewall %
 - [ ] ansible %
-- [ ] scalability
+- [ ] scalability (pxe, tftp)
 
 256 \* 2 (no 600gb disk)
-
