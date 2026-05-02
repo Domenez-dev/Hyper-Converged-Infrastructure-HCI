@@ -12,9 +12,12 @@
 - [x] monitoring
 - [x] test vms
 - [x] CLBS
-- [ ] dhcp - prom MGR
-- [ ] sona vms %
-- [ ] sona web
+- [x] dhcp 
+- [x] prom MGR
+- [x] sona vms 
+- [x] sona web
+- [ ] DNS server
+- [ ] gitlab
 - [ ] firewall %
 - [ ] ansible %
 - [ ] scalability (pxe, tftp)

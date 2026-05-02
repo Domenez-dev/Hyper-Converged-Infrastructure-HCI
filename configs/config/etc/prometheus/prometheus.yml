@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+  external_labels:
+    monitor: "example"
+
+scrape_configs:
+  - job_name: ceph
+    static_configs:
+      - targets:
+          - "192.168.10.213:9283" # Pve-02 active MGR
+          - "192.168.10.83:9283" # Pve-03 standby MGR
+          - "192.168.10.100:9283" # Pve-01 fallback MGR
+        labels:
+          cluster: "proxmox-lab"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
