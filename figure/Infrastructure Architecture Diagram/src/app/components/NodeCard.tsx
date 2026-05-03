@@ -3,6 +3,7 @@ import { VLANBadge } from "./VLANBadge";
 
 interface NodeCardProps {
   name: string;
+  ip?: string;
   hasCephMgr?: "actif" | "standby";
 }
 
@@ -18,10 +19,11 @@ const vlanColors = {
   90: "#6b7280", // gray
 };
 
-export function NodeCard({ name, hasCephMgr }: NodeCardProps) {
+export function NodeCard({ name, ip, hasCephMgr }: NodeCardProps) {
   return (
     <div className="bg-white rounded-lg border border-gray-300 p-4 flex-1 shadow-sm">
-      <h3 className="text-lg font-bold text-[#1e3a8a] mb-3">{name}</h3>
+      <h3 className="text-lg font-bold text-[#1e3a8a] mb-1">{name}</h3>
+      {ip && <div className="text-xs text-gray-500 mb-3">{ip}</div>}
       
       <div className="flex flex-col gap-2 mb-4">
         <PillBadge label="Ceph MON" color="#3b82f6" />

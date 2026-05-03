@@ -11,10 +11,10 @@ const vlans: VLANInfo[] = [
   { vlan: 30, name: "Ceph Cluster", subnet: "10.10.30.0/24", color: "#f59e0b" },
   { vlan: 40, name: "Ceph Public", subnet: "10.10.40.0/24", color: "#fb923c" },
   { vlan: 50, name: "Live Migration", subnet: "10.10.50.0/24", color: "#8b5cf6" },
-  { vlan: 60, name: "VM Production", subnet: "172.16.60.0/24", color: "#10b981" },
-  { vlan: 70, name: "VM Test/Dev", subnet: "172.16.70.0/24", color: "#84cc16" },
+  { vlan: 60, name: "Réseau Dev", subnet: "172.16.60.0/24", color: "#10b981" },
+  { vlan: 70, name: "Réseau Prod", subnet: "172.16.70.0/24", color: "#84cc16" },
   { vlan: 80, name: "DMZ External", subnet: "172.16.80.0/24", color: "#ef4444" },
-  { vlan: 90, name: "Backup", subnet: "10.10.90.0/24", color: "#6b7280" },
+  { vlan: 90, name: "Backup PBS", subnet: "10.10.90.0/24", color: "#6b7280" },
 ];
 
 export function VLANLegend() {
