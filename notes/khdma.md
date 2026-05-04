@@ -17,9 +17,10 @@
 - [x] sona vms 
 - [x] sona web
 - [ ] DNS server
-- [ ] gitlab
+- [ ] Central Logs 
 - [ ] firewall %
 - [ ] ansible %
-- [ ] scalability (pxe, tftp)
+- [ ] scalability (pxe, tftp) %
+- [ ] gitlab
 
 256 \* 2 (no 600gb disk)
