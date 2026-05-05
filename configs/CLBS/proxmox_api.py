@@ -1,5 +1,8 @@
 import requests
 from config import PVE_HOST, PVE_TOKEN_ID, PVE_TOKEN_SEC
+from logging_setup import get_logger
+
+log = get_logger()
 
 class ProxmoxAPI:
     def __init__(self):
