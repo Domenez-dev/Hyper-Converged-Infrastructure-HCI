@@ -1,0 +1,35 @@
+root@pve-01:~# ceph osd dump
+epoch 1036
+fsid 7953d46f-79cf-42bf-b44b-bc826790072a
+created 2026-04-13T13:56:17.413142+0100
+modified 2026-05-05T13:17:05.120126+0100
+flags sortbitwise,recovery_deletes,purged_snapdirs,pglog_hardlimit
+crush_version 28
+full_ratio 0.95
+backfillfull_ratio 0.9
+nearfull_ratio 0.85
+require_min_compat_client luminous
+min_compat_client jewel
+require_osd_release squid
+stretch_mode_enabled false
+pool 1 '.mgr' replicated size 3 min_size 2 crush_rule 0 object_hash rjenkins pg_num 1 pgp_num 1 autoscale_mode on last_change 25 flags hashpspool stripe_width 0 pg_num_max 32 pg_num_min 1 application mgr read_balance_score 3.00
+pool 2 'Ceph-Pool' replicated size 3 min_size 2 crush_rule 0 object_hash rjenkins pg_num 32 pgp_num 32 autoscale_mode on last_change 1035 lfor 0/461/459 flags hashpspool,selfmanaged_snaps stripe_width 0 application rbd read_balance_score 1.41
+pool 3 'rbd' replicated size 3 min_size 2 crush_rule 0 object_hash rjenkins pg_num 64 pgp_num 64 autoscale_mode on last_change 714 flags hashpspool stripe_width 0 application rbd read_balance_score 1.36
+max_osd 3
+osd.0 up   in  weight 1 up_from 991 up_thru 1013 down_at 986 last_clean_interval [946,985) [v2:10.10.40.3:6800/2348534488,v1:10.10.40.3:6801/2348534488] [v2:10.10.30.3:6800/2348534488,v1:10.10.30.3:6801/2348534488] exists,up 03130fa9-4708-4de1-8fd9-8c16ca5a6a18
+osd.1 up   in  weight 1 up_from 983 up_thru 1012 down_at 981 last_clean_interval [898,982) [v2:10.10.40.1:6800/876883801,v1:10.10.40.1:6801/876883801] [v2:10.10.30.1:6804/879883801,v1:10.10.30.1:6805/879883801] exists,up 3126c0f4-6581-464d-849c-c65d27f007d6
+osd.2 up   in  weight 1 up_from 1009 up_thru 1014 down_at 1001 last_clean_interval [966,1000) [v2:10.10.40.2:6800/506233952,v1:10.10.40.2:6801/506233952] [v2:10.10.30.2:6800/506233952,v1:10.10.30.2:6801/506233952] exists,up 9b401146-a92c-4080-be0f-6e0ed65e333a
+
+
+root@pve-01:~# ceph mon dump
+epoch 5
+fsid 7953d46f-79cf-42bf-b44b-bc826790072a
+last_changed 2026-04-14T11:54:33.285200+0100
+created 2026-04-13T13:56:16.538225+0100
+min_mon_release 19 (squid)
+election_strategy: 1
+0: [v2:10.10.40.1:3300/0,v1:10.10.40.1:6789/0] mon.pve-01
+1: [v2:10.10.40.3:3300/0,v1:10.10.40.3:6789/0] mon.pve-03
+2: [v2:10.10.40.2:3300/0,v1:10.10.40.2:6789/0] mon.pve-02
+dumped monmap epoch 5
+root@pve-01:~#

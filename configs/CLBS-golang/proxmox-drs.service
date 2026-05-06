@@ -1,0 +1,20 @@
+[Unit]
+Description=Proxmox DRS - CSLB Load Balancer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/proxmox-drs
+EnvironmentFile=/opt/proxmox-drs/.env
+ExecStart=/opt/proxmox-drs/proxmox-drs
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=proxmox-drs
+
+[Install]
+WantedBy=multi-user.target
