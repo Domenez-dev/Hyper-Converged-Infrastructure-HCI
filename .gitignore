@@ -3,3 +3,4 @@ other/
 node_modules/
 .obsidian
 .venv
+.env

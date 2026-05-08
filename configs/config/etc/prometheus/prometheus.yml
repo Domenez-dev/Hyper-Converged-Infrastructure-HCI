@@ -17,3 +17,9 @@ scrape_configs:
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
+
+  - job_name: "clbs"
+    static_configs:
+      - targets: ["192.168.10.104:9101"]
+        scrape_interval: 30s
+        scrape_timeout: 10s

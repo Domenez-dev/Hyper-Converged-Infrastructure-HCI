@@ -133,7 +133,6 @@ iface vxlan60-pve03 inet manual
 
 auto vxlan60-int
 iface vxlan60-int inet static
-    address 172.16.60.2/24
     ovs_type OVSIntPort
     ovs_bridge vmbr0
 
@@ -152,7 +151,6 @@ iface vxlan70-pve03 inet manual
 
 auto vxlan70-int
 iface vxlan70-int inet static
-    address 172.16.70.2/24
     ovs_type OVSIntPort
     ovs_bridge vmbr0
 
@@ -171,7 +169,6 @@ iface vxlan80-pve03 inet manual
 
 auto vxlan80-int
 iface vxlan80-int inet static
-    address 172.16.80.2/24
     ovs_type OVSIntPort
     ovs_bridge vmbr0
 

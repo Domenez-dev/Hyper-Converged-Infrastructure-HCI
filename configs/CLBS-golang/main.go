@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"net/http"
 	"os"
@@ -67,7 +66,7 @@ func fmtWTV(v float64) string  { return fmt.Sprintf("%s%.1f%%%s", colorOrange, v
 func fmtThreshold(v float64) string {
 	return fmt.Sprintf("%s%s%.1f%%%s", colorTeal, colorBold, v, colorReset)
 }
-func fmtVMName(name string) string { return fmt.Sprintf("%s%s%s", colorPurple, name, colorReset) }
+func fmtVMName(name string) string    { return fmt.Sprintf("%s%s%s", colorPurple, name, colorReset) }
 func fmtCandidate(name string) string { return fmt.Sprintf("%s%s%s", colorCyan, name, colorReset) }
 
 func fmtNode(name, band string) string {
@@ -95,9 +94,13 @@ const (
 	lvlCritical
 )
 
-type colorLog struct{ base *log.Logger }
+type colorLog struct {
+	out *os.File
+}
 
-var logger = &colorLog{base: log.New(os.Stdout, "", 0)}
+// Write directly to stderr with an explicit Sync() so output is immediate
+// whether running in a terminal, piped, or under systemd/journald.
+var logger = &colorLog{out: os.Stderr}
 
 func (l *colorLog) log(lvl level, msg string) {
 	ts := time.Now().Format("2006-01-02 15:04:05")
@@ -114,12 +117,13 @@ func (l *colorLog) log(lvl level, msg string) {
 	case lvlCritical:
 		lvlColor, lvlName = colorBoldRed, "CRITICAL"
 	}
-	fmt.Printf(
+	line := fmt.Sprintf(
 		"%s%s%s [%s%s%s] %s\n",
 		colorGrey, ts, colorReset,
 		lvlColor, lvlName, colorReset,
 		msg,
 	)
+	fmt.Fprint(l.out, line)
 }
 
 func (l *colorLog) Debug(f string, a ...any)    { l.log(lvlDebug, fmt.Sprintf(f, a...)) }
@@ -133,6 +137,8 @@ func (l *colorLog) Critical(f string, a ...any) { l.log(lvlCritical, fmt.Sprintf
 // ------------------------------------------------------------
 
 const (
+	metricsAddr = ":9101" // Prometheus scrape endpoint
+
 	ramHigh                   = 85.0
 	checkInterval             = 60 * time.Second
 	migrationCooldown         = 300 * time.Second
@@ -167,13 +173,13 @@ var (
 func loadConfig() {
 	_ = godotenv.Load()
 
-	influxURL    = os.Getenv("INFLUX_URL")
-	influxToken  = os.Getenv("INFLUX_TOKEN")
-	influxOrg    = os.Getenv("INFLUX_ORG")
+	influxURL = os.Getenv("INFLUX_URL")
+	influxToken = os.Getenv("INFLUX_TOKEN")
+	influxOrg = os.Getenv("INFLUX_ORG")
 	influxBucket = os.Getenv("INFLUX_BUCKET")
-	pveHost      = os.Getenv("PVE_HOST")
-	pveTokenID   = os.Getenv("PVE_TOKEN_ID")
-	pveTokenSec  = os.Getenv("PVE_TOKEN_SEC")
+	pveHost = os.Getenv("PVE_HOST")
+	pveTokenID = os.Getenv("PVE_TOKEN_ID")
+	pveTokenSec = os.Getenv("PVE_TOKEN_SEC")
 
 	required := map[string]string{
 		"INFLUX_URL":    influxURL,
@@ -918,27 +924,43 @@ func (e *DRSEngine) findDestination(
 
 // Migration record keeping
 
-func (e *DRSEngine) recordMigration(vmid int, name string) {
+func (e *DRSEngine) recordMigration(vm *VMInfo, src, dst string) {
 	now := time.Now()
 	e.lastMigration = now
-	e.lastMigratedVMID = vmid
+	e.lastMigratedVMID = vm.VMID
 	e.clusterMigrations = append(e.clusterMigrations, now)
-	e.migrationHistory[vmid] = append(e.migrationHistory[vmid], now)
+	e.migrationHistory[vm.VMID] = append(e.migrationHistory[vm.VMID], now)
+
+	metrics.RecordMigration(migrationEvent{
+		At:     now,
+		VMID:   vm.VMID,
+		VMName: vm.Name,
+		Kind:   vm.Kind,
+		Src:    src,
+		Dst:    dst,
+	})
 
 	logger.Info(
 		"Recorded migration for %s (%d) - total cluster migrations in window: %d",
-		fmtVMName(name), vmid, len(e.clusterMigrations),
+		fmtVMName(vm.Name), vm.VMID, len(e.clusterMigrations),
 	)
 }
 
 // Main cycle
 
 func (e *DRSEngine) RunCycle() {
+	cycleStart := time.Now()
 	logger.Info(strings.Repeat("=", 55))
 	logger.Info("DRS cycle starting")
 
 	// Storm guard
 	if e.checkMigrationStorm() {
+		stormSecs := 0.0
+		if time.Now().Before(e.stormPauseUntil) {
+			stormSecs = time.Until(e.stormPauseUntil).Seconds()
+		}
+		metrics.SetSafetyState(true, stormSecs, false, 0, len(e.clusterMigrations))
+		metrics.FinishCycle(cycleStart, false)
 		return
 	}
 
@@ -946,20 +968,29 @@ func (e *DRSEngine) RunCycle() {
 	nodes := e.buildNodeLoads()
 	if len(nodes) == 0 {
 		logger.Warning("No PVE nodes found, skipping")
+		metrics.FinishCycle(cycleStart, true)
 		return
 	}
 
-	threshold, _, upper := e.bandCalc.Compute(nodes)
+	threshold, lower, upper := e.bandCalc.Compute(nodes)
+	metrics.SetBands(nodes, threshold, lower, upper)
 
 	// Phase 2 - Profitability
 	if !e.isProfitable(nodes) {
 		logger.Info("No heavy+light pair found - cluster is balanced, nothing to do")
+		metrics.SetSafetyState(false, 0, false, 0, len(e.clusterMigrations))
+		metrics.FinishCycle(cycleStart, false)
 		return
 	}
 
 	if !e.cooldownOK() {
+		cooldownSecs := migrationCooldown.Seconds() - time.Since(e.lastMigration).Seconds()
+		metrics.SetSafetyState(false, 0, true, cooldownSecs, len(e.clusterMigrations))
+		metrics.FinishCycle(cycleStart, false)
 		return
 	}
+
+	metrics.SetSafetyState(false, 0, false, 0, len(e.clusterMigrations))
 
 	for _, heavy := range nodes {
 		if heavy.Band != "heavy" {
@@ -1016,11 +1047,12 @@ func (e *DRSEngine) RunCycle() {
 		}
 
 		logger.Info("Migration task submitted: %s", string(taskData))
-		e.recordMigration(vm.VMID, vm.Name)
+		e.recordMigration(vm, heavy.Name, dest.Name)
 
 		// One migration per cycle - re-evaluate after cooldown
 		break
 	}
+	metrics.FinishCycle(cycleStart, false)
 }
 
 func (e *DRSEngine) Run() {
@@ -1048,5 +1080,6 @@ func (e *DRSEngine) Run() {
 
 func main() {
 	loadConfig()
+	startMetricsServer(metricsAddr)
 	newDRSEngine().Run()
 }
