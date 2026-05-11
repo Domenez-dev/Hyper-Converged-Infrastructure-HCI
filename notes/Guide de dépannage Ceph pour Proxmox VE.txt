@@ -1,0 +1,162 @@
+Voici un **guide de résolution pas à pas** basé sur votre expérience réelle. Il couvre les problèmes récurrents que vous avez rencontrés (PG inconsistants, OSD qui disparaît, disque bloqué, etc.). Conservez-le précieusement.
+
+---
+
+# Guide de dépannage Ceph pour Proxmox VE
+
+## 1. Vérifier l’état du cluster
+
+```bash
+ceph -s
+ceph health detail
+ceph osd tree
+```
+
+- **HEALTH_OK** → tout va bien.
+- **HEALTH_WARN/ERR** → lire les messages, noter les PGs inconsistants (ex: `pg 2.5 inconsistent`).
+
+## 2. Réparer des PGs inconsistants (corruption isolée)
+
+Pour chaque PG problématique :
+
+```bash
+ceph pg repair <PG_ID>      # ex: ceph pg repair 2.5
+```
+
+Surveillez la fin de la réparation :
+
+```bash
+watch -n 2 ceph -s
+```
+
+Si les PGs repassent `active+clean` → fin.  
+Si l’incohérence revient peu après → l’OSD est corrompu, passez à l’étape 3.
+
+## 3. Remplacer un OSD défaillant (purge + recréation)
+
+### 3.1. Identifier l’OSD problématique
+
+```bash
+ceph osd tree
+# Notez l’ID (ex: 1) et le nœud (ex: pve-01)
+```
+
+### 3.2. Sortir et purger l’OSD
+
+```bash
+ceph osd out <ID>
+# Attendre que tous les PG soient clean (ceph -s)
+systemctl stop ceph-osd@<ID>
+ceph osd purge <ID> --yes-i-really-mean-it
+```
+
+### 3.3. Nettoyer le disque physique (sur le nœud concerné)
+
+Trouvez le disque utilisé (ex: `/dev/sdb`) :
+
+```bash
+lsblk
+```
+
+Effacez-le radicalement :
+
+```bash
+wipefs -a /dev/sdb
+dd if=/dev/zero of=/dev/sdb bs=1M count=100
+```
+
+> **Si `wipefs` échoue avec « Device or resource busy »** :  
+> ```
+> dmsetup ls | grep ceph        # repérer un mapping résiduel
+> dmsetup remove <nom_du_mapping>
+> ```
+
+### 3.4. Recréer l’OSD
+
+Méthode recommandée (directe avec `ceph-volume`) :
+
+```bash
+ceph-volume lvm create --data /dev/sdb
+```
+
+Si vous préférez l’outil Proxmox :
+
+```bash
+pveceph osd create /dev/sdb
+```
+
+Vérifiez :
+
+```bash
+ceph osd tree
+ceph -s      # les PGs vont se rééquilibrer (degraded / backfilling)
+```
+
+## 4. Cas particulier : l’OSD ne réapparaît pas après création
+
+### 4.1. Activer manuellement tous les volumes
+
+```bash
+ceph-volume lvm activate --all
+```
+
+### 4.2. Vérifier la présence des tags LVM
+
+```bash
+lvs -a -o lv_name,lv_tags
+```
+
+Si un volume n’a pas de tag `ceph.osd_id`, retaguez-le :
+
+```bash
+lvchange --addtag "ceph.osd_id=<ID>" /dev/<VG>/<LV>
+```
+
+Puis redémarrez le service :
+
+```bash
+systemctl restart ceph-osd@<ID>
+```
+
+## 5. Nettoyer l’avertissement « Too many repaired reads »
+
+Cet avertissement est informatif et disparaît au bout de 24h. Pour le masquer immédiatement :
+
+```bash
+ceph health mute OSD_TOO_MANY_REPAIRS 86400    # 24 heures
+```
+
+## 6. Vérifier la santé du disque (prévention)
+
+Sur le nœud hébergeant l’OSD suspect :
+
+```bash
+# Trouver le disque (ex: /dev/sdb)
+ceph-volume lvm list | grep -A10 "osd.<ID>"
+# Installer smartctl si nécessaire : apt install smartmontools
+smartctl -a /dev/sdb | grep -E "Reallocated_Sector_Ct|Current_Pending_Sector|UDMA_CRC_Error"
+```
+
+Si des valeurs sont > 0, le disque est défaillant → remplacement physique.
+
+## 7. Surveillance proactive
+
+Ajoutez cette tâche cron (tous les matins à 8h) :
+
+```bash
+0 8 * * * /usr/bin/ceph -s | grep -E "HEALTH_ERR|inconsistent" || true
+```
+
+## Récapitulatif des commandes d’urgence
+
+| Problème | Commande |
+|----------|----------|
+| PG inconsistent | `ceph pg repair <ID>` |
+| OSD absent après purge | `ceph-volume lvm create --data /dev/sdX` |
+| Disque busy / mapping résiduel | `dmsetup remove <nom>` |
+| Activation forcée | `ceph-volume lvm activate --all` |
+| Nettoyage complet du disque | `wipefs -a /dev/sdX` + `dd` |
+
+---
+
+**Gardez ce guide à portée de main.** Il vous permettra de résoudre rapidement la plupart des problèmes Ceph sur Proxmox.
