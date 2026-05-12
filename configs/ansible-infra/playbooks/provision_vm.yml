@@ -3,8 +3,11 @@
 #
 # Usage examples:
 #
-#   Basic (uses all defaults from debian-Template):
+#   Linked clone (default):
 #     ansible-playbook playbooks/provision_vm.yml -e "vm_id=110 vm_name=my-server"
+#
+#   Full clone (explicit):
+#     ansible-playbook playbooks/provision_vm.yml -e "vm_id=110 vm_name=my-server vm_full_clone=true"
 #
 #   Custom CPU/RAM:
 #     ansible-playbook playbooks/provision_vm.yml \
@@ -39,6 +42,7 @@
     # ---- passes via -e ----
     vm_id: ~
     vm_name: ~
+    vm_full_clone: false
 
     # ---- Template source ----
     vm_template_name: "web-02"
@@ -101,12 +105,22 @@
 
   tasks:
     # 1. Clone
-    - name: Clone debian-Template to new VM
+    - name: Full-clone template to new VM
       ansible.builtin.shell:
         cmd: "qm clone {{ vm_template_id }} {{ vm_id }} --name {{ vm_name }} --full 1 --storage {{ ceph_pool }}"
       become: true
       register: clone_result
       changed_when: clone_result.rc == 0
+      when: vm_full_clone | bool
+      tags: [clone]
+
+    - name: Linked-clone template to new VM
+      ansible.builtin.shell:
+        cmd: "qm clone {{ vm_template_id }} {{ vm_id }} --name {{ vm_name }}"
+      become: true
+      register: clone_result
+      changed_when: clone_result.rc == 0
+      when: not (vm_full_clone | bool)
       tags: [clone]
 
     - name: Wait a moment for the clone to settle
