@@ -1,5 +1,5 @@
 #!/bin/bash
 sudo sysctl -w net.ipv4.ip_forward=1
 
-sudo ip addr add 10.0.0.1/24 dev enp0s20f0u4
-sudo ip link set enp0s20f0u4 up
+sudo ip addr add 10.0.0.1/24 dev enp0s20f0u3
+sudo ip link set enp0s20f0u3 up
