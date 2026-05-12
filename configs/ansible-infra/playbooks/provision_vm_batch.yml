@@ -1,0 +1,48 @@
+---
+# provision_vm_batch.yml
+#
+# Provision multiple VMs in one shot by defining a list.
+#
+# Usage:
+#   ansible-playbook playbooks/provision_vm_batch.yml
+#
+# Edit the `vms` list below or override with a vars file:
+#   ansible-playbook playbooks/provision_vm_batch.yml -e @my_vms.yml
+#
+# my_vms.yml example:
+#   vms:
+#     - id: 110
+#       name: web-01
+#     - id: 111
+#       name: db-01
+#       cores: 4
+#       memory: 8192
+
+- name: Batch-provision VMs from debian-template
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    target_node: "pve-01"
+    vms:
+      - id: 110
+        name: "node-110"
+      # add more entries here:
+      # - id: 111
+      #   name: "node-111"
+      #   cores: 4
+      #   memory: 8192
+
+  tasks:
+    - name: Invoke provision_vm.yml for each VM in the list
+      ansible.builtin.include_playbook:
+        name: provision_vm.yml
+      vars:
+        vm_id: "{{ item.id }}"
+        vm_name: "{{ item.name }}"
+        vm_cores: "{{ item.cores | default(2) }}"
+        vm_memory: "{{ item.memory | default(4096) }}"
+        target_node: "{{ item.node | default(target_node) }}"
+      loop: "{{ vms }}"
+      loop_control:
+        label: "{{ item.name }} ({{ item.id }})"
