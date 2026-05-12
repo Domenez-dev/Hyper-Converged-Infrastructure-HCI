@@ -3,7 +3,7 @@
 #
 # Usage examples:
 #
-#   Basic (uses all defaults from debian-template):
+#   Basic (uses all defaults from debian-Template):
 #     ansible-playbook playbooks/provision_vm.yml -e "vm_id=110 vm_name=my-server"
 #
 #   Custom CPU/RAM:
@@ -21,7 +21,7 @@
 #   vm 200 -> .110
 #
 # The playbook:
-#   1. Clones debian-template (id 101) on the chosen proxmox node
+#   1. Clones debian-Template (id 101) on the chosen proxmox node
 #   2. Applies hardware config (cpu/ram from template unless overridden)
 #   3. Sets cloud-init static IP derived from vm_id
 #   4. Starts the VM
@@ -29,7 +29,7 @@
 #   6. Verifies the IP address matches expectation
 #   7. Runs apt update and apt upgrade
 
-- name: Provision VM from debian-template
+- name: Provision VM from debian-Template
   hosts: "{{ target_node | default('pve-01') }}"
   gather_facts: false
   vars_files:
@@ -41,7 +41,7 @@
     vm_name: ~
 
     # ---- Template source ----
-    vm_template_name: "debian-template"
+    vm_template_name: "debian-Template"
     vm_template_id: 101
 
     # ---- Hardware defaults (mirrors the template) ----
@@ -67,6 +67,14 @@
     pve_node: "{{ target_node | default('pve-01') }}"
 
   pre_tasks:
+    - name: Ensure proxmoxer is installed on the node
+      ansible.builtin.apt:
+        name: python3-proxmoxer
+        state: present
+        update_cache: true
+      become: true
+      tags: [always]
+
     - name: Validate required variables
       ansible.builtin.assert:
         that:
@@ -76,6 +84,7 @@
         fail_msg: >
           You must pass vm_id (integer > 90) and vm_name via -e.
           Example: -e "vm_id=110 vm_name=my-server"
+      tags: [always]
 
     - name: Show VM plan
       ansible.builtin.debug:
@@ -88,58 +97,48 @@
           - "Gateway  : {{ vm_gw }}"
           - "CPU      : {{ vm_cores }} cores"
           - "RAM      : {{ vm_memory }} MB"
+      tags: [always]
 
   tasks:
     # 1. Clone
-    - name: Clone debian-template to new VM
-      community.proxmox.proxmox_kvm:
-        api_host: "{{ pve_api_host }}"
-        api_token_id: "{{ pve_api_token_id }}"
-        api_token_secret: "{{ pve_api_token_secret }}"
-        node: "{{ pve_node }}"
-        clone: "{{ vm_template_id }}"
-        newid: "{{ vm_id }}"
-        name: "{{ vm_name }}"
-        storage: "{{ ceph_pool }}"
-        full: true
-        state: present
+    - name: Clone debian-Template to new VM
+      ansible.builtin.shell:
+        cmd: "qm clone {{ vm_template_id }} {{ vm_id }} --name {{ vm_name }} --full 1 --storage {{ ceph_pool }}"
+      become: true
       register: clone_result
+      changed_when: clone_result.rc == 0
+      tags: [clone]
 
     - name: Wait a moment for the clone to settle
       ansible.builtin.pause:
         seconds: 5
+      tags: [clone]
 
     # 2. Hardware config
     - name: Configure VM hardware (CPU + RAM)
-      community.proxmox.proxmox_kvm:
-        api_host: "{{ pve_api_host }}"
-        api_token_id: "{{ pve_api_token_id }}"
-        api_token_secret: "{{ pve_api_token_secret }}"
-        node: "{{ pve_node }}"
-        vmid: "{{ vm_id }}"
-        cores: "{{ vm_cores }}"
-        memory: "{{ vm_memory }}"
-        net:
-          net0: "virtio,bridge=vmbr0,tag={{ vm_vlan }}"
-        state: present
+      ansible.builtin.shell:
+        cmd: >
+          qm set {{ vm_id }}
+          --cores {{ vm_cores }}
+          --memory {{ vm_memory }}
+      become: true
+      tags: [hardware]
 
     # 3. Cloud-init static IP
-    - name: Set cloud-init network (static IP derived from VM ID)
-      community.proxmox.proxmox_kvm:
-        api_host: "{{ pve_api_host }}"
-        api_token_id: "{{ pve_api_token_id }}"
-        api_token_secret: "{{ pve_api_token_secret }}"
-        node: "{{ pve_node }}"
-        vmid: "{{ vm_id }}"
-        ipconfig:
-          ipconfig0: "ip={{ vm_cidr }},gw={{ vm_gw }}"
-        nameservers: "{{ vm_dns }}"
-        state: present
+    - name: Set cloud-init network
+      ansible.builtin.shell:
+        cmd: >
+          qm set {{ vm_id }}
+          --ipconfig0 ip={{ vm_cidr }},gw={{ vm_gw }}
+          --nameserver {{ vm_dns }}
+      become: true
+      tags: [network]
 
     # Optional: grow the disk if vm_disk_resize is set to true
     - name: Resize disk (optional)
       community.proxmox.proxmox_disk:
         api_host: "{{ pve_api_host }}"
+        api_user: "{{ pve_api_user }}"
         api_token_id: "{{ pve_api_token_id }}"
         api_token_secret: "{{ pve_api_token_secret }}"
         vmid: "{{ vm_id }}"
@@ -147,16 +146,14 @@
         size: "{{ vm_disk }}G"
         state: resized
       when: vm_disk_resize | bool
+      tags: [disk]
 
     # 4. Start VM
     - name: Start the VM
-      community.proxmox.proxmox_kvm:
-        api_host: "{{ pve_api_host }}"
-        api_token_id: "{{ pve_api_token_id }}"
-        api_token_secret: "{{ pve_api_token_secret }}"
-        node: "{{ pve_node }}"
-        vmid: "{{ vm_id }}"
-        state: started
+      ansible.builtin.shell:
+        cmd: "qm start {{ vm_id }}"
+      become: true
+      tags: [start]
 
     # 5. Wait for SSH
     - name: Wait for VM SSH to become reachable (up to {{ vm_boot_timeout }}s)
@@ -167,6 +164,8 @@
         timeout: "{{ vm_boot_timeout }}"
         state: started
       delegate_to: localhost
+      become: false
+      tags: [ssh]
 
     - name: Add new VM to in-memory inventory
       ansible.builtin.add_host:
@@ -176,6 +175,8 @@
         ansible_ssh_private_key_file: "{{ vm_ssh_key }}"
         ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
         groups: provisioned_vms
+      become: false
+      tags: [inventory]
 
 # ------------------------------------------------------------------
 # Play 2: verify + update on the new VM itself
