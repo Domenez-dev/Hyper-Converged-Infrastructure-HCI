@@ -41,8 +41,8 @@
     vm_name: ~
 
     # ---- Template source ----
-    vm_template_name: "debian-Template"
-    vm_template_id: 101
+    vm_template_name: "web-02"
+    vm_template_id: 111
 
     # ---- Hardware defaults (mirrors the template) ----
     # Override with -e
@@ -125,12 +125,30 @@
       tags: [hardware]
 
     # 3. Cloud-init static IP
+    - name: Attach cloud-init drive
+      ansible.builtin.shell:
+        cmd: "qm set {{ vm_id }} --ide2 {{ ceph_pool }}:cloudinit"
+      become: true
+      tags: [network]
+
     - name: Set cloud-init network
       ansible.builtin.shell:
         cmd: >
           qm set {{ vm_id }}
           --ipconfig0 ip={{ vm_cidr }},gw={{ vm_gw }}
           --nameserver {{ vm_dns }}
+      become: true
+      tags: [network]
+
+    - name: Set cloud-init DNS
+      ansible.builtin.shell:
+        cmd: "qm set {{ vm_id }} --nameserver 8.8.8.8 --searchdomain localdomain"
+      become: true
+      tags: [network]
+
+    - name: Regenerate cloud-init drive
+      ansible.builtin.shell:
+        cmd: "qm cloudinit update {{ vm_id }}"
       become: true
       tags: [network]
 
@@ -153,6 +171,11 @@
       ansible.builtin.shell:
         cmd: "qm start {{ vm_id }}"
       become: true
+      register: start_result
+      failed_when: >
+        start_result.rc != 0 and
+        'already running' not in start_result.stderr
+      changed_when: start_result.rc == 0
       tags: [start]
 
     # 5. Wait for SSH
@@ -163,7 +186,7 @@
         delay: 10
         timeout: "{{ vm_boot_timeout }}"
         state: started
-      delegate_to: localhost
+      delegate_to: "{{ pve_node }}"
       become: false
       tags: [ssh]
 
@@ -211,6 +234,13 @@
           IP verification failed.
           Expected {{ ansible_host }} but found {{ vm_actual_ips }}.
         success_msg: "IP {{ ansible_host }} is correctly configured."
+
+    - name: Ensure nameserver is set for this session
+      ansible.builtin.lineinfile:
+        path: /etc/resolv.conf
+        line: "nameserver 8.8.8.8"
+        state: present
+      tags: [dns]
 
     # 7. apt update + upgrade
     - name: Update apt cache
