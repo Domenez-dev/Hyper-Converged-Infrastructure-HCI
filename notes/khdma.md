@@ -16,8 +16,8 @@
 - [x] prom MGR
 - [x] sona vms 
 - [x] sona web
-- [ ] DNS server
-- [ ] Central Logs 
+- [/] DNS server
+- [/] Central Logs 
 - [ ] firewall %
 - [ ] ansible %
 - [ ] scalability (pxe, tftp) %

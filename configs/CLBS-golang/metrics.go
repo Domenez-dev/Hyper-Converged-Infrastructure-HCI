@@ -111,9 +111,14 @@ func (m *Metrics) RecordMigration(ev migrationEvent) {
 	defer m.mu.Unlock()
 	m.MigrationsTotal++
 	m.recentMigrations = append(m.recentMigrations, ev)
-	if len(m.recentMigrations) > 100 {
-		m.recentMigrations = m.recentMigrations[1:]
+
+	// Keep only the last 24 hours
+	cutoff := time.Now().Add(-24 * time.Hour)
+	i := 0
+	for i < len(m.recentMigrations) && m.recentMigrations[i].At.Before(cutoff) {
+		i++
 	}
+	m.recentMigrations = m.recentMigrations[i:]
 }
 
 // ------------------------------------------------------------
@@ -175,15 +180,13 @@ func prometheusHandler(w http.ResponseWriter, r *http.Request) {
 	sb.WriteString("# HELP clbs_node_cpu_percent Current CPU usage of each Proxmox node\n")
 	sb.WriteString("# TYPE clbs_node_cpu_percent gauge\n")
 	for node, cpu := range m.NodeCPU {
-		band := m.NodeBands[node]
-		sb.WriteString(fmt.Sprintf(`clbs_node_cpu_percent{node="%s",band="%s"} %g`+"\n", node, band, cpu))
+		sb.WriteString(fmt.Sprintf(`clbs_node_cpu_percent{node="%s"} %g`+"\n", node, cpu))
 	}
 
 	sb.WriteString("# HELP clbs_node_ram_percent Current RAM usage of each Proxmox node\n")
 	sb.WriteString("# TYPE clbs_node_ram_percent gauge\n")
 	for node, ram := range m.NodeRAM {
-		band := m.NodeBands[node]
-		sb.WriteString(fmt.Sprintf(`clbs_node_ram_percent{node="%s",band="%s"} %g`+"\n", node, band, ram))
+		sb.WriteString(fmt.Sprintf(`clbs_node_ram_percent{node="%s"} %g`+"\n", node, ram))
 	}
 
 	sb.WriteString("# HELP clbs_node_band Current band classification of each node (0=light, 1=moderate, 2=heavy)\n")
@@ -202,6 +205,12 @@ func prometheusHandler(w http.ResponseWriter, r *http.Request) {
 	// Recent migrations as individual labelled counters
 	sb.WriteString("# HELP clbs_migration_info Information about the most recent migrations (value = unix timestamp)\n")
 	sb.WriteString("# TYPE clbs_migration_info gauge\n")
+
+	cutoff := time.Now().Add(-24 * time.Hour)
+	for len(m.recentMigrations) > 0 && m.recentMigrations[0].At.Before(cutoff) {
+		m.recentMigrations = m.recentMigrations[1:]
+	}
+
 	for _, ev := range m.recentMigrations {
 		sb.WriteString(fmt.Sprintf(
 			`clbs_migration_info{vmid="%d",vm="%s",kind="%s",src="%s",dst="%s"} %d`+"\n",
