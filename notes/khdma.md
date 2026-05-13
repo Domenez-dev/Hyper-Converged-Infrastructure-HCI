@@ -18,6 +18,9 @@
 - [x] sona web
 - [/] DNS server
 - [/] Central Logs 
+- [ ] alertmanager
+- [ ] log centralise
+- [ ] ineterface playbooks
 - [ ] firewall %
 - [ ] ansible 1/3
 - [ ] scalability (pxe, tftp) %
