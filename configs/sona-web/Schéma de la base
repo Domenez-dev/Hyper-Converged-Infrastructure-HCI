@@ -1,0 +1,25 @@
+-- Créer l'utilisateur
+CREATE USER sona WITH PASSWORD 'sona123';
+
+-- Créer la base de données
+CREATE DATABASE sonadb OWNER sona;
+
+-- Donner les droits
+GRANT ALL PRIVILEGES ON DATABASE sonadb TO sona;
+
+-- Se connecter à la base
+\c sonadb
+
+-- Créer la table des requêtes
+CREATE TABLE requests (
+    id SERIAL PRIMARY KEY,
+    instance_id VARCHAR(50) NOT NULL,
+    path VARCHAR(255) NOT NULL,
+    request_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    client_ip VARCHAR(45),
+    user_agent TEXT
+);
+
+-- Donner les droits sur la table
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sona;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO sona;
