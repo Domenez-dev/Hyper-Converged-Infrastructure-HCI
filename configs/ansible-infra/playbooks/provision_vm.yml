@@ -45,7 +45,7 @@
     vm_full_clone: false
 
     # ---- Template source ----
-    vm_template_name: "web-02"
+    vm_template_name: "debian-Template"
     vm_template_id: 111
 
     # ---- Hardware defaults (mirrors the template) ----

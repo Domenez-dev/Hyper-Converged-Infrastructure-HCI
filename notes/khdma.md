@@ -19,7 +19,7 @@
 - [/] DNS server
 - [/] Central Logs 
 - [ ] firewall %
-- [ ] ansible %
+- [ ] ansible 1/3
 - [ ] scalability (pxe, tftp) %
 - [ ] gitlab
 

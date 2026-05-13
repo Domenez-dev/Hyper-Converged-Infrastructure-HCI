@@ -1,0 +1,36 @@
+
+% In the figure:
+\begin{tikzpicture}[
+  node distance=0.8cm and 1.5cm,
+  box/.style={rectangle, rounded corners, draw=black, fill=blue!10, 
+               text width=5cm, align=center, minimum height=0.8cm, font=\small},
+  decision/.style={diamond, draw=black, fill=orange!20, aspect=2,
+                   text width=3cm, align=center, font=\small},
+  arrow/.style={-{Latex}, thick},
+  ]
+
+  \node[box] (start) {Début du cycle (60s)};
+  \node[box, below=of start] (fetch) {Récupérer métriques CPU \& RAM\\(moyenne 5 min) depuis InfluxDB};
+  \node[box, below=of fetch] (calc) {Calculer seuil et bande modérée\\pour CPU et RAM};
+  \node[decision, below=of calc] (heavy) {N\oe{}ud surchargé\\(hors bande haute)\\ ET charge $> 50\%$ ?};
+  \node[box, right=2cm of heavy] (wait) {Attendre prochain\\cycle};
+  \node[box, below=of heavy] (vmsel) {Sélectionner VM candidate\\(CSLB vecteur de transfert,\\cooldown respecté)};
+  \node[box, below=of vmsel] (destsel) {Calculer score destination :\\$\Delta_{CPU} \times 0.7 + \Delta_{RAM} \times 0.3$};
+  \node[decision, below=of destsel] (found) {N\oe{}ud destination\\trouvé ?};
+  \node[box, right=2cm of found] (nocand) {Aucune action,\\attendre prochain cycle};
+  \node[box, below=of found] (migrate) {Déclencher live migration\\via API Proxmox (VxLAN 50)};
+  \node[box, below=of migrate] (log) {Enregistrer dans InfluxDB\\Appliquer cooldown (10 min)};
+  \node[box, below=of log] (end) {Fin du cycle};
+
+  \draw[arrow] (start) -- (fetch);
+  \draw[arrow] (fetch) -- (calc);
+  \draw[arrow] (calc) -- (heavy);
+  \draw[arrow] (heavy) -- node[above]{\small Non} (wait);
+  \draw[arrow] (heavy) -- node[right]{\small Oui} (vmsel);
+  \draw[arrow] (vmsel) -- (destsel);
+  \draw[arrow] (destsel) -- (found);
+  \draw[arrow] (found) -- node[above]{\small Non} (nocand);
+  \draw[arrow] (found) -- node[right]{\small Oui} (migrate);
+  \draw[arrow] (migrate) -- (log);
+  \draw[arrow] (log) -- (end);
+\end{tikzpicture}

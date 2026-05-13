@@ -1,0 +1,127 @@
+{\color{bleu}\chapter{Présentation du Contexte}}
+\thispagestyle{empty}
+\newpage
+
+{\color{bleu} \section{Introduction}}
+
+\par Ce chapitre vise à présenter le contexte général dans lequel s'inscrit notre projet de fin d'études. Nous y aborderons les fondements de l'hyper convergence (HCI), les enjeux liés à la virtualisation et à la gestion unifiée des ressources informatiques, ainsi que les besoins spécifiques de l'entreprise Sonatrach. Ce cadre introductif nous permettra de mieux comprendre les choix technologiques effectués et les objectifs fixés pour le déploiement d'une infrastructure Cloud privée hyperconvergée basée sur des solutions open source.\\
+
+{\color{bleu} \section{Présentation de Sonatrach}}
+
+\par Sonatrach est une entreprise publique algérienne créée le 31 décembre 1963, peu après l'indépendance de l'Algérie. Elle a été fondée dans le but de gérer, développer et exploiter les ressources hydrocarbures du pays, qui représentent une richesse stratégique pour l'économie nationale. À ses débuts, Sonatrach se consacrait essentiellement au transport et à la commercialisation du pétrole brut extrait en Algérie. [1]\\
+
+\par Avec le temps, Sonatrach a évolué pour devenir la plus grande entreprise en Afrique dans le domaine des hydrocarbures. Elle intervient aujourd'hui dans l'ensemble de la chaîne de valeur pétrolière et gazière : exploration, production, transport, transformation et commercialisation. L'entreprise est également active dans la pétrochimie et les énergies renouvelables.\\
+
+\par Sonatrach entretient de nombreuses collaborations internationales avec des compagnies pétrolières et gazières étrangères, impliquées dans de grands projets de partenariat via des joint-ventures et accords technologiques avec des entreprises européennes, américaines, asiatiques et africaines. Ces coopérations ont permis un transfert de savoir-faire et de technologie vers l'Algérie.\\
+
+\par Le projet est réalisé au sein du Centre d'innovation de Sonatrach. Cette direction joue un rôle stratégique dans l'innovation technologique et l'optimisation des processus internes. Elle dispose d'infrastructures informatiques avancées, notamment des solutions de virtualisation et de stockage haute capacité, destinées à soutenir les travaux de simulation, de test et de pré-production.\\
+
+{\color{bleu} \section{Infrastructure Existante et Contexte Technologique}}
+
+{\color{bleuu} \subsection{Infrastructure actuelle de Sonatrach}}
+
+\par Sonatrach dispose actuellement d'une infrastructure hyperconvergée basée sur la solution propriétaire Nutanix, déployée à l'échelle nationale sur plusieurs wilayas et utilisée pour les environnements de production critiques. Cette solution est reconnue pour sa stabilité, ses performances et la richesse de ses fonctionnalités, notamment en matière de gestion centralisée, de haute disponibilité et de scalabilité.\\
+
+\par Cependant, cette infrastructure présente des contraintes structurelles qui deviennent de plus en plus préoccupantes dans une perspective d'évolution à long terme :\\
+
+\begin{itemize}
+
+    \item \textbf{Coûts de licences croissants :} les frais de licence Nutanix suivent une trajectoire haussière, représentant une charge financière significative et récurrente pour l'entreprise, indépendamment du niveau d'utilisation réel de la plateforme.
+
+    \item \textbf{Dépendance technologique forte :} le recours exclusif à un éditeur propriétaire unique expose Sonatrach à un risque de vendor lock-in, limitant sa capacité à négocier les conditions contractuelles et à adopter librement de nouvelles technologies.
+
+    \item \textbf{Manque de souveraineté technique :} les évolutions de la plateforme, les mises à jour et les décisions d'architecture sont entièrement soumises à la roadmap de l'éditeur, sans possibilité d'adaptation aux besoins spécifiques de l'entreprise.
+
+    \item \textbf{Inadaptation aux petits déploiements :} pour les environnements de test, de développement et de pré-production, le déploiement de Nutanix sur de petits clusters de 3 à 4 n\oe{}uds est disproportionné par rapport aux besoins réels, tant en complexité qu'en coût.
+
+\end{itemize}
+
+\par Ces constats positionnent ce projet non pas comme un simple exercice académique, mais comme une réponse concrète à une problématique stratégique réelle : explorer et valider la viabilité d'une infrastructure hyperconvergée open source capable de répondre aux exigences de Sonatrach, aujourd'hui en environnement de test et demain potentiellement en production.\\
+
+{\color{bleuu} \subsection{Les besoins en infrastructure légère pour les zones de test}}
+
+\par Au-delà des besoins immédiats en environnements de test et de pré-production, Sonatrach a besoin d'une infrastructure qui réponde à des exigences de niveau entreprise, tout en s'affranchissant des contraintes des solutions propriétaires. Ces besoins couvrent plusieurs dimensions :\\
+
+\begin{itemize}
+
+    \item \textbf{Fiabilité et haute disponibilité :} l'infrastructure doit garantir la continuité de service en cas de défaillance d'un ou plusieurs n\oe{}uds, avec basculement automatique des charges de travail sans intervention humaine.
+
+    \item \textbf{Performance et scalabilité :} la solution doit pouvoir monter en charge progressivement, en ajoutant des n\oe{}uds au cluster sans interruption de service, pour accompagner la croissance des besoins de l'entreprise.
+
+    \item \textbf{Gestion unifiée des ressources :} calcul, stockage et réseau doivent être administrés depuis une interface centralisée unique, réduisant la complexité opérationnelle et les besoins en compétences spécialisées multiples.
+
+    \item \textbf{Équilibrage dynamique de charge :} à l'image du mécanisme DRS de VMware, la plateforme doit être capable de redistribuer automatiquement les charges de travail entre les n\oe{}uds en fonction de l'utilisation des ressources, optimisant ainsi l'efficacité globale du cluster.
+
+    \item \textbf{Souveraineté et indépendance technologique :} en s'appuyant exclusivement sur des technologies open source, l'entreprise reprend le contrôle total de son infrastructure, avec la liberté d'auditer, de modifier et d'adapter la solution à ses besoins propres.
+
+    \item \textbf{Réduction du coût total de possession (TCO) :} l'absence de licences propriétaires représente une économie substantielle sur le long terme, réallouable vers des investissements matériels ou humains.
+
+\end{itemize}
+
+{\color{bleu} \section{Problématique}}
+
+\par La problématique centrale de ce projet est la suivante :\\
+
+\par \textbf{Comment concevoir et déployer une infrastructure Cloud privée hyperconvergée, entièrement basée sur des technologies open source, capable de répondre aux exigences de fiabilité, de performance et de scalabilité d'une grande entreprise industrielle, tout en constituant une alternative crédible et souveraine aux solutions propriétaires de type Nutanix ?}\\
+
+\par Cette problématique soulève plusieurs questions techniques structurantes :\\
+
+\begin{itemize}
+
+    \item Comment concevoir un système de stockage distribué, redondant et performant garantissant l'intégrité des données en cas de défaillance d'un n\oe{}ud ?
+
+    \item Comment assurer le basculement et l'équilibrage automatique des charges de travail dans un cluster à plusieurs n\oe{}uds, sans perte de données ni interruption prolongée de service ?
+
+    \item Comment segmenter et isoler strictement les flux réseau au sein d'une infrastructure hyperconvergée, en séparant les trafics de gestion, de réplication, de migration et de production ?
+
+    \item Dans quelle mesure une solution open source peut-elle répondre aux exigences d'une infrastructure de niveau production dans le contexte d'une grande entreprise ?
+
+\end{itemize}
+
+{\color{bleu} \section{Objectifs du Projet}}
+
+{\color{bleuu} \subsection{Objectif général}}
+
+\par Concevoir et déployer une infrastructure Cloud privée hyperconvergée, entièrement open source, sur trois serveurs physiques Dell PowerEdge R720 mis à disposition par Sonatrach, offrant des garanties de fiabilité, de performance et d'évolutivité comparables aux solutions propriétaires de type Nutanix, et constituant une alternative stratégique à moyen et long terme.\\
+
+{\color{bleuu} \subsection{Objectifs spécifiques}}
+
+\begin{itemize}
+
+    \item \textbf{Déployer un cluster de trois n\oe{}uds physiques à haute disponibilité} sur les serveurs Dell PowerEdge R720 fournis par Sonatrach, avec gestion centralisée, administration simplifiée et support de la migration à chaud.
+
+    \item \textbf{Configurer Proxmox VE sur chaque serveur physique} en exploitant pleinement les ressources matérielles disponibles (256 GB RAM, 5 disques SAS par n\oe{}ud).
+
+    \item \textbf{Concevoir et mettre en place un système de stockage distribué Ceph} en utilisant les disques SAS 600 GB de chaque n\oe{}ud comme OSD, et les disques 300 GB pour le système d'exploitation et les métadonnées Ceph (WAL/DB).
+
+    \item \textbf{Implémenter une segmentation réseau avancée} via Open vSwitch, en configurant une architecture multi-VLAN séparant les flux de gestion, de réplication, de migration et de production sur l'infrastructure physique réelle.
+
+    \item \textbf{Développer un mécanisme d'équilibrage dynamique de la charge (DRS)}, capable de redistribuer automatiquement les machines virtuelles selon les métriques de performance en temps réel.
+
+    \item \textbf{Valider la solution} à travers un scénario de haute disponibilité démontrant la tolérance aux pannes sans perte de données ni interruption de service.
+
+    \item \textbf{Fournir une base d'infrastructure évolutive}, accompagnée d'une documentation technique et d'une conception architecturale réutilisable à plus grande échelle au sein de Sonatrach.
+
+\end{itemize}
+
+{\color{bleu} \section{Périmètre et Limitations du Projet}}
+
+\par Ce projet vise le déploiement d'un cluster hyperconvergé open source destiné aux environnements de test, de développement et de pré-production. L'infrastructure est déployée sur un cluster physique de trois serveurs Dell PowerEdge R720 mis à disposition par Sonatrach, offrant les ressources matérielles nécessaires à l'exécution de l'hyperviseur Proxmox VE en \textit{bare-metal}, du stockage distribué Ceph et des VMs de démonstration.\\
+
+\par Le passage à une architecture physique distribuée lève la contrainte majeure du point de défaillance unique (SPOF) matériel. Néanmoins, le périmètre de ce projet se limite volontairement à un environnement de laboratoire structuré, ce qui implique les contraintes suivantes :\\
+
+\begin{itemize}
+
+    \item \textbf{Échelle du cluster (Scale) :} Bien que le cluster repose sur trois serveurs physiques de classe entreprise offrant une excellente capacité de calcul (256 Go de RAM par n\oe{}ud), il représente la configuration minimale recommandée (3 n\oe{}uds) pour maintenir un quorum stable avec Corosync et Ceph.
+
+    \item \textbf{Capacité de stockage :} La taille du pool Ceph est techniquement contrainte par les disques physiques alloués aux OSDs (3 disques de 600 Go par serveur). Avec une réplication de facteur 3, le cluster offre environ 1,8 To d'espace utilisable. Cela rend cette infrastructure parfaitement adaptée aux charges de test et de développement, mais insuffisante pour des \textit{workloads} de données à très grande échelle.
+
+    \item \textbf{Absence de multitenancy :} Proxmox VE, dans la configuration mise en \oe{}uvre, est orienté Cloud privé. La gestion \textit{multi-tenant} stricte (isolation forte entre différents clients ou départements totalement hermétiques), propre aux environnements Cloud publics, n'entre pas dans le périmètre de ce projet.
+
+    \item \textbf{Maintenance à long terme :} La gestion opérationnelle continue de l'infrastructure (cycle de mises à jour, configuration d'un serveur Proxmox Backup Server externe sécurisé, gestion des pannes matérielles physiques) n'est pas couverte par la phase de déploiement de ce projet et constitue une perspective d'évolution naturelle pour l'équipe d'exploitation.
+
+\end{itemize}
+
+{\color{bleu} \section{Conclusion}}
+
+\par Dans ce chapitre, nous avons présenté le contexte général du projet, les besoins identifiés au sein de Sonatrach, et la problématique qui motive notre démarche. Nous avons défini les objectifs, le périmètre et les limites du projet. Ce cadre nous permettra d'aborder, dans le chapitre suivant, l'état de l'art des solutions disponibles et les fondements théoriques de l'hyperconvergence, de la virtualisation et des technologies retenues.\\

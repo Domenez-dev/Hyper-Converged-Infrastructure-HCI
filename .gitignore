@@ -4,3 +4,62 @@ node_modules/
 .obsidian
 .venv
 .env
+
+# === Latex ===
+# Core auxiliary files
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+
+# Intermediate documents
+*.dvi
+*.xdv
+*-converted-to.*
+
+# Bibliography
+*.bbl
+*.bbl-SAVE-ERROR
+*.bcf
+*.blg
+*-blx.aux
+*-blx.bib
+*.run.xml
+
+# Build tools
+*.fdb_latexmk
+*.synctex
+*.synctex.gz
+*.synctex.gz(busy)
+*.pdfsync
+latex.out/
+
+# Misc packages
+*.alg
+*.loa
+*.idx
+*.ilg
+*.ind
+*.maf
+*.mtc*
+*.lol
+_minted*
+*.pyg
+
+# Editors
+*.bak
+*.sav
+*.bak[0-9]*
+.texpadtmp
+*.lyx~
+*.backup
+.*.swp
+./auto/*
+*.el

@@ -1,0 +1,123 @@
+\documentclass[a4paper,12pt]{report}
+%------------- package -----------------------
+\usepackage[french]{babel}
+\frenchbsetup{StandardLists=true} 
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fancyhdr}
+\usepackage{inputenc}
+\usepackage[top=2cm, bottom=2cm, left=2.5cm, right=2cm]{geometry}
+\usepackage{lmodern,tikz,lipsum}
+\newcommand\framethispage[1][1cm]{%
+    \tikz[overlay,remember picture,line width=2.5pt]
+    \draw([xshift=(#1),yshift=(-#1)]current page.north west)rectangle
+         ([xshift=(-#1),yshift=(#1)]current page.south east);%
+}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{setspace}
+\usepackage{abstract}
+\usepackage{subfig}
+\usepackage{layout}
+\usepackage{ragged2e}
+
+% Tikz for graphs
+\usepackage{tikz} 
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit}
+
+% Code Box (morceaux du codes)
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+
+\definecolor{codebg}{RGB}{245,245,244}
+\definecolor{codeframe}{RGB}{210,210,210}
+\definecolor{codecomment}{RGB}{0,128,0}
+\definecolor{codekeyword}{RGB}{0,0,180}
+\definecolor{codestring}{RGB}{163,21,21}
+
+\lstdefinestyle{sonacode}{
+    backgroundcolor=\color{codebg},
+    frame=single,
+    rulecolor=\color{codeframe},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{codekeyword}\bfseries,
+    commentstyle=\color{codecomment},
+    stringstyle=\color{codestring},
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=2,
+    captionpos=b
+}
+
+
+\renewcommand{\thechapter}{\Roman{chapter}} 
+
+\definecolor{bleu}{RGB}{0,76,153}
+\definecolor{bleuu}{RGB}{0,102,204}	
+
+\makeatletter
+\def\headrule{{\if@fancyplain\let\headrulewidth\plainheadrulewidth\fi
+		\color{bleu}\hrule\@height\headrulewidth\@width\headwidth \vskip-\headrulewidth}}
+\def\footrule{{\if@fancyplain\let\footrulewidth\plainfootrulewidth\fi
+		\vskip-\footruleskip\vskip-\footrulewidth
+		\color{bleu}\color{bleu}\hrule\@width\headwidth\@height\footrulewidth\vskip\footruleskip}}
+\makeatother
+
+
+%------------------ memoire -------------------------
+\begin{document}
+
+%------------------ page de garde -------------------	
+\input{./pagedegarde.tex}
+%-------------------remerciments---------------------
+\input{./merci.tex}
+%-------------------table de matiéres----------------
+\newpage
+\pagenumbering{Roman}\setcounter{page}{+2}
+\renewcommand{\contentsname}{\textbf{\Huge{\textcolor{bleu}{Table des matières}}}}
+\tableofcontents
+
+%-------------------table des figures-----------------
+\renewcommand{\listfigurename}{\textbf{\Huge{\textcolor{bleu}{Table des figures}}}}
+\listoffigures
+\addcontentsline{toc}{chapter}{Table des figures}
+
+%-------------------la liste des tableaux--------------
+\renewcommand{\listtablename }{\textbf{\Huge{\textcolor{bleu}{Liste des tableaux}}}}
+\listoftables
+\addcontentsline{toc}{chapter}{Liste des tableaux}
+%-------------------acronymes------------------------
+\input{./acronymes.tex}
+%-------------------l'en tête -----------------------
+\pagestyle{fancy}
+\lhead{\leftmark}
+\chead{}
+\rhead{}
+\renewcommand{\headrulewidth}{2pt}
+\renewcommand{\footrulewidth}{0.8pt}
+ 
+ %-------------------introduction--------------------
+\input{./introduction.tex}
+\pagenumbering{arabic}
+%------------------les chapitres---------------------
+\begin{justify}
+\input{chapitre/chapitre1.tex}	
+\input{chapitre/chapitre2.tex}
+\input{chapitre/chapitre3.tex}
+\input{chapitre/chapitre4.tex}
+\end{justify}
+
+\end{document}	
