@@ -1,8 +1,6 @@
 \documentclass[a4paper,12pt]{report}
 %------------- package -----------------------
 \usepackage[french]{babel}
-\frenchbsetup{StandardLists=true} 
-\usepackage[utf8x]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{fancyhdr}
 \usepackage{inputenc}
@@ -31,7 +29,7 @@
 \usepackage{ragged2e}
 
 % Tikz for graphs
-\usepackage{tikz} 
+\usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit}
 
 % Code Box (morceaux du codes)
@@ -63,10 +61,10 @@
 }
 
 
-\renewcommand{\thechapter}{\Roman{chapter}} 
+\renewcommand{\thechapter}{\Roman{chapter}}
 
 \definecolor{bleu}{RGB}{0,76,153}
-\definecolor{bleuu}{RGB}{0,102,204}	
+\definecolor{bleuu}{RGB}{0,102,204}
 
 \makeatletter
 \def\headrule{{\if@fancyplain\let\headrulewidth\plainheadrulewidth\fi
@@ -80,7 +78,7 @@
 %------------------ memoire -------------------------
 \begin{document}
 
-%------------------ page de garde -------------------	
+%------------------ page de garde -------------------
 \input{./pagedegarde.tex}
 %-------------------remerciments---------------------
 \input{./merci.tex}
@@ -108,16 +106,16 @@
 \rhead{}
 \renewcommand{\headrulewidth}{2pt}
 \renewcommand{\footrulewidth}{0.8pt}
- 
+
  %-------------------introduction--------------------
 \input{./introduction.tex}
 \pagenumbering{arabic}
 %------------------les chapitres---------------------
 \begin{justify}
-\input{chapitre/chapitre1.tex}	
+\input{chapitre/chapitre1.tex}
 \input{chapitre/chapitre2.tex}
 \input{chapitre/chapitre3.tex}
 \input{chapitre/chapitre4.tex}
 \end{justify}
 
-\end{document}	
+\end{document}
