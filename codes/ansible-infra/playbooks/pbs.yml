@@ -1,4 +1,5 @@
 ---
+# NOTE: NOT SURE TO KEEP THIS PLAYBOOK
 - name: Install and configure Proxmox Backup Server
   hosts: pbs
   vars_files:

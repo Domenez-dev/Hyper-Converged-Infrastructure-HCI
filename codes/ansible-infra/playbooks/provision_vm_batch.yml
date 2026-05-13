@@ -1,4 +1,6 @@
 ---
+# NOTE: THIS PLAYBOOK ISN'T TESTED YET!
+
 # provision_vm_batch.yml
 #
 # Provision multiple VMs in one shot by defining a list.

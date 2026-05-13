@@ -1,4 +1,5 @@
 ---
+# NOTE: THIS PLAYBOOK HAS NOT BEEN TESTED YET
 - name: Harden all Proxmox nodes
   hosts: proxmox_nodes
 
