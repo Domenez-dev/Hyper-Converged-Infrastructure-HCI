@@ -1,0 +1,16 @@
+[Unit]
+Description=Flask Sona-Web App
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root
+Environment="INSTANCE_ID=app-1"
+Environment="HOSTNAME=app-1"
+ExecStart=/usr/bin/python3 /root/app.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
