@@ -19,7 +19,6 @@
 - [/] DNS server
 - [/] Central Logs 
 - [ ] alertmanager
-- [ ] log centralise
 - [ ] ineterface playbooks
 - [ ] firewall %
 - [ ] ansible 1/3
