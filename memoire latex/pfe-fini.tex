@@ -1,6 +1,8 @@
 \documentclass[a4paper,12pt]{report}
 %------------- package -----------------------
 \usepackage[french]{babel}
+\frenchbsetup{StandardLists=true}
+\usepackage[utf8x]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{fancyhdr}
 \usepackage{inputenc}
@@ -61,10 +63,74 @@
 }
 
 
+%================ COLORS =================
+\definecolor{bleu}{RGB}{0,76,153}
+\definecolor{bleuu}{RGB}{0,90,186}
+\definecolor{bleuuu}{RGB}{0,102,204}
+
+%================ TITLES =================
+\usepackage{titlesec}
+
+\titleformat{\chapter}[display]
+{\normalfont\Huge\bfseries\color{bleu}}
+{\chaptertitlename\ \thechapter}
+{20pt}
+{\Huge}
+
+\titleformat{\section}
+{\normalfont\Large\bfseries\color{bleu}}
+{\thesection}
+{1em}
+{}
+
+\titleformat{\subsection}
+{\normalfont\large\bfseries\color{bleuu}}
+{\thesubsection}
+{1em}
+{}
+
+\titleformat{\subsubsection}
+{\normalfont\normalsize\bfseries\color{bleuuu}}
+{\thesubsubsection}
+{1em}
+{}
+
+%================ NUMBERING =================
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
 \renewcommand{\thechapter}{\Roman{chapter}}
 
-\definecolor{bleu}{RGB}{0,76,153}
-\definecolor{bleuu}{RGB}{0,102,204}
+\renewcommand{\thesection}
+{\thechapter.\arabic{section}}
+
+\renewcommand{\thesubsection}
+{\thesection.\arabic{subsection}}
+
+\renewcommand{\thesubsubsection}
+{\thesubsection.\arabic{subsubsection}}
+
+
+%================ LISTINGS AS FIGURES =================
+\renewcommand{\lstlistingname}{Figure}
+
+\makeatletter
+\renewcommand*\l@lstlisting{\l@figure}
+\let\c@lstlisting\c@figure
+\let\thelstlisting\thefigure
+
+\AtBeginDocument{
+  \let\addcontentslineorig\addcontentsline
+  \renewcommand{\addcontentsline}[3]{%
+    \ifx#2\ext@lstlisting
+      \addcontentslineorig{lof}{figure}{#3}
+    \else
+      \addcontentslineorig{#1}{#2}{#3}
+    \fi
+  }
+}
+\makeatother
+
 
 \makeatletter
 \def\headrule{{\if@fancyplain\let\headrulewidth\plainheadrulewidth\fi
@@ -82,21 +148,27 @@
 \input{./pagedegarde.tex}
 %-------------------remerciments---------------------
 \input{./merci.tex}
-%-------------------table de matiéres----------------
-\newpage
-\pagenumbering{Roman}\setcounter{page}{+2}
-\renewcommand{\contentsname}{\textbf{\Huge{\textcolor{bleu}{Table des matières}}}}
-\tableofcontents
 
-%-------------------table des figures-----------------
-\renewcommand{\listfigurename}{\textbf{\Huge{\textcolor{bleu}{Table des figures}}}}
+%================ TABLE OF CONTENTS =================
+\clearpage
+\renewcommand{\contentsname}{\textbf{\Huge\textcolor{bleu}{Table des matières}}}
+\tableofcontents
+\addcontentsline{toc}{chapter}{Table des matières}
+
+%================ LIST OF FIGURES =================
+\clearpage
+\renewcommand{\listfigurename}{\textbf{\Huge\textcolor{bleu}{Table des figures}}}
 \listoffigures
 \addcontentsline{toc}{chapter}{Table des figures}
 
-%-------------------la liste des tableaux--------------
-\renewcommand{\listtablename }{\textbf{\Huge{\textcolor{bleu}{Liste des tableaux}}}}
+%================ LIST OF TABLES =================
+\clearpage
+\renewcommand{\listtablename}{\textbf{\Huge\textcolor{bleu}{Liste des tableaux}}}
 \listoftables
 \addcontentsline{toc}{chapter}{Liste des tableaux}
+
+\clearpage
+
 %-------------------acronymes------------------------
 \input{./acronymes.tex}
 %-------------------l'en tête -----------------------

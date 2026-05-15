@@ -1,47 +1,19 @@
-{\color{bleu}\chapter{Implémentation de la Solution Proposée}}
+\chapter{Implémentation de la Solution Proposée}
 \thispagestyle{empty}
 \newpage
 
-% =========================
-% Packages needed in preamble
-% =========================
-% \usepackage{float}
-% \usepackage{xcolor}
-% \usepackage{graphicx}
-% \usepackage{caption}
-% \usepackage{listings}
-%
-% \definecolor{codebg}{RGB}{245,245,244}
-% \definecolor{codeframe}{RGB}{210,210,210}
-% \definecolor{codecomment}{RGB}{0,128,0}
-% \definecolor{codekeyword}{RGB}{0,0,180}
-% \definecolor{codestring}{RGB}{163,21,21}
-%
-% \lstdefinestyle{sonacode}{
-%     backgroundcolor=\color{codebg},
-%     frame=single,
-%     rulecolor=\color{codeframe},
-%     basicstyle=\ttfamily\small,
-%     keywordstyle=\color{codekeyword}\bfseries,
-%     commentstyle=\color{codecomment},
-%     stringstyle=\color{codestring},
-%     breaklines=true,
-%     showstringspaces=false,
-%     tabsize=2,
-%     captionpos=b
-% }
 
-{\color{bleu} \section{Introduction}}
+\section{Introduction}
 
 \par Ce chapitre présente la mise en œuvre concrète de la solution proposée dans le chapitre précédent. L’objectif est de montrer les étapes réelles de déploiement de l’infrastructure hyperconvergée, depuis l’installation de la plateforme de virtualisation jusqu’aux services applicatifs et aux mécanismes d’automatisation. Pour améliorer la lisibilité, l’implémentation est organisée en trois grandes parties : la couche calcul, la couche stockage, puis la couche réseau.\\
 
 \par Les opérations ont été réalisées avec plusieurs outils complémentaires : l’interface web Proxmox VE, la ligne de commande Linux, les fichiers de configuration système, OPNsense, Ceph, ainsi que des playbooks Ansible pour automatiser certaines tâches répétitives. Des captures d’écran sont prévues aux points importants afin d’illustrer visuellement les résultats obtenus.\\
 
-{\color{bleu} \section{Partie I --- Couche Calcul}}
+\section{Partie I --- Couche Calcul}
 
-{\color{bleuu} \subsection{Préparation de l’Infrastructure Physique}}
+\subsection{Préparation de l’Infrastructure Physique}
 
-{\color{bleuuu} \subsubsection{Installation de Proxmox VE sur les nœuds}}
+\subsubsection{Installation de Proxmox VE sur les nœuds}
 
 \par L’installation de la plateforme de virtualisation a commencé par le téléchargement de l’image ISO de Proxmox VE version 9.1.1. Cette image a ensuite été copiée sur une clé USB bootable utilisée pour démarrer chaque serveur Dell PowerEdge R720. Une installation séparée a été réalisée sur chacun des trois nœuds du cluster.\\
 
@@ -51,12 +23,12 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{image/ch4/proxmox.png}
+    \includegraphics[width=1\textwidth]{image/ch4/proxmox.png}
     \caption{Interface web Proxmox au premier login sur PVE-01}
     \label{fig:proxmox-first-login}
 \end{figure}
 
-{\color{bleuuu} \subsubsection{Configuration de la connectivité Internet via le laptop gateway}}
+\subsubsection{Configuration de la connectivité Internet via le laptop gateway}
 
 \par Dans l’environnement de laboratoire, aucun routeur physique dédié n’était disponible pour fournir l’accès Internet aux nœuds Proxmox. Pour cette raison, un laptop a été configuré pour jouer le rôle de passerelle NAT entre le réseau interne de l’infrastructure et Internet. Il possède deux interfaces : \texttt{enp0s20f0u4c2} côté infrastructure avec l’adresse \texttt{192.168.10.36/24}, et \texttt{wlan0} côté Internet avec l’adresse \texttt{10.247.78.8/24}.\\
 
@@ -108,9 +80,9 @@ nmcli connection up "Wired connection 1"
 
 \par Des tests simples comme \texttt{ping 8.8.8.8}, \texttt{ping google.com} et \texttt{apt update} ont confirmé que les nœuds disposaient correctement d’un accès Internet.\\
 
-{\color{bleuu} \subsection{Formation du cluster Proxmox et haute disponibilité}}
+\subsection{Formation du cluster Proxmox et haute disponibilité}
 
-{\color{bleuuu} \subsubsection{Création et jonction au cluster}}
+\subsubsection{Création et jonction au cluster}
 
 \par Après l’installation de Proxmox VE sur les trois serveurs, la phase suivante a consisté à former un cluster unique. Cette opération a été lancée depuis le premier nœud PVE-01, qui devient le nœud initial du cluster.\\
 
@@ -132,12 +104,12 @@ pvecm status
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{image/ch4/nodes online.png}
+    \includegraphics[width=1\textwidth]{image/ch4/nodes online.png}
     \caption{Vue du cluster Proxmox montrant les trois nœuds en ligne}
     \label{fig:cluster-three-nodes}
 \end{figure}
 
-{\color{bleuuu} \subsubsection{Configuration de la migration à chaud}}
+\subsubsection{Configuration de la migration à chaud}
 
 \par La migration à chaud des machines virtuelles a été configurée pour utiliser le réseau dédié VxLAN 50. Ce choix permet de ne pas mélanger le trafic de migration avec le trafic utilisateur ou le trafic de stockage.\\
 
@@ -145,22 +117,22 @@ pvecm status
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{image/ch4/before migration.png}
-    \caption{Avant et après une migration live d’une machine virtuelle}
-    \label{fig:live-migration-before-after}
+    \includegraphics[width=1\textwidth]{image/ch4/before migration.png}
+    \caption{Avant la migration live d’une machine virtuelle}
+    \label{fig:live-migration-before}
 \end{figure}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{image/ch4/after migration.png}
-    \caption{Avant et après une migration live d’une machine virtuelle}
-    \label{fig:live-migration-before-after}
+    \includegraphics[width=1\textwidth]{image/ch4/after migration.png}
+    \caption{Après la migration live d’une machine virtuelle}
+    \label{fig:live-migration-after}
 \end{figure}
 
-{\color{bleuu} \subsection{Déploiement de la stack de monitoring}}
+\subsection{Déploiement de la stack de monitoring}
 
 \par Afin de superviser l’état global de l’infrastructure, une stack de monitoring a été déployée dans un conteneur LXC dédié appelé \texttt{monitoring}, avec l’adresse \texttt{192.168.10.99}. Ce conteneur centralise InfluxDB, Prometheus et Grafana.\\
 
-{\color{bleuuu} \subsubsection{Déploiement d’InfluxDB}}
+\subsubsection{Déploiement d’InfluxDB}
 
 \par InfluxDB a été installé pour recevoir les métriques envoyées directement par Proxmox à travers le système natif \textit{Metric Server}. Un bucket nommé \texttt{proxmox-metrics} a été créé afin de stocker les mesures CPU, mémoire, réseau et stockage de chaque nœud du cluster.\\
 
@@ -168,12 +140,12 @@ pvecm status
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{image/ch4/influxdb.png}
+    \includegraphics[width=1\textwidth]{image/ch4/influxdb.png}
     \caption{Explorateur InfluxDB montrant les métriques reçues depuis Proxmox}
     \label{fig:influxdb-data-explorer}
 \end{figure}
 
-{\color{bleuuu} \subsubsection{Déploiement de Prometheus}}
+\subsubsection{Déploiement de Prometheus}
 
 \par Prometheus a été installé dans le même conteneur afin de collecter les métriques exposées par Ceph et par le service applicatif CLBS. La configuration du fichier \texttt{prometheus.yml} contient deux jobs principaux : un job pour les métriques Ceph via le module MGR Prometheus, et un job pour l’application CLBS développée en Go.\\
 
@@ -201,7 +173,7 @@ scrape_configs:
 
 \par L’interface web Prometheus a ensuite permis de confirmer que les différentes cibles apparaissaient avec l’état \texttt{UP}.\\
 
-{\color{bleuuu} \subsubsection{Déploiement de Grafana}}
+\subsubsection{Déploiement de Grafana}
 
 \par Grafana a été ajouté comme couche de visualisation unifiée pour les métriques de Proxmox, Ceph et CLBS. Deux sources de données ont été configurées : InfluxDB pour les métriques de Proxmox, et Prometheus pour les métriques Ceph et applicatives.\\
 
@@ -225,26 +197,26 @@ CLBS & Prometheus & Historique des migrations \\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{image/ch4/Grafana.png}
+    \includegraphics[width=1\textwidth]{image/ch4/Grafana.png}
     \caption{Dashboard Grafana Infrastructure pour les nœuds Proxmox}
     \label{fig:grafana-proxmox-dashboard}
 \end{figure}
 
-{\color{bleuu} \subsection{Implémentation du mécanisme CLBS}}
+\subsection{Implémentation du mécanisme CLBS}
 
-{\color{bleuuu} \subsubsection{Structure du service}}
+\subsubsection{Structure du service}
 
 \par Le service CLBS (\textit{Cluster Load Balancing Service}) a été développé en langage Go dans une VM dédiée accessible sur le réseau de management. Son rôle est d’analyser périodiquement la charge CPU du cluster et de déclencher automatiquement des migrations live lorsque cela est nécessaire.\\
 
 \par Le code est structuré en plusieurs composants : un lecteur InfluxDB pour les métriques historiques, un client API Proxmox pour piloter le cluster, un calculateur de bandes de charge, et un moteur principal de décision. Les paramètres de connexion sont placés dans un fichier \texttt{.env} chargé au démarrage du service.\\
 
-{\color{bleuuu} \subsubsection{Logique de décision}}
+\subsubsection{Logique de décision}
 
 \par À chaque cycle, le service récupère la charge des nœuds, calcule les bornes de charge modérée, puis classe les nœuds dans les catégories \textit{heavy}, \textit{moderate} ou \textit{light}. Si un déséquilibre est détecté entre un nœud surchargé et un nœud léger, le moteur choisit la VM la plus adaptée à migrer.\\
 
 \par Plusieurs mécanismes de protection ont été ajoutés pour éviter les migrations excessives, comme un temps de cooldown global, un cooldown individuel par VM et une suspension temporaire en cas de fréquence de migration trop élevée.\\
 
-{\color{bleuuu} \subsubsection{Déploiement comme service systemd}}
+\subsubsection{Déploiement comme service systemd}
 
 \par Une fois compilé, le binaire Go a été déployé sur la VM CLBS puis intégré comme service \texttt{systemd} afin d’assurer un démarrage automatique et une relance en cas de panne.\\
 
@@ -254,7 +226,7 @@ systemctl start clbs
 journalctl -u clbs.service -f -o cat
 \end{lstlisting}
 
-{\color{bleuuu} \subsubsection{Validation du mécanisme}}
+\subsubsection{Validation du mécanisme}
 
 \par Pour valider le comportement du service, deux VMs de test ont été créées puis soumises à une charge CPU artificielle avec l’outil \texttt{stress-ng}. Le service CLBS a détecté la surcharge et a déclenché une migration live vers un nœud moins chargé.\\
 
@@ -264,20 +236,20 @@ stress-ng --cpu 8
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{image/ch4/clbs dashboard.png}
+    \includegraphics[width=1\textwidth]{image/ch4/clbs dashboard.png}
     \caption{Dashboard ou logs montrant une migration déclenchée par CLBS}
     \label{fig:clbs-migration-event}
 \end{figure}
 
-{\color{bleuu} \subsection{Déploiement de l’application Sona-Web}}
+\subsection{Déploiement de l’application Sona-Web}
 
-{\color{bleuuu} \subsubsection{Création des machines virtuelles}}
+\subsubsection{Création des machines virtuelles}
 
 \par L’application Sona-Web a été déployée sous la forme de plusieurs VMs créées à partir d’un template Debian stocké dans le pool Ceph. Cette architecture comprend une VM HAProxy en frontal, deux VMs Flask pour la couche applicative, et une VM PostgreSQL pour la base de données.\\
 
 \par Les VMs ont été déployées sur les réseaux internes appropriés, avec attribution d’adresse IP par DHCP selon la zone de sécurité visée. Cette organisation permet de séparer la partie exposée, la partie applicative et la base de données.\\
 
-{\color{bleuuu} \subsubsection{Validation de l’application}}
+\subsubsection{Validation de l’application}
 
 \par La validation a porté sur le fonctionnement du load balancing ainsi que sur la disponibilité de l’application. Des requêtes répétées à travers HAProxy ont montré une alternance correcte entre les serveurs applicatifs Flask, confirmant le bon fonctionnement du mécanisme de répartition de charge.\\
 
@@ -287,9 +259,9 @@ for i in $(seq 1 10); do
 done
 \end{lstlisting}
 
-{\color{bleuu} \subsection{Automatisation avec Ansible}}
+\subsection{Automatisation avec Ansible}
 
-{\color{bleuuu} \subsubsection{Environnement et structure du projet}}
+\subsubsection{Environnement et structure du projet}
 
 \par Afin de simplifier le provisionnement des machines virtuelles et de rendre l’infrastructure plus reproductible, un environnement Ansible a été mis en place. Les connexions se font via SSH depuis les postes des développeurs vers le réseau de management, sans installation d’agent sur les nœuds cibles.\\
 
@@ -318,7 +290,7 @@ become      = True
 become_user = root
 \end{lstlisting}
 
-{\color{bleuuu} \subsubsection{Inventaire}}
+\subsubsection{Inventaire}
 
 \par L’inventaire regroupe les nœuds Proxmox, les VMs permanentes, ainsi qu’un groupe dynamique destiné aux nouvelles VMs provisionnées par les playbooks.\\
 
@@ -338,7 +310,7 @@ all:
       hosts: {}
 \end{lstlisting}
 
-{\color{bleuuu} \subsubsection{Playbook de provisionnement}}
+\subsubsection{Playbook de provisionnement}
 
 \par Le playbook principal automatise la création d’une VM à partir d’un template Debian déjà préparé. Il configure les ressources matérielles, le réseau, le cloud-init, le démarrage de la VM, puis sa validation après boot.\\
 
@@ -364,15 +336,15 @@ qm set {{ vm_id }} --ipconfig0 ip={{ vm_cidr }},gw={{ vm_gw }} --nameserver {{ v
 qm cloudinit update {{ vm_id }}
 \end{lstlisting}
 
-{\color{bleuuu} \subsubsection{Provisionnement en lot et pipeline PXE/TFTP}}
+\subsubsection{Provisionnement en lot et pipeline PXE/TFTP}
 
 \par Un second playbook permet le provisionnement en lot de plusieurs VMs à partir d’une liste définie à l’avance. En complément, un pipeline PXE/TFTP a été prévu pour automatiser à terme l’installation de nouveaux nœuds physiques Proxmox sans intervention manuelle, ce qui améliore la capacité de montée en charge de la plateforme.\\
 
-{\color{bleu} \section{Partie II --- Couche Stockage}}
+\section{Partie II --- Couche Stockage}
 
-{\color{bleuu} \subsection{Déploiement du cluster Ceph}}
+\subsection{Déploiement du cluster Ceph}
 
-{\color{bleuuu} \subsubsection{Initialisation de Ceph}}
+\subsubsection{Initialisation de Ceph}
 
 \par La couche stockage repose sur un cluster Ceph intégré directement à Proxmox. L’initialisation a été effectuée depuis l’interface web ou via la ligne de commande, en définissant un réseau cluster dédié et un réseau public séparé.\\
 
@@ -382,7 +354,7 @@ pveceph init --network 10.10.30.0/24
 
 \par Le réseau \texttt{10.10.30.0/24} a été réservé aux échanges internes Ceph, tandis que le réseau \texttt{10.10.40.0/24} a été utilisé comme réseau public.\\
 
-{\color{bleuuu} \subsubsection{Déploiement des MON et MGR}}
+\subsubsection{Déploiement des MON et MGR}
 
 \par Un moniteur Ceph a été créé sur chaque nœud du cluster afin d’assurer le quorum et la haute disponibilité des métadonnées du cluster.\\
 
@@ -396,7 +368,7 @@ pveceph mon create
 ceph mgr module enable prometheus
 \end{lstlisting}
 
-{\color{bleuuu} \subsubsection{Déploiement des OSDs}}
+\subsubsection{Déploiement des OSDs}
 
 \par Chaque nœud a reçu un disque dédié transformé en OSD afin de participer au stockage distribué. Le déploiement a été réalisé sur \texttt{/dev/sdb} pour chacun des trois serveurs.\\
 
@@ -410,7 +382,7 @@ pveceph osd create /dev/sdb
 ceph osd tree
 \end{lstlisting}
 
-{\color{bleuuu} \subsubsection{Création du pool de stockage}}
+\subsubsection{Création du pool de stockage}
 
 \par Un pool RBD a été créé avec une réplication de taille 3 et une taille minimale de 2, ce qui garantit la disponibilité des données même en cas de perte d’un nœud.\\
 
@@ -427,28 +399,28 @@ ceph df
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{image/ch4/ceph osd.png}
-    \caption{État du cluster Ceph montrant les MON, OSD et le pool RBD}
-    \label{fig:ceph-health-ok}
+    \includegraphics[width=1\textwidth]{image/ch4/ceph osd.png}
+    \caption{État du cluster Ceph montrant les MON et OSD}
+    \label{fig:ceph-osd-health}
 \end{figure}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{image/ch4/ceph pool health.png}
-    \caption{État du cluster Ceph montrant les MON, OSD et le pool RBD}
-    \label{fig:ceph-health-ok}
+    \includegraphics[width=1\textwidth]{image/ch4/ceph pool health.png}
+    \caption{État du cluster Ceph montrant le pool RBD}
+    \label{fig:ceph-pool-health}
 \end{figure}
 
-{\color{bleuu} \subsection{Validation de la tolérance aux pannes}}
+\subsection{Validation de la tolérance aux pannes}
 
 \par La tolérance aux pannes de la couche stockage a été vérifiée par un scénario de panne simulée. Lors de l’extinction d’un nœud, le cluster Ceph est passé temporairement à l’état \texttt{HEALTH\_WARN}, mais les données sont restées accessibles grâce au facteur de réplication.\\
 
 \par Après le retour du nœud défaillant, Ceph a automatiquement lancé la resynchronisation des données et l’état du cluster est revenu à \texttt{HEALTH\_OK}. Ce test valide le bon comportement de la couche stockage distribuée.\\
 
-{\color{bleu} \section{Partie III --- Couche Réseau}}
+\section{Partie III --- Couche Réseau}
 
-{\color{bleuu} \subsection{Configuration Open vSwitch et tunnels VxLAN}}
+\subsection{Configuration Open vSwitch et tunnels VxLAN}
 
-{\color{bleuuu} \subsubsection{Installation d’Open vSwitch}}
+\subsubsection{Installation d’Open vSwitch}
 
 \par Open vSwitch a été installé sur chaque nœud Proxmox afin de construire une couche réseau virtuelle flexible, adaptée au transport de plusieurs flux logiques sur le même réseau physique.\\
 
@@ -463,7 +435,7 @@ ovs-vsctl add-br vmbr1
 ovs-vsctl add-port vmbr1 eno1
 \end{lstlisting}
 
-{\color{bleuuu} \subsubsection{Configuration complète des interfaces sur PVE-01}}
+\subsubsection{Configuration complète des interfaces sur PVE-01}
 
 \par Le fichier \texttt{/etc/network/interfaces} du nœud PVE-01 centralise l’ensemble de la configuration réseau, y compris le bridge principal, les interfaces VXLAN point-à-point vers les autres nœuds, les interfaces internes OVS, et les bridges Linux utilisés pour connecter les machines virtuelles.\\
 
@@ -688,9 +660,9 @@ source /etc/network/interfaces.d/*
 \end{tabular}
 \end{table}
 
-{\color{bleuu} \subsection{Déploiement de la VM OPNsense}}
+\subsection{Déploiement de la VM OPNsense}
 
-{\color{bleuuu} \subsubsection{Création et interfaces réseau}}
+\subsubsection{Création et interfaces réseau}
 
 \par OPNsense a été déployé sous forme de machine virtuelle sur le cluster Proxmox. Son disque système est stocké sur le pool Ceph, ce qui permet de bénéficier du stockage distribué et de la haute disponibilité.\\
 
@@ -716,16 +688,16 @@ net3 (em3) & vmbr80 & LAN DMZ & 172.16.80.1/24 \\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{image/ch4/opnsense.png}
+    \includegraphics[width=1\textwidth]{image/ch4/opnsense.png}
     \caption{Configuration des interfaces de la VM OPNsense}
     \label{fig:opnsense-interfaces}
 \end{figure}
 
-{\color{bleuuu} \subsubsection{NAT sortant}}
+\subsubsection{NAT sortant}
 
 \par Le NAT sortant automatique a été activé dans OPNsense afin de permettre aux réseaux internes de sortir vers Internet via l’interface WAN. Cette configuration a simplifié le routage pour les VMs hébergées sur les réseaux Dev, Prod et DMZ.\\
 
-{\color{bleuu} \subsection{Configuration du service DHCP}}
+\subsection{Configuration du service DHCP}
 
 \par Le service DHCP a été activé via \texttt{dnsmasq} sur les interfaces LAN internes. Ce choix a été retenu car il est simple à configurer et convient bien à un environnement de laboratoire.\\
 
@@ -753,7 +725,7 @@ tcpdump -i em1 port 67 or port 68
 
 \par Cette vérification a montré le cycle normal des échanges DHCP, depuis le \textit{Discover} jusqu’au \textit{Offer}, puis l’attribution effective de l’adresse IP à la machine virtuelle.\\
 
-{\color{bleuu} \subsection{Validation de la haute disponibilité réseau et applicative}}
+\subsection{Validation de la haute disponibilité réseau et applicative}
 
 \par Un scénario de panne a été réalisé afin de tester le comportement global de l’infrastructure en cas de perte d’un nœud physique. L’arrêt brutal de PVE-01 a permis d’observer la détection de panne par Corosync, le redémarrage des services protégés sur un autre nœud, puis la resynchronisation automatique après le retour du serveur.\\
 
@@ -766,7 +738,7 @@ tcpdump -i em1 port 67 or port 68
     \label{fig:ha-failure-sequence}
 \end{figure}
 
-{\color{bleu} \section{Conclusion}}
+\section{Conclusion}
 
 \par Ce chapitre a présenté l’implémentation réelle de l’infrastructure hyperconvergée open source mise en place dans le cadre du projet. La couche calcul a permis de déployer Proxmox, le cluster, le monitoring, l’automatisation et les services applicatifs. La couche stockage a été assurée par Ceph avec réplication et tolérance aux pannes. Enfin, la couche réseau a été construite avec Open vSwitch, les tunnels VxLAN, OPNsense et les services d’adressage associés.\\
 

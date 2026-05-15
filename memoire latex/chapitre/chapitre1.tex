@@ -1,12 +1,12 @@
-{\color{bleu}\chapter{Présentation du Contexte}}
+\chapter{Présentation du Contexte}
 \thispagestyle{empty}
 \newpage
 
-{\color{bleu} \section{Introduction}}
+\section{Introduction}
 
 \par Ce chapitre vise à présenter le contexte général dans lequel s'inscrit notre projet de fin d'études. Nous y aborderons les fondements de l'hyper convergence (HCI), les enjeux liés à la virtualisation et à la gestion unifiée des ressources informatiques, ainsi que les besoins spécifiques de l'entreprise Sonatrach. Ce cadre introductif nous permettra de mieux comprendre les choix technologiques effectués et les objectifs fixés pour le déploiement d'une infrastructure Cloud privée hyperconvergée basée sur des solutions open source.\\
 
-{\color{bleu} \section{Présentation de Sonatrach}}
+\section{Présentation de Sonatrach}
 
 \par Sonatrach est une entreprise publique algérienne créée le 31 décembre 1963, peu après l'indépendance de l'Algérie. Elle a été fondée dans le but de gérer, développer et exploiter les ressources hydrocarbures du pays, qui représentent une richesse stratégique pour l'économie nationale. À ses débuts, Sonatrach se consacrait essentiellement au transport et à la commercialisation du pétrole brut extrait en Algérie. [1]\\
 
@@ -16,9 +16,9 @@
 
 \par Le projet est réalisé au sein du Centre d'innovation de Sonatrach. Cette direction joue un rôle stratégique dans l'innovation technologique et l'optimisation des processus internes. Elle dispose d'infrastructures informatiques avancées, notamment des solutions de virtualisation et de stockage haute capacité, destinées à soutenir les travaux de simulation, de test et de pré-production.\\
 
-{\color{bleu} \section{Infrastructure Existante et Contexte Technologique}}
+\section{Infrastructure Existante et Contexte Technologique}
 
-{\color{bleuu} \subsection{Infrastructure actuelle de Sonatrach}}
+\subsection{Infrastructure actuelle de Sonatrach}
 
 \par Sonatrach dispose actuellement d'une infrastructure hyperconvergée basée sur la solution propriétaire Nutanix, déployée à l'échelle nationale sur plusieurs wilayas et utilisée pour les environnements de production critiques. Cette solution est reconnue pour sa stabilité, ses performances et la richesse de ses fonctionnalités, notamment en matière de gestion centralisée, de haute disponibilité et de scalabilité.\\
 
@@ -38,7 +38,7 @@
 
 \par Ces constats positionnent ce projet non pas comme un simple exercice académique, mais comme une réponse concrète à une problématique stratégique réelle : explorer et valider la viabilité d'une infrastructure hyperconvergée open source capable de répondre aux exigences de Sonatrach, aujourd'hui en environnement de test et demain potentiellement en production.\\
 
-{\color{bleuu} \subsection{Les besoins en infrastructure légère pour les zones de test}}
+\subsection{Les besoins en infrastructure légère pour les zones de test}
 
 \par Au-delà des besoins immédiats en environnements de test et de pré-production, Sonatrach a besoin d'une infrastructure qui réponde à des exigences de niveau entreprise, tout en s'affranchissant des contraintes des solutions propriétaires. Ces besoins couvrent plusieurs dimensions :\\
 
@@ -58,7 +58,7 @@
 
 \end{itemize}
 
-{\color{bleu} \section{Problématique}}
+\section{Problématique}
 
 \par La problématique centrale de ce projet est la suivante :\\
 
@@ -78,13 +78,13 @@
 
 \end{itemize}
 
-{\color{bleu} \section{Objectifs du Projet}}
+\section{Objectifs du Projet}
 
-{\color{bleuu} \subsection{Objectif général}}
+\subsection{Objectif général}
 
 \par Concevoir et déployer une infrastructure Cloud privée hyperconvergée, entièrement open source, sur trois serveurs physiques Dell PowerEdge R720 mis à disposition par Sonatrach, offrant des garanties de fiabilité, de performance et d'évolutivité comparables aux solutions propriétaires de type Nutanix, et constituant une alternative stratégique à moyen et long terme.\\
 
-{\color{bleuu} \subsection{Objectifs spécifiques}}
+\subsection{Objectifs spécifiques}
 
 \begin{itemize}
 
@@ -104,7 +104,7 @@
 
 \end{itemize}
 
-{\color{bleu} \section{Périmètre et Limitations du Projet}}
+\section{Périmètre et Limitations du Projet}
 
 \par Ce projet vise le déploiement d'un cluster hyperconvergé open source destiné aux environnements de test, de développement et de pré-production. L'infrastructure est déployée sur un cluster physique de trois serveurs Dell PowerEdge R720 mis à disposition par Sonatrach, offrant les ressources matérielles nécessaires à l'exécution de l'hyperviseur Proxmox VE en \textit{bare-metal}, du stockage distribué Ceph et des VMs de démonstration.\\
 
@@ -122,6 +122,6 @@
 
 \end{itemize}
 
-{\color{bleu} \section{Conclusion}}
+\section{Conclusion}
 
 \par Dans ce chapitre, nous avons présenté le contexte général du projet, les besoins identifiés au sein de Sonatrach, et la problématique qui motive notre démarche. Nous avons défini les objectifs, le périmètre et les limites du projet. Ce cadre nous permettra d'aborder, dans le chapitre suivant, l'état de l'art des solutions disponibles et les fondements théoriques de l'hyperconvergence, de la virtualisation et des technologies retenues.\\
