@@ -115,19 +115,12 @@
 \renewcommand{\lstlistingname}{Figure}
 
 \makeatletter
-\renewcommand*\l@lstlisting{\l@figure}
-\let\c@lstlisting\c@figure
-\let\thelstlisting\thefigure
+\renewcommand*{\ext@lstlisting}{lof}
 
-\AtBeginDocument{
-  \let\addcontentslineorig\addcontentsline
-  \renewcommand{\addcontentsline}[3]{%
-    \ifx#2\ext@lstlisting
-      \addcontentslineorig{lof}{figure}{#3}
-    \else
-      \addcontentslineorig{#1}{#2}{#3}
-    \fi
-  }
+\AtBeginDocument{%
+  \let\c@lstlisting\c@figure
+  \let\thelstlisting\thefigure
+  \let\ftype@lstlisting\ftype@figure
 }
 \makeatother
 
