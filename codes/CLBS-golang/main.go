@@ -971,12 +971,13 @@ func (e *DRSEngine) recordMigration(vm *VMInfo, src, dst string) {
 	e.migrationHistory[vm.VMID] = append(e.migrationHistory[vm.VMID], now)
 
 	ev := migrationEvent{
-		At:     now,
-		VMID:   vm.VMID,
-		VMName: vm.Name,
-		Kind:   vm.Kind,
-		Src:    src,
-		Dst:    dst,
+		At:         now,
+		MigratedAt: now.UTC().Format("2006-01-02 15:04:05"),
+		VMID:       vm.VMID,
+		VMName:     vm.Name,
+		Kind:       vm.Kind,
+		Src:        src,
+		Dst:        dst,
 	}
 
 	if err := e.store.InsertMigration(ev); err != nil {

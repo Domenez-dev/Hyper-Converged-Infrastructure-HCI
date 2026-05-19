@@ -48,12 +48,13 @@ type Metrics struct {
 }
 
 type migrationEvent struct {
-	At     time.Time
-	VMID   int
-	VMName string
-	Kind   string // "qemu"|"lxc"
-	Src    string
-	Dst    string
+	At         time.Time
+	MigratedAt string // human-readable UTC: "2006-01-02 15:04:05"
+	VMID       int
+	VMName     string
+	Kind       string // "qemu"|"lxc"
+	Src        string
+	Dst        string
 }
 
 var metrics = &Metrics{
@@ -232,8 +233,8 @@ func prometheusHandler(w http.ResponseWriter, r *http.Request) {
 
 	for _, ev := range m.recentMigrations {
 		sb.WriteString(fmt.Sprintf(
-			`clbs_migration_info{vmid="%d",vm="%s",kind="%s",src="%s",dst="%s"} %d`+"\n",
-			ev.VMID, ev.VMName, ev.Kind, ev.Src, ev.Dst, ev.At.Unix(),
+			`clbs_migration_info{vmid="%d",vm="%s",kind="%s",src="%s",dst="%s",migrated_at="%s"} 1`+"\n",
+			ev.VMID, ev.VMName, ev.Kind, ev.Src, ev.Dst, ev.MigratedAt,
 		))
 	}
 
