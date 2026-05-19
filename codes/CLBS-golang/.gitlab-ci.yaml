@@ -1,0 +1,77 @@
+# GitLab CI/CD - proxmox-drs
+#
+# Prerequisites on the CLBS machine (192.168.10.104):
+#
+#   1. GitLab runner registered and running as a dedicated user, e.g. "gitlab-runner"
+#
+#   2. The runner user needs to run two specific commands as root without a password.
+#      Add this to /etc/sudoers.d/gitlab-runner-drs (edit with visudo):
+#
+#        gitlab-runner ALL=(root) NOPASSWD: /bin/cp /home/gitlab-runner/builds/*/proxmox-drs /opt/proxmox-drs/proxmox-drs
+#        gitlab-runner ALL=(root) NOPASSWD: /bin/systemctl restart proxmox-drs
+#
+#      If you'd rather not touch sudoers, just change DEPLOY_PATH to something
+#      the runner user already owns (e.g. /home/gitlab-runner/proxmox-drs) and
+#      update the systemd unit's ExecStart to match.
+#
+#   3. The runner must be tagged "clbs" (shell executor, not Docker).
+#      Register it on the CLBS machine:
+#        sudo gitlab-runner register \
+#          --url https://<your-gitlab> \
+#          --token <project-token> \
+#          --executor shell \
+#          --tag-list clbs \
+#          --description "CLBS shell runner"
+#
+#   4. Go and golangci-lint must be installed and on PATH for the runner user.
+#      The .env file must already exist at $DEPLOY_PATH/.env.
+#      The pipeline intentionally does NOT overwrite it to avoid wiping credentials.
+
+variables:
+  BINARY: proxmox-drs
+  DEPLOY_PATH: /opt/proxmox-drs
+  SERVICE_NAME: proxmox-drs
+
+stages:
+  - build
+  - deploy
+
+# ---------------------------------------------------------------
+# Build
+# ---------------------------------------------------------------
+build:
+  stage: build
+  tags:
+    - clbs
+  script:
+    - echo "Building $BINARY..."
+    - make tidy
+    - make build
+    - echo "Build OK - binary size $(du -sh $BINARY | cut -f1)"
+  artifacts:
+    paths:
+      - $BINARY
+    expire_in: 1 hour
+  only:
+    - main
+
+# ---------------------------------------------------------------
+# Deploy
+# ---------------------------------------------------------------
+deploy:
+  stage: deploy
+  tags:
+    - clbs
+  needs:
+    - build
+  script:
+    - echo "Deploying to $DEPLOY_PATH..."
+    - sudo cp $BINARY $DEPLOY_PATH/$BINARY
+    - sudo systemctl restart $SERVICE_NAME
+    - sleep 3
+    - systemctl is-active --quiet $SERVICE_NAME && echo "Service is running" || (echo "Service failed to start" && journalctl -u $SERVICE_NAME -n 30 --no-pager && exit 1)
+  environment:
+    name: production
+    url: http://192.168.10.104:9101/healthz
+  only:
+    - main

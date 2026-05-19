@@ -548,6 +548,7 @@ type DRSEngine struct {
 	influx   *InfluxReader
 	pve      *ProxmoxAPI
 	bandCalc *BandCalculator
+	store    *Store
 
 	lastMigration     time.Time
 	lastMigratedVMID  int
@@ -557,12 +558,50 @@ type DRSEngine struct {
 }
 
 func newDRSEngine() *DRSEngine {
-	return &DRSEngine{
+	store, err := openStore("/opt/proxmox-drs/clbs.db")
+	if err != nil {
+		logger.Critical("Failed to open SQLite store: %v", err)
+		os.Exit(1)
+	}
+
+	e := &DRSEngine{
 		influx:           newInfluxReader(),
 		pve:              newProxmoxAPI(),
 		bandCalc:         &BandCalculator{},
+		store:            store,
 		migrationHistory: make(map[int][]time.Time),
 	}
+
+	// Restore state from the database so a restart doesn't reset cooldowns
+	// or lose migration history visible in the metrics endpoint.
+	if events, err := store.LoadRecent(); err != nil {
+		logger.Warning("Could not load migration history from DB: %v", err)
+	} else {
+		metrics.LoadMigrations(events)
+
+		// Rebuild in-memory per-VM history and cluster migration list
+		// so cooldown and storm-guard logic work correctly after a restart.
+		for _, ev := range events {
+			e.migrationHistory[ev.VMID] = append(e.migrationHistory[ev.VMID], ev.At)
+			e.clusterMigrations = append(e.clusterMigrations, ev.At)
+		}
+		logger.Info("Restored %d migrations from DB", len(events))
+	}
+
+	if vmid, err := store.LastMigratedVMID(); err != nil {
+		logger.Warning("Could not read last migrated VMID from DB: %v", err)
+	} else {
+		e.lastMigratedVMID = vmid
+	}
+
+	if t, err := store.LastMigrationTime(); err != nil {
+		logger.Warning("Could not read last migration time from DB: %v", err)
+	} else if !t.IsZero() {
+		e.lastMigration = t
+		logger.Info("Last migration was at %s", t.Format("2006-01-02 15:04:05"))
+	}
+
+	return e
 }
 
 // Cooldown checks
@@ -931,14 +970,20 @@ func (e *DRSEngine) recordMigration(vm *VMInfo, src, dst string) {
 	e.clusterMigrations = append(e.clusterMigrations, now)
 	e.migrationHistory[vm.VMID] = append(e.migrationHistory[vm.VMID], now)
 
-	metrics.RecordMigration(migrationEvent{
+	ev := migrationEvent{
 		At:     now,
 		VMID:   vm.VMID,
 		VMName: vm.Name,
 		Kind:   vm.Kind,
 		Src:    src,
 		Dst:    dst,
-	})
+	}
+
+	if err := e.store.InsertMigration(ev); err != nil {
+		logger.Error("Failed to persist migration to DB: %v", err)
+	}
+
+	metrics.RecordMigration(ev)
 
 	logger.Info(
 		"Recorded migration for %s (%d) - total cluster migrations in window: %d",
@@ -1056,6 +1101,7 @@ func (e *DRSEngine) RunCycle() {
 }
 
 func (e *DRSEngine) Run() {
+	defer e.store.Close()
 	logger.Info(
 		"Check interval: %.0fs  Cooldown: %.0fs",
 		checkInterval.Seconds(), migrationCooldown.Seconds(),

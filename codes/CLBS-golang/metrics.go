@@ -33,7 +33,10 @@ type Metrics struct {
 	BandLower     float64
 	BandUpper     float64
 
-	// Migration events (ring buffer of last 100)
+	// Last migration unix timestamp (0 = never)
+	LastMigrationAt int64
+
+	// Migration events (loaded from SQLite, last 72h)
 	recentMigrations []migrationEvent
 
 	// Safety state
@@ -57,6 +60,17 @@ var metrics = &Metrics{
 	NodeBands: make(map[string]string),
 	NodeCPU:   make(map[string]float64),
 	NodeRAM:   make(map[string]float64),
+}
+
+// LoadMigrations seeds the in-memory ring from the database on startup.
+func (m *Metrics) LoadMigrations(events []migrationEvent) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.recentMigrations = events
+	m.MigrationsTotal = int64(len(events))
+	if len(events) > 0 {
+		m.LastMigrationAt = events[len(events)-1].At.Unix()
+	}
 }
 
 // Writer methods - called by DRSEngine
@@ -110,10 +124,11 @@ func (m *Metrics) RecordMigration(ev migrationEvent) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.MigrationsTotal++
+	m.LastMigrationAt = ev.At.Unix()
 	m.recentMigrations = append(m.recentMigrations, ev)
 
-	// Keep only the last 24 hours
-	cutoff := time.Now().Add(-24 * time.Hour)
+	// Keep only the last 72 hours (pruning handled by SQLite layer too)
+	cutoff := time.Now().Add(-72 * time.Hour)
 	i := 0
 	for i < len(m.recentMigrations) && m.recentMigrations[i].At.Before(cutoff) {
 		i++
@@ -168,13 +183,18 @@ func prometheusHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Migration metrics
 	counter("clbs_migrations_total", "Total number of live migrations triggered by CLBS", m.MigrationsTotal)
+	gauge("clbs_last_migration_timestamp", "Unix timestamp of the last migration (0 = never since restart)",
+		float64(m.LastMigrationAt))
 	gauge("clbs_migrations_in_storm_window", "Number of migrations recorded in the current storm detection window",
 		float64(m.MigrationsInWindow))
 
-	// Band thresholds
+	// CPU Band thresholds
 	gauge("clbs_band_threshold_percent", "Current CSLB CPU threshold (mean of all nodes)", m.BandThreshold)
-	gauge("clbs_band_lower_percent", "Lower bound of the moderate band", m.BandLower)
-	gauge("clbs_band_upper_percent", "Upper bound of the moderate band", m.BandUpper)
+	gauge("clbs_band_lower_percent", "Lower bound of the moderate CPU band", m.BandLower)
+	gauge("clbs_band_upper_percent", "Upper bound of the moderate CPU band", m.BandUpper)
+
+	// RAM cap (static from config, exposed so dashboards can draw reference lines)
+	gauge("clbs_ram_hard_cap_percent", "Hard RAM cap above which a destination node is rejected", ramHigh)
 
 	// Per-node metrics
 	sb.WriteString("# HELP clbs_node_cpu_percent Current CPU usage of each Proxmox node\n")
@@ -202,11 +222,10 @@ func prometheusHandler(w http.ResponseWriter, r *http.Request) {
 	gauge("clbs_global_cooldown_active", "1 if the global post-migration cooldown is active", boolToFloat(m.GlobalCooldown))
 	gauge("clbs_global_cooldown_remaining_seconds", "Seconds remaining in the global cooldown (0 if not active)", m.CooldownSeconds)
 
-	// Recent migrations as individual labelled counters
-	sb.WriteString("# HELP clbs_migration_info Information about the most recent migrations (value = unix timestamp)\n")
+	sb.WriteString("# HELP clbs_migration_info Information about recent migrations in the last 72h (value = unix timestamp)\n")
 	sb.WriteString("# TYPE clbs_migration_info gauge\n")
 
-	cutoff := time.Now().Add(-24 * time.Hour)
+	cutoff := time.Now().Add(-72 * time.Hour)
 	for len(m.recentMigrations) > 0 && m.recentMigrations[0].At.Before(cutoff) {
 		m.recentMigrations = m.recentMigrations[1:]
 	}
