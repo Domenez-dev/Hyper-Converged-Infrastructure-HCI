@@ -1,0 +1,68 @@
+logging {
+  level = "warn"
+}
+
+prometheus.exporter.unix "default" {
+  include_exporter_metrics = true
+  disable_collectors       = ["mdadm"]
+}
+
+prometheus.scrape "default" {
+  targets = array.concat(
+    prometheus.exporter.unix.default.targets,
+    [{
+      // Self-collect metrics
+      job         = "alloy",
+      __address__ = "127.0.0.1:12345",
+    }],
+  )
+
+  forward_to = [
+  // TODO: components to forward metrics to (like prometheus.remote_write or
+  // prometheus.relabel).
+  ]
+}
+// read logs from journald for the proxmox-drs service
+loki.source.journal "proxmox_drs" {
+  forward_to    = [loki.write.default.receiver]
+  matches       = "_SYSTEMD_UNIT=proxmox-drs.service"
+  max_age       = "12h"
+  labels        = {
+    job  = "proxmox-drs",
+    host = "clbs",
+  }
+  relabel_rules = loki.relabel.extract_level.rules
+}
+
+// pull the log level out of the log line into a label
+loki.relabel "extract_level" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__priority"]
+    regex         = "0|1|2|3"
+    target_label  = "level"
+    replacement   = "error"
+  }
+
+  rule {
+    source_labels = ["__journal__priority"]
+    regex         = "4"
+    target_label  = "level"
+    replacement   = "warning"
+  }
+
+  rule {
+    source_labels = ["__journal__priority"]
+    regex         = "5|6|7"
+    target_label  = "level"
+    replacement   = "info"
+  }
+}
+
+// push to your Loki instance
+loki.write "default" {
+  endpoint {
+    url = "http://192.168.10.99:3100/loki/api/v1/push"
+  }
+}
