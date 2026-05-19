@@ -18,11 +18,9 @@
 - [x] sona web
 - [/] DNS server
 - [/] Central Logs 
-- [ ] alertmanager
+- [/] alertmanager
 - [ ] ineterface playbooks
 - [ ] firewall %
-- [ ] ansible 1/3
-- [ ] scalability (pxe, tftp) %
-- [ ] gitlab
-
-256 \* 2 (no 600gb disk)
+- [x] ansible 1/3
+- [/] scalability (pxe, tftp) %
+- [x] gitlab

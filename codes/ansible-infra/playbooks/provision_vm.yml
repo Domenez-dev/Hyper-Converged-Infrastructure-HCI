@@ -105,13 +105,20 @@
 
   tasks:
     # 1. Clone
+
+    # Debug clone mode
+    - name: Debug clone mode
+      ansible.builtin.debug:
+        msg: "Clone mode: {{ 'FULL' if vm_full_clone | bool else 'LINKED' }}"
+      tags: [clone]
+
     - name: Full-clone template to new VM
       ansible.builtin.shell:
         cmd: "qm clone {{ vm_template_id }} {{ vm_id }} --name {{ vm_name }} --full 1 --storage {{ ceph_pool }}"
       become: true
       register: clone_result
       changed_when: clone_result.rc == 0
-      when: vm_full_clone | bool
+      when: vm_full_clone | bool # Full clone should be explicitly mentioned in the command as `--full 1`
       tags: [clone]
 
     - name: Linked-clone template to new VM
@@ -143,6 +150,11 @@
       ansible.builtin.shell:
         cmd: "qm set {{ vm_id }} --ide2 {{ ceph_pool }}:cloudinit"
       become: true
+      register: cloudinit_attach
+      failed_when:
+        - cloudinit_attach.rc != 0
+        - "'File exists' not in cloudinit_attach.stderr"
+      changed_when: cloudinit_attach.rc == 0
       tags: [network]
 
     - name: Set cloud-init network
