@@ -1,3 +1,9 @@
+% ============================================================
+% Chapitre 4 — Implémentation de la Solution Proposée
+% Version modifiée : citations figures corrigées, nouvelles
+% figures ajoutées, TikZ externalisé dans figures/
+% ============================================================
+
 \chapter{Implémentation de la Solution Proposée}
 \thispagestyle{empty}
 \newpage
@@ -9,7 +15,9 @@
 
 \par Les opérations ont été réalisées avec plusieurs outils complémentaires : l'interface web Proxmox VE, la ligne de commande Linux, les fichiers de configuration système, OPNsense, Ceph, ainsi que des playbooks Ansible pour automatiser certaines tâches répétitives. Des captures d'écran sont prévues aux points importants afin d'illustrer visuellement les résultats obtenus.\\
 
-\section{Partie I --- Couche Calcul}
+% ============================================================
+\section{Partie I -- Couche Calcul}
+% ============================================================
 
 \par Cette partie couvre l'ensemble des opérations réalisées au niveau de la couche de calcul de l'infrastructure : installation de Proxmox VE, formation du cluster, déploiement du monitoring, implémentation du mécanisme CLBS, et déploiement des services applicatifs.
 
@@ -96,7 +104,9 @@ nmcli connection up "Wired connection 1"
 
 \par Des tests simples comme \texttt{ping 8.8.8.8}, \texttt{ping google.com} et \texttt{apt update} ont confirmé que les nœuds disposaient correctement d'un accès Internet.\\
 
+% ------------------------------------------------------------
 \subsection{Formation du cluster Proxmox et haute disponibilité}
+% ------------------------------------------------------------
 
 \par Après avoir installé et connecté les trois nœuds à Internet, l'étape suivante a consisté à les regrouper en un cluster unifié et à configurer les mécanismes de haute disponibilité.
 
@@ -124,7 +134,7 @@ pvecm add 192.168.10.100
 pvecm status
 \end{lstlisting}
 
-\par La commande \texttt{pvecm status} affiche l'état du cluster Corosync : nombre de membres actifs, version du quorum, et confirmation de l'atteinte du quorum. Une sortie avec \texttt{Quorum: Yes} et trois membres confirme que le cluster est correctement formé. La figure~\ref{fig:cluster-three-nodes} illustre ce résultat dans l'interface web.\\
+\par La commande \texttt{pvecm status} affiche l'état du cluster Corosync : nombre de membres actifs, version du quorum, et confirmation de l'atteinte du quorum. Une sortie avec \texttt{Quorum: Yes} et trois membres confirme que le cluster est correctement formé. Comme l'illustre la figure~\ref{fig:cluster-three-nodes}, ce résultat est également visible dans l'interface web.\\
 
 \begin{figure}[H]
     \centering
@@ -159,7 +169,9 @@ pvecm status
 
 \par La figure~\ref{fig:live-migration-after} confirme que la VM a été déplacée avec succès vers le nœud PVE-03 sans interruption du service. Le journal de tâches affiche les étapes successives de la migration, incluant le transfert de l'état mémoire et la commutation finale.\\
 
+% ------------------------------------------------------------
 \subsection{Déploiement de la stack de monitoring}
+% ------------------------------------------------------------
 
 \par Afin de superviser l'état global de l'infrastructure, une stack de monitoring a été déployée dans un conteneur LXC dédié appelé \texttt{monitoring}, avec l'adresse \texttt{192.168.10.99}. Ce conteneur centralise InfluxDB, Prometheus et Grafana.\\
 
@@ -206,7 +218,16 @@ scrape_configs:
 
 \par Ce fichier définit deux jobs de collecte : le premier interroge les endpoints Ceph MGR des trois nœuds sur le port 9283, le second scrute le service CLBS sur le port 9101. L'intervalle de 30 secondes constitue un bon compromis entre fraîcheur des données et charge générée sur les cibles.\\
 
-\par L'interface web Prometheus a ensuite permis de confirmer que les différentes cibles apparaissaient avec l'état \texttt{UP}.\\
+\par Après déploiement, l'interface web Prometheus a permis de confirmer que l'ensemble des cibles déclarées apparaissaient avec l'état \texttt{UP}, comme l'illustre la figure~\ref{fig:prometheus-targets}.\\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{image/ch4/prometheus_targets.png}
+    \caption{Interface Prometheus montrant les cibles Ceph et CLBS avec l'état UP}
+    \label{fig:prometheus-targets}
+\end{figure}
+
+\par La figure~\ref{fig:prometheus-targets} présente la page \textit{Targets} de l'interface web Prometheus. Chacune des cibles déclarées dans le fichier \texttt{prometheus.yml} — les trois endpoints Ceph MGR et le service CLBS — affiche l'état \texttt{UP}, confirmant que la collecte des métriques est opérationnelle sur l'ensemble du cluster.\\
 
 \subsubsection{Déploiement de Grafana}
 
@@ -228,7 +249,7 @@ CLBS & Prometheus & Historique des migrations \\
 \caption{Dashboards Grafana configurés}
 \end{table}
 
-\par Trois dashboards principaux ont ainsi été utilisés : un dashboard infrastructure Proxmox, un dashboard Ceph, et un dashboard personnalisé pour le service CLBS. La figure~\ref{fig:grafana-proxmox-dashboard} présente le premier d'entre eux.\\
+\par Trois dashboards principaux ont ainsi été utilisés : un dashboard infrastructure Proxmox, un dashboard Ceph, et un dashboard personnalisé pour le service CLBS. La figure~\ref{fig:grafana-proxmox-dashboard} présente le dashboard dédié à l'infrastructure Proxmox, tandis que la figure~\ref{fig:grafana-ceph-dashboard} illustre celui consacré au cluster Ceph.\\
 
 \begin{figure}[H]
     \centering
@@ -239,7 +260,18 @@ CLBS & Prometheus & Historique des migrations \\
 
 \par La figure~\ref{fig:grafana-proxmox-dashboard} présente le dashboard Grafana dédié à l'infrastructure Proxmox. Il affiche en temps réel les métriques CPU, mémoire et charge des trois nœuds, ainsi qu'un récapitulatif des VMs en cours d'exécution et des ressources disponibles dans le cluster.\\
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{image/ch4/grafana_ceph_dashboard.png}
+    \caption{Dashboard Grafana Ceph affichant l'état du cluster, des pools et la latence des OSDs}
+    \label{fig:grafana-ceph-dashboard}
+\end{figure}
+
+\par La figure~\ref{fig:grafana-ceph-dashboard} présente le dashboard Grafana dédié au cluster Ceph. On y retrouve l'état global de santé du cluster, les métriques I/O par pool, la latence des OSDs et le taux de réplication en temps réel, permettant de superviser en continu la couche stockage depuis la même interface unifiée.\\
+
+% ------------------------------------------------------------
 \subsection{Implémentation du mécanisme CLBS}
+% ------------------------------------------------------------
 
 \par Le mécanisme CLBS constitue l'une des contributions principales de ce projet. Il s'agit d'un service d'équilibrage proactif développé spécifiquement pour pallier l'absence de DRS natif dans Proxmox VE.
 
@@ -265,7 +297,16 @@ systemctl start clbs
 journalctl -u clbs.service -f -o cat
 \end{lstlisting}
 
-\par Ces trois commandes activent le démarrage automatique du service au boot, le démarrent immédiatement, et affichent les journaux en temps réel. La commande \texttt{journalctl} permet de surveiller les décisions de migration et les éventuelles erreurs de connexion à l'API Proxmox ou à InfluxDB.\\
+\par Ces trois commandes activent le démarrage automatique du service au boot, le démarrent immédiatement, et affichent les journaux en temps réel. Comme le montre la figure~\ref{fig:clbs-logs}, ces journaux permettent de suivre en direct les décisions de migration et les éventuelles erreurs de connexion à l'API Proxmox ou à InfluxDB.\\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{image/ch4/clbs_logs.png}
+    \caption{Journaux systemd du service CLBS lors d'un cycle de détection et de migration}
+    \label{fig:clbs-logs}
+\end{figure}
+
+\par La figure~\ref{fig:clbs-logs} présente la sortie de la commande \texttt{journalctl} pour le service CLBS pendant un cycle de détection actif. On y observe la classification des nœuds par bande de charge (heavy/moderate/light), la sélection de la VM candidate à la migration, le déclenchement de l'opération via l'API Proxmox et l'activation du cooldown post-migration.\\
 
 \subsubsection{Validation du mécanisme}
 
@@ -275,7 +316,7 @@ journalctl -u clbs.service -f -o cat
 stress-ng --cpu 8
 \end{lstlisting}
 
-\par La commande lance 8 workers saturant les cœurs CPU disponibles. Cette surcharge artificielle déclenche la logique de détection du service CLBS qui, après vérification des seuils, sélectionne la VM candidate et initie sa migration vers un nœud moins chargé. Comme illustré par la figure~\ref{fig:clbs-migration-event}, le résultat est directement visible dans le dashboard dédié.\\
+\par La commande lance 8 workers saturant les cœurs CPU disponibles. Cette surcharge artificielle déclenche la logique de détection du service CLBS qui, après vérification des seuils, sélectionne la VM candidate et initie sa migration vers un nœud moins chargé. Comme l'illustre la figure~\ref{fig:clbs-migration-event}, le résultat est directement visible dans le dashboard dédié.\\
 
 \begin{figure}[H]
     \centering
@@ -286,7 +327,9 @@ stress-ng --cpu 8
 
 \par La figure~\ref{fig:clbs-migration-event} présente le dashboard Grafana du service CLBS après le déclenchement d'une migration automatique. On y observe l'historique de charge des nœuds par bande (heavy/moderate/light), la migration enregistrée dans la section \textit{Migration Activity}, ainsi que le cooldown restant avant le prochain cycle d'évaluation.\\
 
+% ------------------------------------------------------------
 \subsection{Déploiement de l'application Sona-Web}
+% ------------------------------------------------------------
 
 \par L'application Sona-Web a été déployée sur l'infrastructure pour démontrer concrètement les capacités de haute disponibilité et de répartition de charge offertes par la plateforme hyperconvergée.
 
@@ -321,8 +364,9 @@ done
 
 \par La figure~\ref{fig:sonaweb-dashboard} présente le tableau de bord principal de Sona-Web, accessible via HAProxy sur le port 8080. L'interface affiche en temps réel l'instance Flask ayant traité la requête courante, le nombre total de requêtes enregistrées en base de données, ainsi que l'état de disponibilité des deux serveurs applicatifs.\\
 
-
+% ------------------------------------------------------------
 \subsection{Automatisation avec Ansible}
+% ------------------------------------------------------------
 
 \par L'automatisation est un élément clé de la reproductibilité de l'infrastructure. Les playbooks Ansible développés permettent de provisionner de nouvelles VMs en quelques minutes sans intervention manuelle.
 
@@ -411,9 +455,6 @@ qm cloudinit update {{ vm_id }}
 
 \par Ces trois commandes attachent le disque cloud-init, injectent la configuration réseau (adresse IP, passerelle, DNS) et régénèrent l'ISO cloud-init afin que la VM applique automatiquement ces paramètres dès son premier démarrage, sans intervention manuelle.\\
 
-% ============================================================
-% SECTION ENRICHIE : Provisionnement en lot et pipeline PXE/TFTP
-% ============================================================
 \subsubsection{Provisionnement en lot et pipeline PXE/TFTP}
 
 \par Un second playbook \texttt{provision\_vm\_batch.yml} permet le provisionnement en lot de plusieurs VMs à partir d'une liste définie à l'avance dans l'inventaire. Plutôt que d'exécuter le playbook unitaire pour chaque machine, ce playbook itère sur une liste de définitions YAML et parallélise les créations, réduisant le temps de provisionnement d'un parc de dix VMs de plusieurs dizaines de minutes à quelques minutes seulement.\\
@@ -519,7 +560,9 @@ LABEL local
 
 \par Ce pipeline PXE/TFTP constitue le premier maillon de la chaîne d'automatisation complète de l'infrastructure. Une fois le nœud installé et accessible sur le réseau de management, les playbooks Ansible prennent le relais pour configurer Proxmox, rejoindre le cluster et intégrer les réseaux VxLAN, offrant ainsi un pipeline de bout en bout depuis un serveur vierge jusqu'à un nœud pleinement opérationnel.\\
 
+% ============================================================
 \section{Partie II --- Couche Stockage}
+% ============================================================
 
 \par La couche stockage repose entièrement sur Ceph, déployé directement en intégration native avec Proxmox VE. Cette section présente le déploiement du cluster Ceph et la validation de sa tolérance aux pannes.
 
@@ -549,7 +592,16 @@ pveceph mon create
 
 \par Cette commande est exécutée successivement sur chacun des trois nœuds. Avec trois monitors, le quorum Ceph est atteint dès que deux d'entre eux sont opérationnels, garantissant la disponibilité même en cas de panne d'un nœud.\\
 
-\par Des managers Ceph ont aussi été déployés pour fournir les fonctions d'administration avancée et l'export des métriques vers Prometheus.\\
+\par Des managers Ceph ont aussi été déployés pour fournir les fonctions d'administration avancée et l'export des métriques vers Prometheus. Comme le montre la figure~\ref{fig:ceph-mon-mgr}, l'interface Proxmox permet de vérifier l'état de l'ensemble des monitors et managers déployés.\\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{image/ch4/ceph_mon_mgr.png}
+    \caption{Interface Proxmox affichant les monitors et managers Ceph actifs sur les trois nœuds}
+    \label{fig:ceph-mon-mgr}
+\end{figure}
+
+\par La figure~\ref{fig:ceph-mon-mgr} présente la vue Ceph de l'interface Proxmox après le déploiement des monitors et managers. Les trois MON apparaissent avec l'état \texttt{online} et le quorum est atteint, tandis que les MGR affichent leur rôle actif ou en veille selon le nœud, confirmant la redondance complète de la couche de contrôle Ceph.\\
 
 \begin{lstlisting}[style=sonacode,language=bash,caption={Activation du module Prometheus pour Ceph},label={lst:ceph-prometheus}]
 ceph mgr module enable prometheus
@@ -618,7 +670,9 @@ ceph df
 
 \par Après le retour du nœud défaillant, Ceph a automatiquement lancé la resynchronisation des données et l'état du cluster est revenu à \texttt{HEALTH\_OK}. Ce test valide le bon comportement de la couche stockage distribuée.\\
 
+% ============================================================
 \section{Partie III --- Couche Réseau}
+% ============================================================
 
 \par La couche réseau est construite autour d'Open vSwitch et des tunnels VxLAN, permettant de créer plusieurs réseaux logiques isolés sur le même réseau physique Sonatrach. OPNsense assure le routage centralisé et le filtrage entre les différents segments.
 
@@ -645,156 +699,17 @@ ovs-vsctl add-port vmbr1 eno1
 
 \par La première commande crée le bridge OVS \texttt{vmbr1}, la seconde y attache l'interface physique \texttt{eno1} comme port de transit. Tous les tunnels VxLAN créés ultérieurement utilisent ce bridge, permettant de transporter plusieurs réseaux logiques sur une seule interface physique.\\
 
-% ============================================================
-% SECTION DECOUPEE : Configuration complète des interfaces PVE-01
-% ============================================================
 \subsubsection{Configuration complète des interfaces sur PVE-01}
 
 \par Le fichier \texttt{/etc/network/interfaces} du nœud PVE-01 centralise l'ensemble de la configuration réseau. Pour en faciliter la lecture, il est présenté ici en cinq parties logiques correspondant aux différents rôles des interfaces : la base physique, les réseaux d'infrastructure Ceph et Corosync, les réseaux de migration et de sauvegarde, puis les réseaux applicatifs et leurs bridges Linux. La figure~\ref{fig:pve01-overview} ci-dessous offre une vue synthétique de cette organisation en quatre couches avant que chacune ne soit détaillée.\\
 
-%----------------------------------
-% DIAGRAMME CORRIGÉ
-%----------------------------------
-\begin{figure}[H]
-\centering
-\resizebox{\textwidth}{!}{%
-\begin{tikzpicture}[
-    font=\sffamily,
-    % Styles
-    physblock/.style={
-        draw, rounded corners=4pt, fill=gray!25, thick,
-        minimum width=3.2cm, minimum height=1.1cm, align=center
-    },
-    ovsblock/.style={
-        draw, rounded corners=4pt, fill=blue!15, thick,
-        minimum width=15cm, minimum height=1.2cm, align=center
-    },
-    partlabel/.style={
-        draw, rounded corners=3pt,
-        font=\sffamily\bfseries\small, minimum width=2.2cm,
-        minimum height=0.65cm, align=center
-    },
-    vxlanbox/.style={
-        draw, rounded corners=3pt, thick,
-        minimum width=3.2cm, minimum height=1.0cm,
-        align=center, font=\sffamily\small
-    },
-    bridgebox/.style={
-        draw, rounded corners=3pt, thick,
-        minimum width=2.8cm, minimum height=1.0cm,
-        align=center, font=\sffamily\small
-    },
-    arrow/.style={-Stealth, thick},
-]
+% ------------------------------------------------------------------
+% Figure TikZ externalisée — fichier : figures/fig_pve01_overview.tex
+% ------------------------------------------------------------------
+\input{image/ch4/fig_pve01_overview}
 
-% ── Y positions (bottom to top) ──────────────────────────────
-% y=0   : nic0
-% y=2   : vmbr0  (Partie 1)
-% y=4   : VxLAN 20 + 30   (Partie 2)
-% y=6   : VxLAN 40 + 50 + 90   (Partie 3)
-% y=8   : VxLAN 60 + 70 + 80   (Partie 4)
-% y=10  : vmbr60 + vmbr70 + vmbr80
-% y=12  : VMs Dev + Prod + DMZ
+\par La figure~\ref{fig:pve01-overview} illustre l'organisation en quatre couches de la configuration réseau de PVE-01 : le bridge de management (Partie 1), les VxLAN d'infrastructure Corosync et Ceph interne (Partie 2), les VxLAN de migration, Ceph public et sauvegarde (Partie 3), et enfin les VxLAN applicatifs avec leurs bridges Linux (Partie 4).\\
 
-% ── Séparateurs horizontaux ──────────────────────────────────
-\foreach \y in {1.2, 3.1, 5.1, 7.1, 9.1} {
-    \draw[dashed, gray!60, thick] (-7.8, \y) -- (7.8, \y);
-}
-
-% ── Badges des parties ───────────────────────────────────────
-\node[partlabel, fill=gray!50,   text=black]          at (-7.0,  1.7) {Partie 1};
-\node[partlabel, fill=orange!70!black, text=white]    at (-7.0,  4.1) {Partie 2};
-\node[partlabel, fill=teal!70,   text=white]          at (-7.0,  6.1) {Partie 3};
-\node[partlabel, fill=violet!70, text=white]          at (-7.0,  8.1) {Partie 4};
-
-% ── Couche 0 : nic0 ──────────────────────────────────────────
-\node[physblock] (nic0) at (0, 0)
-    {\textbf{nic0}\\\small Interface physique};
-
-% ── Partie 1 : vmbr0 ─────────────────────────────────────────
-\node[ovsblock] (vmbr0) at (0, 2.1)
-    {\textbf{vmbr0}\ (OVSBridge)\quad\texttt{192.168.10.100/24} — Management};
-
-% ── Partie 2 : VxLAN 20 + 30 ────────────────────────────────
-\node[vxlanbox, fill=orange!15] (vx20) at (-3.5, 4.1)
-    {\textbf{VxLAN 20}\\\small Corosync Heartbeat\\\texttt{10.10.20.0/24}};
-
-\node[vxlanbox, fill=orange!25] (vx30) at (1.5, 4.1)
-    {\textbf{VxLAN 30}\\\small Ceph Réplication interne\\\texttt{10.10.30.0/24}};
-
-% ── Partie 3 : VxLAN 40 + 50 + 90 ──────────────────────────
-\node[vxlanbox, fill=teal!15] (vx40) at (-5.5, 6.1)
-    {\textbf{VxLAN 40}\\\small Ceph Public\\\texttt{10.10.40.0/24}};
-
-\node[vxlanbox, fill=teal!25] (vx50) at (-0.5, 6.1)
-    {\textbf{VxLAN 50}\\\small Migration Live\\\texttt{10.10.50.0/24}};
-
-\node[vxlanbox, fill=teal!15] (vx90) at (4.5, 6.1)
-    {\textbf{VxLAN 90}\\\small Sauvegarde\\\texttt{10.10.90.0/24}};
-
-% ── Partie 4 : VxLAN 60 + 70 + 80 ──────────────────────────
-\node[vxlanbox, fill=violet!12] (vx60) at (-4.5, 8.1)
-    {\textbf{VxLAN 60}\\\small Zone Dev};
-
-\node[vxlanbox, fill=violet!20] (vx70) at (-0.0, 8.1)
-    {\textbf{VxLAN 70}\\\small Zone Prod};
-
-\node[vxlanbox, fill=violet!12] (vx80) at (4.5, 8.1)
-    {\textbf{VxLAN 80}\\\small Zone DMZ};
-
-% ── Linux Bridges ────────────────────────────────────────────
-\node[bridgebox, fill=violet!30] (br60) at (-4.5, 10.1)
-    {\textbf{vmbr60}\\Linux Bridge};
-
-\node[bridgebox, fill=violet!30] (br70) at (-0.0, 10.1)
-    {\textbf{vmbr70}\\Linux Bridge};
-
-\node[bridgebox, fill=violet!30] (br80) at (4.5, 10.1)
-    {\textbf{vmbr80}\\Linux Bridge};
-
-% ── VMs ──────────────────────────────────────────────────────
-\node[physblock, fill=green!20, minimum width=2.6cm] (vm60) at (-4.5, 12.0)
-    {\textbf{VMs Dev}};
-\node[physblock, fill=green!25, minimum width=2.6cm] (vm70) at (-0.0, 12.0)
-    {\textbf{VMs Prod}};
-\node[physblock, fill=green!20, minimum width=2.6cm] (vm80) at (4.5, 12.0)
-    {\textbf{VMs DMZ}};
-
-% ── Flèches ──────────────────────────────────────────────────
-% nic0 → vmbr0
-\draw[arrow] (nic0.north) -- (vmbr0.south);
-
-% vmbr0 → Partie 2
-\draw[arrow] (vmbr0.north) -- ++(0, 0.35) -| (vx20.south);
-\draw[arrow] (vmbr0.north) -- ++(0, 0.35) -| (vx30.south);
-
-% vmbr0 → Partie 3
-\draw[arrow] (vmbr0.north) -- ++(0, 0.35) -| (vx40.south);
-\draw[arrow] (vmbr0.north) -- ++(0, 0.35) -| (vx50.south);
-\draw[arrow] (vmbr0.north) -- ++(0, 0.35) -| (vx90.south);
-
-% vmbr0 → Partie 4
-\draw[arrow] (vmbr0.north) -- ++(0, 0.35) -| (vx60.south);
-\draw[arrow] (vmbr0.north) -- ++(0, 0.35) -| (vx70.south);
-\draw[arrow] (vmbr0.north) -- ++(0, 0.35) -| (vx80.south);
-
-% VxLAN → Linux Bridges
-\draw[arrow] (vx60.north) -- (br60.south);
-\draw[arrow] (vx70.north) -- (br70.south);
-\draw[arrow] (vx80.north) -- (br80.south);
-
-% Linux Bridges → VMs
-\draw[arrow] (br60.north) -- (vm60.south);
-\draw[arrow] (br70.north) -- (vm70.south);
-\draw[arrow] (br80.north) -- (vm80.south);
-
-\end{tikzpicture}%
-}
-\caption{Vue d'ensemble de la configuration réseau de PVE-01 — Quatre parties logiques}
-\label{fig:pve01-overview}
-\end{figure}
-
-%----------------------------------------
 \paragraph{Partie 1 --- Interface physique et bridge de management}
 
 \par Cette première partie définit l'interface physique \texttt{nic0} ainsi que le bridge OVS principal \texttt{vmbr0}, qui sert de point d'ancrage à l'ensemble des tunnels VxLAN. L'adresse de management \texttt{192.168.10.100/24} est attribuée directement sur ce bridge.\\
@@ -1018,7 +933,9 @@ source /etc/network/interfaces.d/*
 
 \par Les bridges Linux \texttt{vmbr60}, \texttt{vmbr70} et \texttt{vmbr80} constituent la jonction entre le plan de données OVS et les interfaces réseau des VMs Proxmox. Chaque bridge est relié à l'interface interne OVS du VxLAN correspondant, formant ainsi un chemin de commutation continu depuis la VM applicative jusqu'à l'interface physique du nœud, à travers le tunnel VxLAN vers les autres nœuds du cluster. Cette architecture permet de transporter plusieurs réseaux logiques isolés sur le même réseau physique, sans dépendre d'un switch physique configuré en VLAN.\\
 
+% ------------------------------------------------------------
 \subsection{Déploiement de la VM OPNsense}
+% ------------------------------------------------------------
 
 \par OPNsense joue un rôle central dans l'architecture réseau en assurant le routage inter-réseaux, le NAT sortant et le service DHCP pour les trois zones applicatives.
 
@@ -1062,7 +979,9 @@ net3 (em3) & vmbr80 & LAN DMZ & 172.16.80.1/24 \\
 
 \par Le NAT sortant automatique a été activé dans OPNsense afin de permettre aux réseaux internes de sortir vers Internet via l'interface WAN. Cette configuration a simplifié le routage pour les VMs hébergées sur les réseaux Dev, Prod et DMZ.\\
 
+% ------------------------------------------------------------
 \subsection{Configuration du service DHCP}
+% ------------------------------------------------------------
 
 \par Le service DHCP a été activé via \texttt{dnsmasq} sur les interfaces LAN internes. Ce choix a été retenu car il est simple à configurer et convient bien à un environnement de laboratoire.\\
 
@@ -1093,7 +1012,9 @@ tcpdump -i em1 port 67 or port 68
 
 \par Cette vérification a montré le cycle normal des échanges DHCP, depuis le \textit{Discover} jusqu'au \textit{Offer}, puis l'attribution effective de l'adresse IP à la machine virtuelle.\\
 
+% ------------------------------------------------------------
 \subsection{Configuration du pare-feu Proxmox}
+% ------------------------------------------------------------
 
 \par En complément du filtrage assuré par OPNsense au niveau applicatif, le pare-feu natif Proxmox a été configuré au niveau de l'hyperviseur pour protéger les réseaux d'infrastructure et restreindre les accès à la plateforme de gestion.
 
@@ -1103,18 +1024,55 @@ tcpdump -i em1 port 67 or port 68
 
 \subsubsection{Configuration au niveau datacenter}
 
-\par Au niveau datacenter, des alias symboliques ont été définis pour simplifier l'écriture des règles (par exemple \texttt{haproxy}, \texttt{app1}, \texttt{postgres}), ainsi que des IPSets regroupant les adresses des nœuds et des instances Flask. Des groupes de sécurité ont également été créés pour encapsuler les règles de ports associées à chaque service d'infrastructure.\\
+\par Au niveau datacenter, des alias symboliques ont été définis pour simplifier l'écriture des règles. La figure~\ref{fig:fw-datacenter-aliases} illustre les alias créés, parmi lesquels \texttt{haproxy}, \texttt{app1}, \texttt{app2} et \texttt{postgres}, chacun associé à l'adresse IP de l'instance correspondante.\\
 
-\par Les groupes de sécurité définis regroupent les règles nécessaires à chaque service : \texttt{proxmox-management} pour les ports SSH (22), Web UI (8006), VNC (5900--5999) et SPICE (3128) ; \texttt{corosync-cluster} pour les ports UDP 5404--5405 du heartbeat ; \texttt{vxlan-overlay} pour le port UDP 4789 indispensable aux tunnels VxLAN ; et \texttt{ceph-storage} pour les ports MON (3300, 6789) et OSD (6800--7300).\\
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{image/ch4/fw_datacenter_aliases.png}
+    \caption{Aliases définis au niveau datacenter dans le pare-feu Proxmox}
+    \label{fig:fw-datacenter-aliases}
+\end{figure}
 
-% ============================================================
-% NOUVELLE SECTION : Configuration au niveau nœud
-% ============================================================
+\par La figure~\ref{fig:fw-datacenter-aliases} présente la liste des alias configurés dans l'interface Proxmox sous \textit{Datacenter → Firewall → Aliases}. Chaque alias associe un nom symbolique à une adresse IP, simplifiant la lecture et la maintenance des règles de filtrage sans nécessiter de modifier chaque règle individuellement en cas de changement d'adresse.\\
+
+\par Des IPSets ont également été créés pour regrouper les adresses appartenant à un même domaine de sécurité. Comme le montre la figure~\ref{fig:fw-datacenter-ipsets}, ces groupes permettent d'appliquer une règle à un ensemble de machines en une seule définition.\\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{image/ch4/fw_datacenter_ipsets.png}
+    \caption{IPSets configurés au niveau datacenter regroupant les adresses par domaine}
+    \label{fig:fw-datacenter-ipsets}
+\end{figure}
+
+\par La figure~\ref{fig:fw-datacenter-ipsets} présente les IPSets définis dans Proxmox sous \textit{Datacenter → Firewall → IPSet}. On y distingue notamment les groupes d'adresses des nœuds de gestion et des instances Flask, utilisés pour filtrer les flux de manière centralisée sans dupliquer les adresses dans chaque règle individuelle.\\
+
+\par Des groupes de sécurité ont enfin été créés pour encapsuler les règles de ports associées à chaque service d'infrastructure. La figure~\ref{fig:fw-security-groups} illustre ces groupes et leurs règles respectives.\\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{image/ch4/fw_security_groups.png}
+    \caption{Groupes de sécurité Proxmox avec leurs règles de ports par service}
+    \label{fig:fw-security-groups}
+\end{figure}
+
+\par La figure~\ref{fig:fw-security-groups} présente les groupes de sécurité configurés sous \textit{Datacenter → Firewall → Security Groups}. Les groupes définis regroupent les règles nécessaires à chaque service : \texttt{proxmox-management} pour les ports SSH (22), Web UI (8006), VNC (5900--5999) et SPICE (3128) ; \texttt{corosync-cluster} pour les ports UDP 5404--5405 du heartbeat ; \texttt{vxlan-overlay} pour le port UDP 4789 indispensable aux tunnels VxLAN ; et \texttt{ceph-storage} pour les ports MON (3300, 6789) et OSD (6800--7300).\\
+
 \subsubsection{Configuration au niveau nœud}
 
 \par Le deuxième niveau du pare-feu Proxmox s'applique directement à chaque nœud physique du cluster. Les règles définies à ce niveau protègent l'hyperviseur lui-même, indépendamment des VMs qu'il héberge. Elles filtrent les accès aux services système de Proxmox et aux protocoles de cluster, en autorisant uniquement les sources légitimes.\\
 
-\par Sur chacun des trois nœuds PVE-01, PVE-02 et PVE-03, le pare-feu est activé et les groupes de sécurité définis au niveau datacenter sont appliqués. Des règles supplémentaires spécifiques à chaque nœud complètent ce filtrage.\\
+\par Sur chacun des trois nœuds PVE-01, PVE-02 et PVE-03, le pare-feu est activé et les groupes de sécurité définis au niveau datacenter sont appliqués. La figure~\ref{fig:fw-node-rules-web} illustre les règles telles qu'elles apparaissent dans l'interface web Proxmox pour le nœud PVE-01.\\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{image/ch4/fw_node_rules_web.png}
+    \caption{Règles de pare-feu au niveau nœud PVE-01 dans l'interface web Proxmox}
+    \label{fig:fw-node-rules-web}
+\end{figure}
+
+\par La figure~\ref{fig:fw-node-rules-web} présente la vue \textit{Firewall} du nœud PVE-01 dans l'interface Proxmox. On y observe les groupes de sécurité appliqués et les règles spécifiques au nœud, définissant notamment les accès autorisés en entrée par réseau source et par port de service.\\
+
+\par Des règles supplémentaires spécifiques à chaque nœud complètent ce filtrage, comme résumé dans le tableau~\ref{tab:fw-node-rules}.\\
 
 \begin{table}[H]
 \centering
@@ -1147,6 +1105,41 @@ IN & DROP & any & any & Règle par défaut \\
 
 \par L'accès à l'interface web Proxmox (port 8006) et au service SSH (port 22) est restreint au seul réseau de management \texttt{192.168.10.0/24}, empêchant tout accès non autorisé depuis les réseaux applicatifs. Le trafic Corosync est limité au réseau VxLAN 20 (\texttt{10.10.20.0/24}), tandis que les communications Ceph sont isolées sur leurs VxLAN dédiés (30 et 40). Enfin, le réseau de migration (VxLAN 50) est autorisé sans restriction de port, car Proxmox utilise des ports dynamiques pour le transfert de l'état mémoire des VMs lors des migrations live.\\
 
+\par Afin de vérifier que les règles sont correctement appliquées au niveau noyau, la commande suivante a été exécutée directement sur PVE-01 via SSH.\\
+
+\begin{lstlisting}[style=sonacode,language=bash,caption={Vérification des règles iptables actives générées par Proxmox sur PVE-01},label={lst:fw-iptables-host}]
+ssh root@192.168.10.100 \
+    "iptables -L PVEFW-HOST-IN -n -v --line-numbers"
+\end{lstlisting}
+
+\par Cette commande liste la chaîne \texttt{PVEFW-HOST-IN}, générée automatiquement par Proxmox pour filtrer le trafic entrant vers l'hyperviseur. Comme le montre la figure~\ref{fig:fw-iptables-host-in}, la sortie confirme que chaque règle définie dans l'interface web est bien traduite en entrée iptables active.\\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{image/ch4/fw_iptables_host_in.png}
+    \caption{Chaîne iptables \texttt{PVEFW-HOST-IN} active sur PVE-01 (vérification SSH)}
+    \label{fig:fw-iptables-host-in}
+\end{figure}
+
+\par La figure~\ref{fig:fw-iptables-host-in} présente la sortie de la commande \texttt{iptables -L PVEFW-HOST-IN} exécutée sur PVE-01. Chaque ligne correspond à une règle de filtrage active : on y retrouve les autorisations par réseau source et par port définies dans l'interface Proxmox, traduites en règles noyau effectives, validant ainsi la cohérence entre la configuration logique et l'application réelle du filtrage.\\
+
+\par La commande complémentaire suivante a permis de lister les IPSets actifs au niveau noyau, confirmant que les groupes d'adresses définis dans Proxmox sont bien propagés dans le sous-système \texttt{ipset} du kernel.\\
+
+\begin{lstlisting}[style=sonacode,language=bash,caption={Vérification des IPSets actifs sur PVE-01},label={lst:fw-ipset-list}]
+ssh root@192.168.10.100 "ipset list"
+\end{lstlisting}
+
+\par Comme l'illustre la figure~\ref{fig:fw-ipset-list}, la sortie liste l'ensemble des IPSets actifs avec leurs membres, confirmant que les groupes d'adresses sont correctement propagés depuis la configuration Proxmox vers le noyau Linux.\\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{image/ch4/fw_ipset_list.png}
+    \caption{IPSets actifs sur PVE-01 vérifiés via SSH (\texttt{ipset list})}
+    \label{fig:fw-ipset-list}
+\end{figure}
+
+\par La figure~\ref{fig:fw-ipset-list} présente la sortie de la commande \texttt{ipset list} sur PVE-01. Chaque IPSet affiché correspond à un groupe d'adresses défini dans l'interface Proxmox : les membres listés confirment que la configuration du pare-feu au niveau datacenter est bien synchronisée et active sur chaque nœud physique.\\
+
 \par Ces règles au niveau nœud constituent un premier rempart de défense en profondeur, garantissant que même en cas de compromission d'une VM applicative, l'hyperviseur reste inaccessible depuis les réseaux internes.\\
 
 \subsubsection{Règles au niveau des VMs}
@@ -1171,9 +1164,9 @@ Flask app-1/2 & IN & ACCEPT & management-net & 22 TCP \\
 \hline
 Flask app-1/2 & OUT & ACCEPT & -- & 5432 TCP \\
 \hline
-PostgreSQL (204) & IN & ACCEPT & app1, app2 & 5432 TCP \\
+PostgreSQL (205) & IN & ACCEPT & app1, app2 & 5432 TCP \\
 \hline
-PostgreSQL (204) & IN & ACCEPT & management-net & 22 TCP \\
+PostgreSQL (205) & IN & ACCEPT & management-net & 22 TCP \\
 \hline
 \end{tabular}
 \caption{Règles de pare-feu par VM applicative}
@@ -1182,13 +1175,17 @@ PostgreSQL (204) & IN & ACCEPT & management-net & 22 TCP \\
 
 \par Ces règles garantissent que chaque VM ne communique qu'avec les composants dont elle dépend directement. Tout autre flux est implicitement bloqué par la politique par défaut, assurant une isolation stricte entre les composants de l'application.\\
 
+% ------------------------------------------------------------
 \subsection{Validation de la haute disponibilité réseau et applicative}
+% ------------------------------------------------------------
 
 \par Un scénario de panne a été réalisé afin de tester le comportement global de l'infrastructure en cas de perte d'un nœud physique. L'arrêt brutal de PVE-01 a permis d'observer la détection de panne par Corosync, le redémarrage des services protégés sur un autre nœud, puis la resynchronisation automatique après le retour du serveur.\\
 
 \par Cette séquence a montré que le cluster restait opérationnel malgré la défaillance, et que les mécanismes de haute disponibilité répondaient correctement à ce type d'événement. La chronologie observée était la suivante : détection de la défaillance par Corosync, déclenchement du basculement HA, redémarrage des VMs protégées sur les nœuds survivants, puis resynchronisation Ceph après le retour du nœud défaillant.\\
 
+% ============================================================
 \section{Conclusion}
+% ============================================================
 
 \par Ce chapitre a présenté l'implémentation réelle de l'infrastructure hyperconvergée open source mise en place dans le cadre du projet. La couche calcul a permis de déployer Proxmox, le cluster, le monitoring, l'automatisation et les services applicatifs. La couche stockage a été assurée par Ceph avec réplication et tolérance aux pannes. Enfin, la couche réseau a été construite avec Open vSwitch, les tunnels VxLAN, OPNsense et les services d'adressage associés.\\
 

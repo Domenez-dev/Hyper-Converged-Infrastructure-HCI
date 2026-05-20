@@ -1,0 +1,107 @@
+% ============================================================
+% Fichier : figures/fig_pve01_overview.tex
+% Usage   : \input{figures/fig_pve01_overview}
+% Dépend  : packages tikz, tikz-arrows.meta dans le préambule
+% ============================================================
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    font=\sffamily\small,
+    ND/.style={draw, rounded corners=3pt, thick,
+               minimum width=3.0cm, minimum height=1.1cm, align=center},
+    WD/.style={draw, rounded corners=4pt, thick,
+               minimum width=12.0cm, minimum height=1.1cm, align=center},
+    BD/.style={draw, rounded corners=3pt, thick,
+               minimum width=1.9cm, minimum height=0.65cm, align=center,
+               font=\sffamily\bfseries\footnotesize},
+    ar/.style={-Stealth, thick},
+    sp/.style={thick, gray!55},
+]
+
+%─── NIC0 (y=0) ───────────────────────────────────────────────
+\node[ND, fill=gray!22] (nic0) at (0, 0)
+    {\textbf{nic0}\\Interface physique};
+
+%─── VMBR0 / Partie 1 (y=2.0) ────────────────────────────────
+\node[WD, fill=blue!10] (vmbr0) at (0, 2.0)
+    {\textbf{vmbr0}\ (OVSBridge)\quad
+     \texttt{192.168.10.100/24} — Management};
+\node[BD, fill=gray!50, text=black] at (-7.2, 2.0) {Partie 1};
+
+\draw[ar] (nic0.north) -- (vmbr0.south -| nic0.north);
+
+\draw[sp]
+    (0,   2.55)
+    -- (0,   3.2)
+    -- (6.5, 3.2)
+    -- (6.5, 8.1);
+
+\draw[sp] (-2.5, 3.2) -- (0, 3.2);
+
+%─── PARTIE 2 : VxLAN 20 & 30 (y=4.4) ───────────────────────
+\node[BD, fill=orange!80!black, text=white] at (-7.2, 4.4) {Partie 2};
+\node[ND, fill=orange!15] (vx20) at (-2.5, 4.4)
+    {\textbf{VxLAN 20}\\Corosync Heartbeat\\\texttt{10.10.20.0/24}};
+\node[ND, fill=orange!25] (vx30) at ( 2.5, 4.4)
+    {\textbf{VxLAN 30}\\Ceph Réplication\\\texttt{10.10.30.0/24}};
+\draw[ar] (-2.5, 3.2) -- (vx20.south);
+\draw[ar] ( 2.5, 3.2) -- (vx30.south);
+
+\draw[sp] (-4.8, 5.6) -- (6.5, 5.6);
+
+%─── PARTIE 3 : VxLAN 40, 50, 90 (y=6.8) ────────────────────
+\node[BD, fill=teal!65, text=white] at (-7.2, 6.8) {Partie 3};
+\node[ND, fill=teal!12] (vx40) at (-4.8, 6.8)
+    {\textbf{VxLAN 40}\\Ceph Public\\\texttt{10.10.40.0/24}};
+\node[ND, fill=teal!20] (vx50) at ( 0.0, 6.8)
+    {\textbf{VxLAN 50}\\Migration Live\\\texttt{10.10.50.0/24}};
+\node[ND, fill=teal!12] (vx90) at ( 4.8, 6.8)
+    {\textbf{VxLAN 90}\\Sauvegarde\\\texttt{10.10.90.0/24}};
+\draw[ar] (-4.8, 5.6) -- (vx40.south);
+\draw[ar] ( 0.0, 5.6) -- (vx50.south);
+\draw[ar] ( 4.8, 5.6) -- (vx90.south);
+
+\draw[sp] (-4.8, 8.1) -- (6.5, 8.1);
+
+%─── PARTIE 4 : VxLAN 60, 70, 80 (y=9.2) ────────────────────
+\node[BD, fill=violet!65, text=white] at (-7.2, 9.2) {Partie 4};
+\node[ND, fill=violet!12] (vx60) at (-4.8, 9.2)
+    {\textbf{VxLAN 60}\\Zone Dev};
+\node[ND, fill=violet!18] (vx70) at ( 0.0, 9.2)
+    {\textbf{VxLAN 70}\\Zone Prod};
+\node[ND, fill=violet!12] (vx80) at ( 4.8, 9.2)
+    {\textbf{VxLAN 80}\\Zone DMZ};
+\draw[ar] (-4.8, 8.1) -- (vx60.south);
+\draw[ar] ( 0.0, 8.1) -- (vx70.south);
+\draw[ar] ( 4.8, 8.1) -- (vx80.south);
+
+%─── Linux Bridges (y=10.9) ──────────────────────────────────
+\node[ND, fill=violet!28] (br60) at (-4.8, 10.9)
+    {\textbf{vmbr60}\\Linux Bridge};
+\node[ND, fill=violet!28] (br70) at ( 0.0, 10.9)
+    {\textbf{vmbr70}\\Linux Bridge};
+\node[ND, fill=violet!28] (br80) at ( 4.8, 10.9)
+    {\textbf{vmbr80}\\Linux Bridge};
+\draw[ar] (vx60.north) -- (br60.south);
+\draw[ar] (vx70.north) -- (br70.south);
+\draw[ar] (vx80.north) -- (br80.south);
+
+%─── VMs (y=12.5) ────────────────────────────────────────────
+\node[ND, fill=green!18] (vmdev)  at (-4.8, 12.5) {\textbf{VMs Dev}};
+\node[ND, fill=green!24] (vmprod) at ( 0.0, 12.5) {\textbf{VMs Prod}};
+\node[ND, fill=green!18] (vmdmz)  at ( 4.8, 12.5) {\textbf{VMs DMZ}};
+\draw[ar] (br60.north) -- (vmdev.south);
+\draw[ar] (br70.north) -- (vmprod.south);
+\draw[ar] (br80.north) -- (vmdmz.south);
+
+%─── Séparateurs de parties (lignes pointillées) ─────────────
+\draw[dashed, gray!70, thick] (-6.7, 1.35) -- (6.2, 1.35);
+\draw[dashed, gray!70, thick] (-6.7, 2.85) -- (6.2, 2.85);
+\draw[dashed, gray!70, thick] (-6.7, 5.45) -- (6.2, 5.45);
+\draw[dashed, gray!70, thick] (-6.7, 7.90) -- (6.2, 7.90);
+
+\end{tikzpicture}
+\caption{Vue d'ensemble de la configuration réseau de PVE-01 — Quatre parties logiques}
+\label{fig:pve01-overview}
+\end{figure}
