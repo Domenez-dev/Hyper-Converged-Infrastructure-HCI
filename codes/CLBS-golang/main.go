@@ -154,10 +154,10 @@ const (
 )
 
 var (
-	excludedVMs   = map[string]bool{"monitoring": true, "OPNsense": true, "gitlab": true, "clbs-services": true}
-	excludedVMIDs = map[int]bool{100: true, 102: true, 103: true, 104: true}
-	excludedCTs   = map[string]bool{"monitoring": true}
-	excludedCTIDs = map[int]bool{102: true}
+	excludedVMs   = map[string]bool{"monitoring": true, "OPNsense": true, "clbs-services": true, "bidata-2026": true}
+	excludedVMIDs = map[int]bool{100: true, 102: true, 103: true, 104: true, 200: true}
+	excludedCTs   = map[string]bool{"monitoring": true, "gitlab": true}
+	excludedCTIDs = map[int]bool{102: true, 103: true}
 )
 
 var (
