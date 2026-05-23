@@ -10,7 +10,7 @@
 
 \subsection{Définition}
 
-\par L'hyperconvergence (HCI, Hyper-Converged Infrastructure) est une architecture informatique qui regroupe, dans un même système, les ressources de calcul, de stockage et de réseau. Ces ressources sont pilotées par une couche logicielle centralisée, supprimant ainsi la nécessité de gérer des équipements spécialisés distincts pour chaque fonction. [2]\\
+\par L'hyperconvergence (HCI, Hyper-Converged Infrastructure) est une architecture informatique qui regroupe, dans un même système, les ressources de calcul, de stockage et de réseau. Ces ressources sont pilotées par une couche logicielle centralisée, supprimant ainsi la nécessité de gérer des équipements spécialisés distincts pour chaque fonction~\cite{ref2}.\\
 
 \par L'infrastructure hyperconvergée repose sur trois composantes fondamentales :\\
 
@@ -118,7 +118,7 @@ Haute disponibilité & Optionnelle et complexe & Native \\
 
 \subsection{Harvester HCI}
 
-\par Harvester est une solution HCI open source développée par SUSE, basée sur Kubernetes et KubeVirt. Elle propose une interface moderne et une intégration native avec Rancher pour la gestion de clusters Kubernetes. [5]\\
+\par Harvester est une solution HCI open source développée par SUSE, basée sur Kubernetes et KubeVirt. Elle propose une interface moderne et une intégration native avec Rancher pour la gestion de clusters Kubernetes~\cite{ref5}.\\
 
 \par Ses limites dans notre contexte :\\
 
@@ -128,13 +128,13 @@ Haute disponibilité & Optionnelle et complexe & Native \\
 
     \item \textbf{Maturité relative pour les VMs classiques} : Harvester est davantage orienté vers les workloads conteneurisés. La gestion de VMs Linux/Windows classiques est moins optimisée que sur une solution dédiée.
 
-    \item \textbf{Courbe d'apprentissage} : la maîtrise de Kubernetes est un prérequis pour administrer efficacement Harvester. [4]
+    \item \textbf{Courbe d'apprentissage} : la maîtrise de Kubernetes est un prérequis pour administrer efficacement Harvester~\cite{ref4}.
 
 \end{itemize}
 
 \subsection{Proxmox VE}
 
-\par Proxmox Virtual Environment (VE) est une plateforme de virtualisation open source basée sur KVM (pour les VMs) et LXC (pour les conteneurs). Elle propose une interface web centralisée, un support natif de Ceph pour le stockage distribué, et une gestion intégrée du clustering et de la haute disponibilité. [6]\\
+\par Proxmox Virtual Environment (VE) est une plateforme de virtualisation open source basée sur KVM (pour les VMs) et LXC (pour les conteneurs). Elle propose une interface web centralisée, un support natif de Ceph pour le stockage distribué, et une gestion intégrée du clustering et de la haute disponibilité~\cite{ref6}.\\
 
 \par Ses atouts pour notre cas d'usage sont nombreux :\\
 
@@ -214,9 +214,54 @@ Coût de licence & Gratuit & Gratuit & Gratuit (Enterprise payant) \\
 
 \par Lorsque KVM est disponible, QEMU délègue l'exécution du code de la VM à KVM et n'émule que les périphériques. C'est cette combinaison KVM+QEMU qui constitue l'hyperviseur réel sous Proxmox.\\
 
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  layer/.style={draw=bleu, fill=bleu!10, rounded corners=3pt, text width=11cm,
+                minimum height=1.3cm, align=center, font=\small\bfseries},
+  arrowlayer/.style={->, thick, color=bleu!60},
+  note/.style={font=\footnotesize\itshape, color=bleu!70, anchor=west}
+]
+  \node[layer, fill=gray!12, draw=gray!50] (hw) at (0,0)
+    {Matériel physique\\
+     {\normalfont\footnotesize CPU Intel VT-x / AMD-V \ --- \ RAM \ --- \ Disques}};
+
+  \node[layer, fill=bleu!22] (kernel) at (0,2.0)
+    {Noyau Linux + \texttt{kvm.ko}\\
+     {\normalfont\footnotesize Hyperviseur de type 1 --- exécution native du code VM via VT-x / AMD-V}};
+
+  \node[layer, fill=bleu!14] (qemu) at (0,4.0)
+    {QEMU (\texttt{qemu-system-x86\_64})\\
+     {\normalfont\footnotesize Espace utilisateur --- émulation des périphériques, gestion mémoire, live migration}};
+
+  \node[layer, fill=bleu!8] (proxmox) at (0,6.0)
+    {Proxmox VE (API REST, interface web port 8006)\\
+     {\normalfont\footnotesize Corosync, HA Manager, Ceph, Open vSwitch}};
+
+  \node[layer, fill=white, draw=bleu!40] (vms) at (0,8.0)
+    {Machines virtuelles (KVM) et conteneurs (LXC)\\
+     {\normalfont\footnotesize Systèmes invités : Linux, Windows, BSD}};
+
+  \draw[arrowlayer] (hw)      -- (kernel);
+  \draw[arrowlayer] (kernel)  -- (qemu);
+  \draw[arrowlayer] (qemu)    -- (proxmox);
+  \draw[arrowlayer] (proxmox) -- (vms);
+
+  \node[note] at (6.2, 0)    {bare metal};
+  \node[note] at (6.2, 2.0)  {type 1 (noyau)};
+  \node[note] at (6.2, 4.0)  {user space};
+  \node[note] at (6.2, 6.0)  {orchestration};
+  \node[note] at (6.2, 8.0)  {systèmes invités};
+\end{tikzpicture}
+\caption{Pile de virtualisation KVM + QEMU dans Proxmox VE}
+\label{fig:kvm-qemu-stack}
+\end{figure}
+
+\par La figure~\ref{fig:kvm-qemu-stack} illustre les cinq niveaux de la pile de virtualisation Proxmox. KVM, intégré au noyau Linux, exploite les extensions matérielles VT-x et AMD-V pour exécuter le code des VMs directement sur le CPU physique. QEMU opère en espace utilisateur et émule les périphériques. Proxmox VE orchestre l'ensemble via son API REST et unifie la gestion du cluster, du stockage Ceph et du réseau Open vSwitch.\\
+
 \textbf{Gestion du cluster : Corosync et le quorum}
 
-\par La gestion du cluster Proxmox repose sur \textbf{Corosync}, un framework de communication de cluster qui assure le consensus entre les n\oe{}uds via un mécanisme de \textit{quorum}. Corosync envoie des messages \textit{heartbeat} à intervalles réguliers entre les n\oe{}uds (sur notre VLAN 20 dédié) pour détecter les défaillances. Un cluster Proxmox nécessite un minimum de \textbf{3 n\oe{}uds} pour garantir un quorum stable.\\
+\par La gestion du cluster Proxmox repose sur \textbf{Corosync}, un framework de communication de cluster qui assure le consensus entre les n\oe{}uds via un mécanisme de \textit{quorum}~\cite{ref20}. Corosync envoie des messages \textit{heartbeat} à intervalles réguliers entre les n\oe{}uds (sur notre VLAN 20 dédié) pour détecter les défaillances. Un cluster Proxmox nécessite un minimum de \textbf{3 n\oe{}uds} pour garantir un quorum stable.\\
 
 \par Le quorum définit le nombre minimum de n\oe{}uds qui doivent être en accord pour que le cluster soit considéré comme opérationnel. Avec 3 n\oe{}uds, la majorité est de 2 : si un n\oe{}ud tombe, les 2 restants ont toujours quorum et le cluster continue de fonctionner. Si 2 n\oe{}uds tombent simultanément, le n\oe{}ud isolé n'a plus quorum et se met en retrait pour éviter le \textit{split-brain}, une situation où deux parties du cluster croient chacune être la seule à fonctionner et modifient les données de manière concurrente.\\
 
@@ -278,7 +323,7 @@ API REST (port 8006) & Interface de pilotage programmatique, exploitée par le D
 
 \subsection{Ceph : Le stockage distribué}
 
-\par Ceph est une solution libre de stockage distribuée (Software-Defined Storage) qui s'impose aujourd'hui comme une référence dans le domaine des infrastructures open source. Conçu pour répondre aux besoins de fiabilité, d'extensibilité et de performance, Ceph constitue le choix idéal pour assurer la couche de stockage d'une infrastructure hyperconvergée telle que celle que nous proposons. Sa capacité à fonctionner sur du matériel standard (serveurs x86) et son architecture auto-réparatrice en font un composant central de notre projet.\\
+\par Ceph est une solution libre de stockage distribuée (Software-Defined Storage) qui s'impose aujourd'hui comme une référence dans le domaine des infrastructures open source~\cite{ref27}. Conçu pour répondre aux besoins de fiabilité, d'extensibilité et de performance, Ceph constitue le choix idéal pour assurer la couche de stockage d'une infrastructure hyperconvergée telle que celle que nous proposons. Sa capacité à fonctionner sur du matériel standard (serveurs x86) et son architecture auto-réparatrice en font un composant central de notre projet.\\
 
 \textbf{Architecture de Ceph}
 
@@ -298,7 +343,7 @@ API REST (port 8006) & Interface de pilotage programmatique, exploitée par le D
 
 \textbf{La gestion intelligente des données : CRUSH et Placement Groups}
 
-\par L'intelligence de Ceph réside dans sa manière unique de gérer l'emplacement des données. Contrairement aux systèmes de stockage traditionnels qui utilisent une table de correspondance centralisée, Ceph utilise un algorithme appelé CRUSH (Controlled Replication Under Scalable Hashing). Cet algorithme permet à un client de calculer mathématiquement l'emplacement exact d'un objet (ou de sa réplique) en se basant sur la carte CRUSH, sans avoir à interroger un serveur central. Cette approche élimine un point de défaillance unique et améliore considérablement la scalabilité.\\
+\par L'intelligence de Ceph réside dans sa manière unique de gérer l'emplacement des données. Contrairement aux systèmes de stockage traditionnels qui utilisent une table de correspondance centralisée, Ceph utilise un algorithme appelé CRUSH (Controlled Replication Under Scalable Hashing)~\cite{ref28}. Cet algorithme permet à un client de calculer mathématiquement l'emplacement exact d'un objet (ou de sa réplique) en se basant sur la carte CRUSH, sans avoir à interroger un serveur central. Cette approche élimine un point de défaillance unique et améliore considérablement la scalabilité.\\
 
 \par La carte CRUSH est une structure hiérarchique qui définit l'organisation physique du cluster. L'administrateur peut y définir des "domaines de défaillance" (n\oe{}uds, racks, salles, data centers). Ceph utilise ensuite ces informations pour placer les répliques des données sur des n\oe{}uds distincts, garantissant ainsi que la perte d'un équipement n'entraîne pas de perte de données.\\
 
@@ -352,7 +397,7 @@ API REST (port 8006) & Interface de pilotage programmatique, exploitée par le D
 
 \textbf{Présentation générale}
 
-\par Open vSwitch (OVS) est un commutateur logiciel multicouche open source, distribué sous licence Apache 2.0, conçu pour fournir une plateforme de commutation de qualité production dans les environnements de virtualisation. Il fonctionne selon deux composants principaux : \texttt{ovs-vswitchd}, le démon qui implémente le switch avec son module noyau Linux pour un transfert haute performance, et \texttt{ovsdb-server}, une base de données légère de configuration persistante. Parmi ses fonctionnalités natives figurent le modèle VLAN 802.1Q, le bonding avec ou sans LACP, la supervision via NetFlow et sFlow, la configuration QoS, ainsi que le support natif des protocoles de tunneling GRE, VXLAN et Geneve.\\
+\par Open vSwitch (OVS) est un commutateur logiciel multicouche open source, distribué sous licence Apache 2.0, conçu pour fournir une plateforme de commutation de qualité production dans les environnements de virtualisation~\cite{ref8}. Il fonctionne selon deux composants principaux : \texttt{ovs-vswitchd}, le démon qui implémente le switch avec son module noyau Linux pour un transfert haute performance, et \texttt{ovsdb-server}, une base de données légère de configuration persistante. Parmi ses fonctionnalités natives figurent le modèle VLAN 802.1Q, le bonding avec ou sans LACP, la supervision via NetFlow et sFlow, la configuration QoS, ainsi que le support natif des protocoles de tunneling GRE, VXLAN et Geneve.\\
 
 \par Dans notre infrastructure, OVS joue le rôle de commutateur central de chaque n\oe{}ud du cluster, assurant la segmentation de tout le trafic en flux distincts et isolés depuis un bridge virtuel unique par serveur.\\
 
@@ -474,7 +519,7 @@ API REST (port 8006) & Interface de pilotage programmatique, exploitée par le D
 
     \item \textbf{RAM par n\oe{}ud} : 64 GB
 
-    \item \textbf{Disques par n\oe{}ud} : 2 × 300 GB SAS
+    \item \textbf{Disques par n\oe{}ud} : 5 disques SAS (2 × 300 GB + 3 × 600 GB)
 
     \item \textbf{Réseau inter-n\oe{}uds} : Réseau physique Sonatrach (VLAN OVS)
 

@@ -68,8 +68,17 @@
 \definecolor{bleuu}{RGB}{0,90,186}
 \definecolor{bleuuu}{RGB}{0,102,204}
 
+\hypersetup{
+    colorlinks=true,
+    linkcolor=bleu,
+    citecolor=bleu,
+    urlcolor=bleu
+}
+
 %================ TITLES =================
 \usepackage{titlesec}
+\usepackage{tocloft}
+\setlength{\cftfignumwidth}{3.5em}
 
 \titleformat{\chapter}[display]
 {\normalfont\Huge\bfseries\color{bleu}}
@@ -160,8 +169,6 @@
 \listoftables
 \addcontentsline{toc}{chapter}{Liste des tableaux}
 
-\clearpage
-
 %-------------------acronymes------------------------
 \input{./acronymes.tex}
 %-------------------l'en tête -----------------------
@@ -182,5 +189,8 @@
 \input{chapitre/chapitre3.tex}
 \input{chapitre/chapitre4.tex}
 \end{justify}
+
+\clearpage
+\input{Bibliography.tex}
 
 \end{document}

@@ -1057,6 +1057,21 @@ tcpdump -i em1 port 67 or port 68
 
 \par La figure~\ref{fig:fw-security-groups} présente les groupes de sécurité configurés sous \textit{Datacenter → Firewall → Security Groups}. Les groupes définis regroupent les règles nécessaires à chaque service : \texttt{proxmox-management} pour les ports SSH (22), Web UI (8006), VNC (5900--5999) et SPICE (3128) ; \texttt{corosync-cluster} pour les ports UDP 5404--5405 du heartbeat ; \texttt{vxlan-overlay} pour le port UDP 4789 indispensable aux tunnels VxLAN ; et \texttt{ceph-storage} pour les ports MON (3300, 6789) et OSD (6800--7300).\\
 
+\par Deux règles complémentaires ont été ajoutées au niveau datacenter pour
+couvrir des besoins opérationnels spécifiques non couverts par les groupes
+de sécurité précédents. D'une part, une règle ICMP autorisant les requêtes
+\textit{ping} depuis le réseau de management a été intégrée dans le groupe
+\texttt{proxmox-management}. Cette règle est indispensable aux diagnostics
+de connectivité entre nœuds, notamment pour vérifier rapidement la
+joignabilité d'un hôte lors d'une intervention. D'autre part, le port
+\texttt{9283} TCP a été ouvert dans le groupe \texttt{ceph-storage} depuis
+le réseau de management, afin de permettre à Prometheus de collecter les
+métriques exposées par le module MGR Ceph. Ce port est celui sur lequel le
+daemon \texttt{ceph-mgr} expose son endpoint \texttt{/metrics} lorsque le
+module Prometheus est activé, et son ouverture conditionne directement le
+bon fonctionnement du job \texttt{ceph} déclaré dans
+\texttt{prometheus.yml}.\\
+
 \subsubsection{Configuration au niveau nœud}
 
 \par Le deuxième niveau du pare-feu Proxmox s'applique directement à chaque nœud physique du cluster. Les règles définies à ce niveau protègent l'hyperviseur lui-même, indépendamment des VMs qu'il héberge. Elles filtrent les accès aux services système de Proxmox et aux protocoles de cluster, en autorisant uniquement les sources légitimes.\\
@@ -1084,6 +1099,8 @@ IN & ACCEPT & 192.168.10.0/24 & 8006 TCP & Accès Web UI Proxmox \\
 \hline
 IN & ACCEPT & 192.168.10.0/24 & 22 TCP & Accès SSH administration \\
 \hline
+IN & ACCEPT & 192.168.10.0/24 & ICMP & Diagnostic réseau (ping) \\
+\hline
 IN & ACCEPT & 10.10.20.0/24 & 5404--5405 UDP & Heartbeat Corosync \\
 \hline
 IN & ACCEPT & 10.10.30.0/24 & 6800--7300 TCP & Trafic OSD Ceph interne \\
@@ -1091,6 +1108,8 @@ IN & ACCEPT & 10.10.30.0/24 & 6800--7300 TCP & Trafic OSD Ceph interne \\
 IN & ACCEPT & 10.10.30.0/24 & 3300, 6789 TCP & Moniteurs Ceph \\
 \hline
 IN & ACCEPT & 10.10.40.0/24 & 6800--7300 TCP & Trafic OSD Ceph public \\
+\hline
+IN & ACCEPT & 192.168.10.0/24 & 9283 TCP & Export métriques Ceph MGR (Prometheus) \\
 \hline
 IN & ACCEPT & 10.10.50.0/24 & any & Migration live (VxLAN 50) \\
 \hline
@@ -1103,7 +1122,21 @@ IN & DROP & any & any & Règle par défaut \\
 \label{tab:fw-node-rules}
 \end{table}
 
-\par L'accès à l'interface web Proxmox (port 8006) et au service SSH (port 22) est restreint au seul réseau de management \texttt{192.168.10.0/24}, empêchant tout accès non autorisé depuis les réseaux applicatifs. Le trafic Corosync est limité au réseau VxLAN 20 (\texttt{10.10.20.0/24}), tandis que les communications Ceph sont isolées sur leurs VxLAN dédiés (30 et 40). Enfin, le réseau de migration (VxLAN 50) est autorisé sans restriction de port, car Proxmox utilise des ports dynamiques pour le transfert de l'état mémoire des VMs lors des migrations live.\\
+% === MODIFICATION 2 : paragraphe explicatif mis à jour ===
+\par L'accès à l'interface web Proxmox (port 8006) et au service SSH (port 22)
+est restreint au seul réseau de management \texttt{192.168.10.0/24},
+empêchant tout accès non autorisé depuis les réseaux applicatifs. La règle
+ICMP, limitée au même réseau, permet les diagnostics de connectivité sans
+exposer les nœuds à des requêtes provenant des VMs internes. Le port 9283
+est autorisé depuis le réseau de management uniquement, de sorte que seul
+le conteneur \texttt{monitoring} (\texttt{192.168.10.99}) peut interroger
+l'endpoint Prometheus du MGR Ceph ; cette restriction empêche toute
+exfiltration des métriques d'infrastructure depuis les réseaux applicatifs.
+Le trafic Corosync est limité au réseau VxLAN 20 (\texttt{10.10.20.0/24}),
+tandis que les communications Ceph sont isolées sur leurs VxLAN dédiés
+(30 et 40). Enfin, le réseau de migration (VxLAN 50) est autorisé sans
+restriction de port, car Proxmox utilise des ports dynamiques pour le
+transfert de l'état mémoire des VMs lors des migrations live.\\
 
 \par Afin de vérifier que les règles sont correctement appliquées au niveau noyau, la commande suivante a été exécutée directement sur PVE-01 via SSH.\\
 
@@ -1146,15 +1179,20 @@ ssh root@192.168.10.100 "ipset list"
 
 \par Chaque VM dispose de règles de pare-feu adaptées à son rôle. Le principe appliqué est celui du moindre privilège : seuls les ports strictement nécessaires sont ouverts en entrée, et les flux sortants sont autorisés uniquement vers les destinations légitimes.\\
 
+% === MODIFICATION 3 : tableau tab:fw-vm-rules mis à jour ===
 \begin{table}[H]
 \centering
 \begin{tabular}{|l|l|l|l|l|}
 \hline
-\textbf{VM} & \textbf{Direction} & \textbf{Action} & \textbf{Source} & \textbf{Port} \\
+\textbf{VM} & \textbf{Direction} & \textbf{Action} & \textbf{Source} & \textbf{Port / Protocole} \\
 \hline
 HAProxy (201) & IN & ACCEPT & 0.0.0.0/0 & 8080 TCP \\
 \hline
+HAProxy (201) & IN & ACCEPT & management-net & 8404 TCP \\
+\hline
 HAProxy (201) & IN & ACCEPT & management-net & 22 TCP \\
+\hline
+HAProxy (201) & IN & ACCEPT & management-net & ICMP \\
 \hline
 HAProxy (201) & OUT & ACCEPT & -- & 8000 TCP \\
 \hline
@@ -1173,7 +1211,17 @@ PostgreSQL (205) & IN & ACCEPT & management-net & 22 TCP \\
 \label{tab:fw-vm-rules}
 \end{table}
 
-\par Ces règles garantissent que chaque VM ne communique qu'avec les composants dont elle dépend directement. Tout autre flux est implicitement bloqué par la politique par défaut, assurant une isolation stricte entre les composants de l'application.\\
+\par Ces règles garantissent que chaque VM ne communique qu'avec les
+composants dont elle dépend directement. Pour la VM HAProxy, deux règles
+supplémentaires ont été ajoutées : le port \texttt{8404} TCP, restreint au
+réseau de management, expose l'interface web de statistiques native
+d'HAProxy, permettant de consulter en temps réel le nombre de connexions
+actives, les codes de réponse et l'état de chaque backend sans passer par
+Grafana. La règle ICMP, également limitée au réseau de management, autorise
+les diagnostics de connectivité vers le frontal sans l'exposer aux réseaux
+internes. Tout autre flux est implicitement bloqué par la politique par
+défaut, assurant une isolation stricte entre les composants de
+l'application.\\
 
 % ------------------------------------------------------------
 \subsection{Validation de la haute disponibilité réseau et applicative}

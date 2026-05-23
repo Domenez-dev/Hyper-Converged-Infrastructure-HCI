@@ -1,0 +1,64 @@
+﻿[1],"I. N. Sonatrach. (2012, août 13). « Historique et évolution ». Institut-numérique. https://www.institut-numerique.org/2-historique-et-evolution-5028f58cb09d3"
+[2],"Schneider, J., Susnjara, S., et Smalley, I. (2024, 12 février). « Hyperconverged infrastructure explained ». IBM. https://www.ibm.com/think/topics/hyperconverged-infrastructure"
+,
+[4],"Pande, A. (2025, February 23). « Proxmox vs. Harvester: Can the enterprise-grade platform beat the community favorite?» XDA Developers. https://www.xda-developers.com/proxmox-vs-harvester/"
+[5],SUSE. (s. d.). « Harvester HCI documentation ». Harvester HCI. https://harvesterhci.io/
+[6],"Proxmox Server Solutions. (s. d.). « Proxmox virtual environment overview ». Proxmox. 
+https://www.proxmox.com/en/products/proxmox-virtual-environment/overview"
+,
+[8],Open vSwitch Authors. (s. d.). « What is Open vSwitch ? ». Documentation Open vSwitch. https://docs.openvswitch.org/en/latest/intro/what-is-ovs/
+[9],Open vSwitch Authors. (s. d.). « Features ». Open vSwitch. https://www.openvswitch.org/features/
+[10],"Proxmox Server Solutions. (2025, 19 novembre). « Deploy hyper-converged Ceph cluster ». Proxmox VE Wiki. https://pve.proxmox.com/wiki/Deploy_Hyper-Converged_Ceph_Cluster"
+[11],"Proxmox Server Solutions. (2025, 18 décembre). « Full mesh network for Ceph server ». Proxmox VE Wiki. https://pve.proxmox.com/wiki/Full_Mesh_Network_for_Ceph_Server"
+[12],Ceph Authors. (s. d.). « Network configuration reference ». Documentation Ceph. https://docs.ceph.com/en/latest/rados/configuration/network-config-ref/
+[13],Red Hat. (s. d.). « Chapter 1 : The Ceph architecture ». Red Hat Ceph Storage 4 Architecture Guide. https://docs.redhat.com/en/documentation/red_hat_ceph_storage/4/html/architecture_guide/the-ceph-architecture_arch
+[14],"Chandak, A., Jaju, K., Kanfade, A., Lohiya, P., et Joshi, A. (2012, mai). « Dynamic load balancing of virtual machines using QEMU-KVM ». International Journal of Computer Applications, 46(6), 10-14. https://research.ijcaonline.org/volume46/number6/pxc3879263.pdf",article
+[15],"Proxmox Server Solutions. (2025, 6 août). « Proxmox Backup Server ». Proxmox Backup Server Wiki. https://pbs.proxmox.com/wiki/Main_Page",
+[16],"Mr.PlanB. (2025, 9 septembre). « Goodbye DRS, hello PBS : What I wish I knew before ditching VMware for Proxmox ». Medium. https://medium.com/@PlanB./goodbye-drs-hello-pbs-what-i-wish-i-knew-before-ditching-vmware-for-proxmox-26f9dec3e9f5",payant
+[17],"Watts, J. (1995). « A practical approach to dynamic load balancing » [Mémoire de master, California Institute of Technology]. Caltech THESIS. https://thesis.caltech.edu/6924/1/Watts_j_1995.pdf",article
+[18],Broadcom. (s. d.). « VMware DRS overview : Optimizing resource allocation in vSphere cluster ». Broadcom Knowledge Base. https://knowledge.broadcom.com/external/article/391137/vmware-drs-overview-optimizing-resource.html,
+[19],KVM Authors. (s. d.). « Nested guests ». Linux KVM Wiki. https://www.linux-kvm.org/page/Nested_Guests,
+[20],Corosync Project. (s. d.). « The Corosync cluster engine ». Corosync. https://corosync.github.io/corosync/,
+,,
+[22],Broadcom. (s. d.). « vSphere availability ». VMware vSphere 8.0 Documentation. https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-availability.html,
+[23],VMware. (s. d.). « vSphere DRS performance ». VMware Documentation. https://www.vmware.com/docs/vsphere6-drs-perf,Article/Pas Utilisé
+[24],InfluxData. (s. d.). « InfluxDB v2 documentation ». InfluxData. https://docs.influxdata.com/influxdb/v2/,Necessite une màj
+[25],Grafana Labs. (s. d.). « Grafana documentation ». Grafana Labs. https://grafana.com/docs/grafana/latest/,Necessite une màj
+[26],Willy Tarreau. (s. d.). « HAProxy version 2.8 : configuration manuelle ». HAProxy. https://www.haproxy.org/download/2.8/doc/configuration.txt,
+[27],"Weil, S. A., Brandt, S. A., Miller, E. L., & Long, D. D. (2006). Ceph: A scalable, high-performance distributed file system. In Proceedings of the 7th symposium on Operating systems design and implementation (OSDI '06). USENIX Association",
+[28],"Weil, S. A., Brandt, S. A., Miller, E. L., & Maltzahn, C. (2007). CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data. In Proceedings of the 2007 ACM/IEEE conference on Supercomputing (SC '07). ACM.",
+[29],Ceph Documentation. (2024). RADOS Block Device (RBD). https://docs.ceph.com/en/latest/rbd/,
+[30],https://docs.redhat.com/en/documentation/red_hat_ceph_storage/4/html/architecture_guide/the-ceph-architecture_arch,
+[31],https://docs.ceph.com/en/latest/rados/configuration/network-config-ref/,
+[32],"Van der Ster, D., & Wiebalck, A. (2025). Ceph at CERN in the multi-datacentre era. EPJ Web of Conferences, 337, 01331. https://doi.org/10.1051/epjconf/202533701331",
+[33],Proxmox Server Solutions. (2024). Proxmox VE Ceph Server. https://pve.proxmox.com/wiki/Ceph_Server,
+34,https://artheodoc.wordpress.com/wp-content/uploads/2023/03/le_pare-feu_integre_de_proxmox.pdf,pdf sur la configuration du pare-feu 
+35,https://pve.proxmox.com/pve-docs/pve-admin-guide.html#chapter_pve_firewall,pare-feu
+36,https://doc.ataxya.net/books/proxmox-ve/page/securisation-basique-de-son-proxmox,pare-feu
+37,"Live Virtual Machine Migration Based on Improved Pre-copy Approach, Proc. Software Engineering and Service Sciences https://ieeexplore.ieee.org/document/5552416",payant
+38,"Terry C. Wilcox Jr, Dynamic Load Balancing Of Virtual Machines Hosted On Xen, Department of Computer Science, Brigham Young University, M.S. Thesis, April 2009. https://scholarsarchive.byu.edu/cgi/viewcontent.cgi?article=2653&context=etd",
+39,https://www.techwrix.com/containers-vs-vms-choosing-the-right-approach-for-your-proxmox-ve-part-4/,
+40,https://docs.gitlab.com/install/requirements/,
+41,,
+42,,
+43,,
+44,,
+45,,
+46,,
+47,,
+48,,
+49,,
+50,,
+51,,
+52,,
+53,,
+54,,
+55,,
+56,,
+57,,
+58,,
+59,,
+60,,
+61,,
+62,,
+63

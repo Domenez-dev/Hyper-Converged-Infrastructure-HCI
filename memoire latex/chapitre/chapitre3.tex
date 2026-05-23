@@ -54,11 +54,11 @@
 
 \par L'infrastructure physique est constituée de trois serveurs Dell PowerEdge R720. Ces serveurs forment les nœuds du cluster Proxmox : PVE-01, PVE-02 et PVE-03. Proxmox VE est installé directement en mode bare metal sur chacun d'eux, sans couche de virtualisation intermédiaire. Le Dell PowerEdge R720 est un serveur rack 2U de la gamme Enterprise de Dell, équipé de processeurs Intel Xeon E5-2600, adapté aux charges de virtualisation intensive et au stockage distribué.\\
 
-\par Chaque serveur dispose de deux disques SAS répartis selon leurs rôles respectifs, conformément aux recommandations Proxmox concernant la séparation des entrées/sorties système et de stockage :\\
+\par Chaque serveur dispose de cinq disques SAS répartis selon leurs rôles respectifs, conformément aux recommandations Proxmox concernant la séparation des entrées/sorties système et de stockage :\\
 
 \begin{itemize}
     \item \textbf{Disque système (\texttt{sda} --- 1 × 300 GB SAS) :} dédié au système d'exploitation Proxmox VE. Cette séparation garantit que les opérations de réplication Ceph ne perturbent pas les I/O système du nœud.
-    \item \textbf{Disque OSD Ceph (\texttt{sdb} --- 1 × 300 GB SAS) :} affecté à un OSD Ceph, contribuant au stockage distribué du cluster.
+    \item \textbf{Disques OSD Ceph (1 × 300 GB SAS + 3 × 600 GB SAS) :} les quatre disques restants sont affectés comme OSDs Ceph. Chaque nœud contribue ainsi avec quatre OSDs au cluster de stockage distribué, soit douze OSDs au total dans le cluster.
 \end{itemize}
 
 \begin{table}[H]
@@ -74,7 +74,7 @@ RAM & 64 GB & 192 GB & Proxmox + Ceph + VMs \\
 \hline
 Disque OS (\texttt{sda}) & 1 × 300 GB SAS & 3 × 300 GB & Isolation I/O hôte / Ceph \\
 \hline
-Disque OSD (\texttt{sdb}) & 1 × 300 GB SAS & 3 × 300 GB & 1 OSD par nœud \\
+Disques OSD (\texttt{sdb--sde}) & 1 × 300 GB + 3 × 600 GB SAS & 12 OSDs (6,3 TB brut) & Stockage distribué Ceph \\
 \hline
 IP Management & Tableau 3-2 & & Réseau Sonatrach 192.168.10.0/24 \\
 \hline
@@ -147,7 +147,7 @@ Panne CLBS & VM CLBS & Aucun impact applicatif. Le service redémarre automatiqu
 
 \subsubsection{Base Algorithmique : CSLB}
 
-\par Notre mécanisme, nommé \textbf{CLBS (Central Load Balancing Scheduler)}, est une adaptation du CSLB (Central Scheduler Load Balancing). L'algorithme original repose sur cinq phases : évaluation de charge, détermination de rentabilité, calcul du vecteur de transfert, sélection de VM, et exécution de la migration. La charge CPU de chaque nœud est évaluée par rapport à un seuil dynamique (moyenne des charges de tous les nœuds) :
+\par Notre mécanisme, nommé \textbf{CLBS (Central Load Balancing Scheduler)}, est une adaptation du CSLB (Central Scheduler Load Balancing)~\cite{ref38}. L'algorithme original repose sur cinq phases : évaluation de charge, détermination de rentabilité, calcul du vecteur de transfert, sélection de VM, et exécution de la migration~\cite{ref17}. La charge CPU de chaque nœud est évaluée par rapport à un seuil dynamique (moyenne des charges de tous les nœuds) :
 
 \[
 \text{seuil} = \frac{\sum_{i=1}^{n} \alpha_i}{n}, \quad \text{diff} = \left|\text{seuil} - \frac{\alpha_{min} + \alpha_{max}}{2}\right|
@@ -160,7 +160,7 @@ Panne CLBS & VM CLBS & Aucun impact applicatif. Le service redémarre automatiqu
 \par Notre adaptation introduit plusieurs modifications importantes par rapport à l'algorithme original.\\
 
 \begin{itemize}
-    \item \textbf{Implémentation en Go :} retenu pour sa faible empreinte mémoire, sa gestion native de la concurrence via les goroutines, et la simplicité du déploiement sous forme de binaire statique dans un service systemd.
+    \item \textbf{Implémentation en Go :} retenu pour sa faible empreinte mémoire, sa gestion native de la concurrence via les goroutines, et la simplicité du déploiement sous forme de binaire statique dans un service systemd~\cite{ref14}.
 
     \item \textbf{Extension à la RAM :} le CSLB original ne considère que le CPU. Notre implémentation calcule une bande modérée indépendante pour la RAM. Un nœud est surchargé si l'une ou l'autre dépasse sa bande respective.
 
@@ -228,7 +228,7 @@ toutes les 60 secondes :
 \par Sona-Web est une application web déployée sur le cluster pour démontrer les capacités de haute disponibilité et de live migration. Elle est constituée de quatre VMs Debian 12 interconnectées :\\
 
 \begin{itemize}
-    \item \textbf{HAProxy (VM-201, 192.168.10.111:8080) :} point d'entrée unique de l'application. Il distribue les requêtes HTTP entre les deux serveurs applicatifs selon l'algorithme round-robin et surveille leur disponibilité toutes les 200 ms (\texttt{GET /health}), basculant vers l'instance disponible en moins de 200 ms (\texttt{fall 1}) en cas d'indisponibilité.
+    \item \textbf{HAProxy (VM-201, 192.168.10.111:8080) :} point d'entrée unique de l'application. Il distribue les requêtes HTTP entre les deux serveurs applicatifs selon l'algorithme round-robin et surveille leur disponibilité toutes les 200 ms (\texttt{GET /health}), basculant vers l'instance disponible en moins de 200 ms (\texttt{fall 1}) en cas d'indisponibilité~\cite{ref26}.
 
     \item \textbf{Flask app-1 (VM-202, 192.168.10.112:8000) et app-2 (VM-203, 192.168.10.114:8000) :} deux instances identiques de l'application Python Flask. Chaque instance enregistre de manière asynchrone en base de données toutes les requêtes reçues.
 
@@ -270,7 +270,7 @@ GROUP BY instance_id;
 
 \par \textbf{Prometheus} collecte les métriques détaillées du cluster Ceph via l'endpoint exposé par le nœud MGR actif sur le port \texttt{9283}. Les métriques applicatives du service CLBS sont également exposées sur le port \texttt{9101} de la VM dédiée.\\
 
-\par \textbf{Grafana} est connecté à InfluxDB et à Prometheus comme sources de données, permettant de construire des tableaux de bord unifiés couvrant l'ensemble de l'infrastructure : utilisation des ressources par nœud, état du cluster Ceph, historique des migrations CLBS, et alertes de surcharge.\\
+\par \textbf{Grafana} est connecté à InfluxDB et à Prometheus comme sources de données, permettant de construire des tableaux de bord unifiés couvrant l'ensemble de l'infrastructure : utilisation des ressources par nœud, état du cluster Ceph, historique des migrations CLBS, et alertes de surcharge~\cite{ref25}.\\
 
 \subsection{Automatisation}
 
@@ -337,7 +337,7 @@ GROUP BY instance_id;
 \begin{itemize}
     \item \textbf{Monitors (MON) :} un monitor par nœud, soit trois au total. Les monitors maintiennent la carte du cluster (\textit{cluster map}) et assurent le consensus distribué. Trois monitors garantissent un quorum stable (2/3 suffisants).
     \item \textbf{Managers (MGR) :} PVE-02 héberge le MGR actif, PVE-03 le MGR en standby. Le MGR expose les métriques du cluster via un endpoint REST utilisé par Prometheus.
-    \item \textbf{OSDs (Object Storage Daemons) :} un OSD par nœud sur le disque \texttt{sdb} (300 GB SAS), soit trois OSDs contribuant au pool de stockage distribué.
+    \item \textbf{OSDs (Object Storage Daemons) :} quatre OSDs par nœud (disques \texttt{sdb}, \texttt{sdc}, \texttt{sdd} et \texttt{sde}), soit douze OSDs au total dans le cluster~\cite{ref33}.
 \end{itemize}
 
 \subsubsection{Dimensionnement du Pool}
@@ -345,7 +345,7 @@ GROUP BY instance_id;
 \par Avec un facteur de réplication de 3, la capacité utilisable est calculée ainsi :\\
 
 \[
-\text{Capacité utilisable} = \frac{3 \times 300\ \text{GB}}{3} = 300\ \text{GB}
+\text{Capacité utilisable} = \frac{3 \times (300 + 3 \times 600)\ \text{GB}}{3} = \frac{3 \times 2100\ \text{GB}}{3} = 2100\ \text{GB} \approx 2{,}05\ \text{TB}
 \]
 
 \par L'algorithme CRUSH est configuré pour respecter les domaines de défaillance au niveau du nœud physique, garantissant que les trois répliques d'un même bloc ne se retrouvent jamais sur le même serveur. Le tableau suivant présente la répartition prévue :\\
@@ -367,18 +367,26 @@ Flask VM 2 & 32 GB \\
 \hline
 PostgreSQL VM & 100 GB \\
 \hline
-VM Monitoring (InfluxDB + Prometheus + Grafana) & 100 GB \\
+VM Monitoring (InfluxDB + Prometheus + Grafana + Loki) & 150 GB \\
 \hline
 VM CLBS & 32 GB \\
 \hline
-Marge, snapshots et templates & \textasciitilde{}200 GB \\
+LXC GitLab & 200 GB \\
 \hline
-\textbf{Total estimé} & \textbf{\textasciitilde{}532 GB (thin)} \\
+LXC Rundeck & 16 GB \\
+\hline
+LXC OpenLDAP & 16 GB \\
+\hline
+LXC NTP & 8 GB \\
+\hline
+Marge, snapshots et templates & \textasciitilde{}300 GB \\
+\hline
+\textbf{Total estimé} & \textbf{\textasciitilde{}922 GB (thin)} \\
 \hline
 \end{tabular}
 \end{table}
 
-\par Le total estimé dépasse la capacité brute de 300 GB car le thin provisioning de Ceph RBD ne consomme l'espace que proportionnellement aux données réellement écrites.\\
+\par Le total estimé reste inférieur à la capacité utilisable de 2 100 GB car le thin provisioning de Ceph RBD ne consomme l'espace que proportionnellement aux données réellement écrites.\\
 
 \subsubsection{Configuration CRUSH et Domaines de Défaillance}
 
@@ -553,9 +561,324 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \par La figure~\ref{fig:firewall} représente les deux niveaux de filtrage coexistant dans l'infrastructure. OPNsense assure le filtrage inter-réseaux entre Dev, Prod et DMZ selon des politiques d'isolation applicative. Le pare-feu Proxmox, basé sur iptables, opère au niveau de l'hyperviseur pour protéger les réseaux d'infrastructure (Ceph, Corosync) et restreindre l'accès à l'interface de management. Cette défense en profondeur garantit qu'aucune VM applicative ne puisse atteindre les réseaux de contrôle du cluster.\\
 
 % ============================================================
+\section{Services Complémentaires d'Infrastructure}
+% ============================================================
+
+\par Cette section présente les services transverses qui complètent les trois couches de base (calcul, stockage, réseau). Ils sont déployés sous forme de conteneurs LXC sur le cluster Proxmox et couvrent la supervision avancée, la synchronisation temporelle, la gestion des identités, la gestion du code source et l'automatisation opérationnelle.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  vm/.style={draw=bleu!60, fill=bleu!8, rounded corners=3pt,
+             minimum width=5.6cm, minimum height=0.72cm,
+             align=left, font=\footnotesize\bfseries, inner sep=4pt},
+  lxc/.style={draw=gray!55, fill=gray!8, rounded corners=3pt,
+              minimum width=5.6cm, minimum height=0.72cm,
+              align=left, font=\footnotesize\bfseries, inner sep=4pt},
+  osd/.style={draw=orange!55, fill=orange!7, rounded corners=3pt,
+              minimum width=5.6cm, minimum height=0.62cm,
+              align=left, font=\footnotesize, inner sep=4pt},
+  cephsvc/.style={draw=purple!45, fill=purple!5, rounded corners=3pt,
+                  minimum width=5.6cm, minimum height=0.62cm,
+                  align=left, font=\footnotesize, inner sep=4pt},
+  netbar/.style={draw=bleu!60, fill=bleu!12, rounded corners=4pt,
+                 minimum height=0.85cm, align=center, font=\small\bfseries},
+  leglbl/.style={font=\footnotesize, anchor=west}
+]
+
+% ---- PVE-01 ----
+\draw[draw=bleu, very thick, rounded corners=6pt, fill=bleu!3]
+  (0.0, 0.0) rectangle (6.5,-7.8);
+\node[font=\small\bfseries\color{bleu}] at (3.25,-0.38) {PVE-01};
+\node[vm,  anchor=west] at (0.45,-1.20) {VM~HAProxy};
+\node[vm,  anchor=west] at (0.45,-2.05) {VM~OPNsense};
+\node[lxc, anchor=west] at (0.45,-2.90) {LXC~Monitoring};
+\node[lxc, anchor=west] at (0.45,-3.75) {LXC~NTP (Chrony)};
+\node[lxc, anchor=west] at (0.45,-4.60) {LXC~TFTP/PXE};
+\node[osd, anchor=west] at (0.45,-5.50) {OSD $\times$ 4~(sdb--sde)};
+\node[cephsvc, anchor=west] at (0.45,-6.22) {Ceph MON};
+
+% ---- PVE-02 ----
+\draw[draw=bleu, very thick, rounded corners=6pt, fill=bleu!3]
+  (7.0, 0.0) rectangle (13.5,-7.8);
+\node[font=\small\bfseries\color{bleu}] at (10.25,-0.38) {PVE-02};
+\node[vm,  anchor=west] at (7.45,-1.20) {VM~Flask app-1};
+\node[vm,  anchor=west] at (7.45,-2.05) {VM~CLBS};
+\node[lxc, anchor=west] at (7.45,-2.90) {LXC~GitLab CE};
+\node[lxc, anchor=west] at (7.45,-3.75) {LXC~Rundeck};
+\node[lxc, anchor=west] at (7.45,-4.60) {LXC~OpenLDAP};
+\node[osd, anchor=west] at (7.45,-5.50) {OSD $\times$ 4~(sdb--sde)};
+\node[cephsvc, anchor=west] at (7.45,-6.22) {Ceph MON + MGR (actif)};
+
+% ---- PVE-03 ----
+\draw[draw=bleu, very thick, rounded corners=6pt, fill=bleu!3]
+  (14.0, 0.0) rectangle (20.5,-7.8);
+\node[font=\small\bfseries\color{bleu}] at (17.25,-0.38) {PVE-03};
+\node[vm,  anchor=west] at (14.45,-1.20) {VM~Flask app-2};
+\node[vm,  anchor=west] at (14.45,-2.05) {VM~PostgreSQL};
+\node[lxc, anchor=west] at (14.45,-2.90) {LXC~GitLab Runner};
+\node[osd, anchor=west] at (14.45,-3.75) {OSD $\times$ 4~(sdb--sde)};
+\node[cephsvc, anchor=west] at (14.45,-4.47) {Ceph MON + MGR (standby)};
+
+% ---- Network bar ----
+\node[netbar, minimum width=20.5cm] at (10.25,-8.8)
+  {Ceph RBD Pool partagé~~\textbar~~VxLAN overlay (VNI 10--90)~~\textbar~~Réseau Sonatrach 192.168.10.0/24};
+
+% ---- Legend ----
+\node[vm,      minimum width=1.8cm, anchor=west] at ( 0.0,-10.2) {VM};
+\node[leglbl]  at ( 2.3,-10.2) {Machine virtuelle (KVM)};
+\node[lxc,     minimum width=1.8cm, anchor=west] at ( 6.2,-10.2) {LXC};
+\node[leglbl]  at ( 8.5,-10.2) {Conteneur LXC};
+\node[osd,     minimum width=1.8cm, anchor=west] at (12.5,-10.2) {OSD};
+\node[leglbl]  at (14.8,-10.2) {Disque stockage Ceph};
+\node[cephsvc, minimum width=1.8cm, anchor=west] at (17.2,-10.2) {MON/MGR};
+\node[leglbl]  at (19.5,-10.2) {Service Ceph};
+
+\end{tikzpicture}%
+}
+\caption{Diagramme de déploiement : répartition des services sur les trois nœuds physiques}
+\label{fig:uml-deployment}
+\end{figure}
+
+\par La figure~\ref{fig:uml-deployment} présente la répartition des services virtualisés sur les trois nœuds physiques du cluster. PVE-01 concentre les services réseau et de monitoring. PVE-02 héberge les services applicatifs de développement (GitLab, Rundeck, OpenLDAP) et le service CLBS. PVE-03 prend en charge les instances de l'application de démonstration et le GitLab Runner. Chaque nœud contribue avec quatre OSDs au pool Ceph partagé et héberge un Monitor Ceph. Les Managers actif et standby sont respectivement sur PVE-02 et PVE-03.\\
+
+% ============================================================
+\subsection{Système de Notification : Grafana Alertmanager}
+% ============================================================
+
+\par Grafana intègre nativement un système d'alerte permettant de définir des règles de déclenchement directement sur les tableaux de bord existants. Lorsqu'une condition est vérifiée, Grafana génère une alerte et la transmet via un contact point configuré. Dans notre infrastructure, les notifications sont acheminées vers une adresse Gmail via le protocole SMTP~\cite{ref25}.
+
+\par Les alertes couvrent les métriques critiques suivantes :\\
+
+\begin{itemize}
+    \item \textbf{Cluster Ceph :} OSD en état down, pool en état degraded, espace disponible inférieur à 20\,\%.
+    \item \textbf{Nœuds Proxmox :} charge CPU supérieure à 85\,\%, mémoire disponible inférieure à 10\,\%, perte de quorum Corosync.
+    \item \textbf{Service CLBS :} nombre de migrations excessif déclenchant le circuit breaker, impossibilité de contacter l'API Proxmox ou InfluxDB.
+    \item \textbf{Application Sona-Web :} backend HAProxy hors service, taux d'erreurs HTTP 5xx anormal.
+\end{itemize}
+
+\par À terme, Apprise est envisagé comme couche d'abstraction de notification, permettant d'acheminer les alertes vers plusieurs canaux (email, Discord, Slack) sans dépendre d'un serveur SMTP dédié.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw=bleu, fill=bleu!10, rounded corners=4pt,
+              minimum width=3cm, minimum height=1.2cm,
+              align=center, font=\small\bfseries},
+  boxpale/.style={draw=bleu!40, fill=bleu!5, rounded corners=4pt,
+              minimum width=3cm, minimum height=1.1cm,
+              align=center, font=\small, dashed},
+  arrowstyle/.style={->, thick, color=bleu!70},
+  lbl/.style={font=\footnotesize\itshape, color=gray}
+]
+  \node[box] (grafana) at (0,0) {Grafana\\{\normalfont\footnotesize règles d'alerte}};
+  \node[box] (alertmgr) at (4.5,0) {Alertmanager\\{\normalfont\footnotesize routage}};
+  \node[box] (gmail) at (9, 0.9) {Gmail\\{\normalfont\footnotesize SMTP}};
+  \node[boxpale] (apprise) at (9,-0.9) {Apprise\\{\normalfont\footnotesize (perspective)}};
+
+  \draw[arrowstyle] (grafana)   -- node[above, lbl] {alerte} (alertmgr);
+  \draw[arrowstyle] (alertmgr)  -- node[above, lbl, sloped] {notification} (gmail);
+  \draw[arrowstyle, dashed] (alertmgr) -- node[below, lbl, sloped] {futur} (apprise);
+\end{tikzpicture}
+\caption{Pipeline de notification Grafana Alertmanager}
+\label{fig:alertmanager-pipeline}
+\end{figure}
+
+\par La figure~\ref{fig:alertmanager-pipeline} présente le pipeline de notification. Grafana évalue les règles d'alerte définies sur les tableaux de bord et transmet les déclenchements à l'Alertmanager intégré, qui les achemine vers le contact point configuré (Gmail via SMTP). La liaison vers Apprise est prévue en extension pour supporter plusieurs canaux de notification sans serveur SMTP dédié.
+
+% ============================================================
+\subsection{Centralisation des Journaux : Loki, Alloy et Grafana}
+% ============================================================
+
+\par La centralisation des journaux repose sur la pile Loki, Alloy et Grafana. Loki est une solution de stockage de logs qui indexe uniquement les métadonnées (labels) et stocke les messages compressés, ce qui lui confère une empreinte en ressources nettement inférieure à celle d'Elasticsearch. Grafana Alloy (anciennement Grafana Agent) est l'agent de collecte déployé sur chaque nœud et VM ; il transmet les logs vers Loki. Grafana permet ensuite d'interroger et de visualiser ces journaux via le langage LogQL.
+
+\par Alloy est installé sur chaque nœud Proxmox et sur les VMs à superviser. Loki est hébergé dans le conteneur LXC monitoring existant, aux côtés d'InfluxDB et de Prometheus.
+
+\par Les services retenus pour la collecte des journaux sont les suivants :\\
+
+\begin{itemize}
+    \item \textbf{Nœuds Proxmox :} journaux système (\texttt{auth.log}, \texttt{syslog}, \texttt{kern.log}) pour la sécurité et le diagnostic matériel.
+    \item \textbf{Cluster Ceph :} journaux des démons OSD et MON pour le suivi des événements de santé, de récupération et de rebalancing.
+    \item \textbf{OPNsense :} journaux du pare-feu (connexions bloquées, règles déclenchées) et du service DHCP.
+    \item \textbf{HAProxy :} journaux d'accès HTTP et événements de health check.
+    \item \textbf{Service CLBS :} décisions de migration, activations du circuit breaker, erreurs de connexion à l'API Proxmox.
+    \item \textbf{Authentification SSH :} tentatives de connexion et échecs d'authentification sur les nœuds et VMs (sécurité).
+    \item \textbf{GitLab :} événements d'accès au dépôt et déclenchements de pipelines CI/CD.
+    \item \textbf{Rundeck :} exécutions de jobs et résultats des playbooks Ansible.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  src/.style={draw=bleu!50, fill=bleu!6, rounded corners=3pt,
+              minimum width=2.1cm, minimum height=0.85cm,
+              align=center, font=\footnotesize},
+  comp/.style={draw=bleu, fill=bleu!14, rounded corners=4pt,
+               minimum width=4cm, minimum height=1.1cm,
+               align=center, font=\small\bfseries},
+  arrowstyle/.style={->, thick, color=bleu!65},
+  lbl/.style={font=\footnotesize\itshape, color=gray}
+]
+  % Sources
+  \node[src] (pve1) at (-3.5, 4.5) {PVE-01};
+  \node[src] (pve2) at (-1.0, 4.5) {PVE-02};
+  \node[src] (pve3) at ( 1.5, 4.5) {PVE-03};
+  \node[src] (vms)  at ( 4.0, 4.5) {VMs / LXCs};
+  \node[lbl] at (0.25, 5.15) {Sources de journaux};
+
+  % Alloy
+  \node[comp] (alloy) at (0.25, 3.0)
+    {Grafana Alloy\\{\normalfont\footnotesize agents de collecte}};
+
+  % Loki
+  \node[comp] (loki) at (0.25, 1.5)
+    {Loki\\{\normalfont\footnotesize stockage indexé par labels}};
+
+  % Grafana
+  \node[comp] (grafana) at (0.25, 0.0)
+    {Grafana\\{\normalfont\footnotesize visualisation LogQL}};
+
+  % Arrows sources → Alloy
+  \draw[arrowstyle] (pve1) -- (alloy);
+  \draw[arrowstyle] (pve2) -- (alloy);
+  \draw[arrowstyle] (pve3) -- (alloy);
+  \draw[arrowstyle] (vms)  -- (alloy);
+
+  % Arrows between components
+  \draw[arrowstyle] (alloy) -- node[right, lbl] {push logs} (loki);
+  \draw[arrowstyle] (loki)  -- node[right, lbl] {requêtes LogQL} (grafana);
+\end{tikzpicture}
+\caption{Architecture de centralisation des journaux : Alloy, Loki et Grafana}
+\label{fig:loki-architecture}
+\end{figure}
+
+\par La figure~\ref{fig:loki-architecture} présente l'architecture de collecte centralisée des journaux. Les agents Alloy, déployés sur chaque nœud Proxmox et sur les VMs, collectent les journaux et les transmettent vers Loki par push. Loki stocke les messages compressés en indexant uniquement leurs labels. Grafana interroge Loki via LogQL et affiche les journaux dans les mêmes tableaux de bord que les métriques, offrant une vue unifiée de l'infrastructure.
+
+% ============================================================
+\subsection{Synchronisation Temporelle : Serveur NTP}
+% ============================================================
+
+\par La synchronisation temporelle est un prérequis pour tout système distribué. Dans notre infrastructure, Ceph et Corosync dépendent de l'horloge système de chaque nœud : un écart supérieur à quelques secondes peut provoquer des erreurs de quorum Ceph, des incohérences dans les journaux distribués ou des refus d'authentification.
+
+\par Un serveur NTP interne est déployé dans un conteneur LXC sur le cluster. L'implémentation retenue est \textbf{Chrony}, plus réactif que ntpd classique pour les corrections de dérive d'horloge. Le serveur Chrony se synchronise sur des serveurs NTP publics (\texttt{pool.ntp.org}) et constitue la référence temporelle unique pour l'ensemble des nœuds Proxmox et des VMs. Les nœuds sont configurés comme clients NTP pointant exclusivement vers ce serveur interne.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  l1/.style={draw=bleu, fill=bleu!20, rounded corners=4pt,
+             minimum width=5cm, minimum height=1.1cm,
+             align=center, font=\small\bfseries},
+  l2/.style={draw=bleu!70, fill=bleu!10, rounded corners=4pt,
+             minimum width=4.5cm, minimum height=1.0cm,
+             align=center, font=\small\bfseries},
+  l3/.style={draw=bleu!45, fill=bleu!4, rounded corners=3pt,
+             minimum width=2.2cm, minimum height=0.85cm,
+             align=center, font=\footnotesize},
+  arrowstyle/.style={->, thick, color=bleu!60},
+  lbl/.style={font=\footnotesize\itshape, color=gray, anchor=east}
+]
+  % Niveau 1
+  \node[l1] (internet) at (5, 5.5)
+    {pool.ntp.org\\{\normalfont\footnotesize Stratum 1--2 (Internet)}};
+  \node[lbl] at (1.8, 5.5) {Niveau 1};
+
+  % Niveau 2
+  \node[l2] (chrony) at (5, 3.5)
+    {LXC Chrony\\{\normalfont\footnotesize Stratum 3 (référence interne)}};
+  \node[lbl] at (1.8, 3.5) {Niveau 2};
+
+  % Niveau 3
+  \node[l3] (pve1) at (1.2, 1.5) {PVE-01};
+  \node[l3] (pve2) at (3.8, 1.5) {PVE-02};
+  \node[l3] (pve3) at (6.4, 1.5) {PVE-03};
+  \node[l3] (vms)  at (9.0, 1.5) {VMs / LXCs};
+  \node[lbl] at (1.8, 0.7) {Niveau 3};
+
+  % Arrows
+  \draw[arrowstyle] (internet) -- node[right, font=\footnotesize\itshape, color=gray] {NTP} (chrony);
+  \draw[arrowstyle] (chrony) -- (pve1);
+  \draw[arrowstyle] (chrony) -- (pve2);
+  \draw[arrowstyle] (chrony) -- (pve3);
+  \draw[arrowstyle] (chrony) -- (vms);
+\end{tikzpicture}
+\caption{Hiérarchie NTP : synchronisation temporelle de l'infrastructure}
+\label{fig:ntp-hierarchy}
+\end{figure}
+
+\par La figure~\ref{fig:ntp-hierarchy} présente la hiérarchie de synchronisation temporelle. Le serveur Chrony interne (Stratum 3) se synchronise sur les serveurs publics du pool NTP. Tous les nœuds Proxmox et VMs du cluster utilisent ce serveur comme unique source de temps, garantissant la cohérence temporelle requise par Ceph et Corosync.
+
+% ============================================================
+\subsection{Gestion des Identités : OpenLDAP}
+% ============================================================
+
+\par OpenLDAP est retenu comme solution d'annuaire pour centraliser la gestion des identités de l'infrastructure. Bien que non encore déployé à ce stade du projet, OpenLDAP est prévu pour unifier l'authentification des services suivants : interface web Proxmox, Grafana, GitLab et Rundeck. Cette centralisation permet de gérer les accès depuis un point unique et d'appliquer des politiques de contrôle d'accès cohérentes sur l'ensemble des outils.
+
+\par OpenLDAP sera déployé dans un conteneur LXC dédié. L'intégration avec les services se fera via le protocole LDAP standard, supporté nativement par Proxmox, Grafana et GitLab. Un schéma d'annuaire adapté à l'infrastructure sera défini, avec des groupes distincts pour les rôles administrateur, opérateur et lecture seule.
+
+% ============================================================
+\subsection{Gestion du Code Source et CI/CD : GitLab}
+% ============================================================
+
+\par GitLab est déployé sous forme de conteneur LXC Turnkey Linux sur le cluster Proxmox. Le template Turnkey GitLab repose sur Debian 12 et intègre GitLab Community Edition version 17, antérieure à la dernière version disponible (18.x au moment de la rédaction). Une mise à jour vers la dernière version sera réalisée après le déploiement initial, en suivant la procédure officielle de mise à niveau par paliers~\cite{ref40}.
+
+\par Les projets hébergés sur cette instance GitLab sont les suivants :\\
+
+\begin{itemize}
+    \item \textbf{clbs :} code source du service d'équilibrage de charge en Go.
+    \item \textbf{ansible-infra :} ensemble des playbooks Ansible d'automatisation de l'infrastructure.
+\end{itemize}
+
+\par Des pipelines CI/CD GitLab sont configurés pour automatiser les vérifications de qualité de code et les tests unitaires du service CLBS, ainsi que la validation des syntaxes des playbooks Ansible. Les GitLab Runners sont déployés sous forme de conteneurs LXC sur le cluster et enregistrés dans l'instance GitLab.
+
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  stage/.style={draw=bleu, fill=bleu!10, rounded corners=4pt,
+                minimum width=2.6cm, minimum height=1.1cm,
+                align=center, font=\small\bfseries},
+  arrowstyle/.style={->, thick, color=bleu!70}
+]
+  % Runner background (drawn first so stages appear on top)
+  \draw[draw=bleu!40, fill=bleu!3, rounded corners=6pt, dashed, line width=0.8pt]
+    (5.8,-0.85) rectangle (15.95,0.85);
+  \node[font=\footnotesize\itshape, color=bleu!60, anchor=south]
+    at (10.85,0.85) {GitLab Runner (LXC)};
+
+  \node[stage] (dev)    at ( 0.00,0) {Développeur\\{\normalfont\footnotesize commit / push}};
+  \node[stage] (gitlab) at ( 3.60,0) {GitLab\\{\normalfont\footnotesize pipeline déclenché}};
+  \node[stage] (lint)   at ( 7.25,0) {Lint\\{\normalfont\footnotesize go vet / ansible-lint}};
+  \node[stage] (tests)  at (10.85,0) {Tests\\{\normalfont\footnotesize go test}};
+  \node[stage] (build)  at (14.45,0) {Build\\{\normalfont\footnotesize go build}};
+  \node[stage] (deploy) at (18.20,0) {Déploiement\\{\normalfont\footnotesize systemd reload}};
+
+  \draw[arrowstyle] (dev)    -- (gitlab);
+  \draw[arrowstyle] (gitlab) -- (lint);
+  \draw[arrowstyle] (lint)   -- (tests);
+  \draw[arrowstyle] (tests)  -- (build);
+  \draw[arrowstyle] (build)  -- (deploy);
+\end{tikzpicture}%
+}
+\caption{Pipeline CI/CD GitLab pour les projets \texttt{clbs} et \texttt{ansible-infra}}
+\label{fig:gitlab-cicd}
+\end{figure}
+
+\par La figure~\ref{fig:gitlab-cicd} présente le pipeline CI/CD configuré pour les deux projets hébergés sur l'instance GitLab. À chaque push, GitLab déclenche automatiquement le pipeline. Les trois stages (Lint, Tests, Build) s'exécutent sur le GitLab Runner déployé en LXC sur le cluster. Le stage de déploiement met à jour le service \texttt{systemd} correspondant sur la VM cible.
+
+% ============================================================
+\subsection{Automatisation Opérationnelle : Rundeck}
+% ============================================================
+
+\par Rundeck est un outil d'automatisation opérationnelle qui expose les playbooks Ansible via une interface web. Il permet aux administrateurs d'exécuter des jobs prédéfinis sans accès direct à la ligne de commande, d'historiser les exécutions avec leurs journaux complets, et de contrôler les permissions d'exécution par utilisateur ou groupe.
+
+\par Dans notre infrastructure, Rundeck est déployé dans un conteneur LXC et connecté au dépôt \texttt{ansible-infra} hébergé sur GitLab. Les playbooks de provisionnement de VMs, d'intégration de nœuds et de promotion d'environnements sont ainsi accessibles via une interface graphique, sans nécessiter d'accès SSH direct aux nœuds Proxmox.
+
+% ============================================================
 \section{Conclusion}
 % ============================================================
 
-\par Ce chapitre a présenté la conception complète de l'infrastructure Cloud privée hyperconvergée, organisée autour des trois piliers fondamentaux de l'HCI. La partie Calcul couvre les serveurs physiques, le cluster Proxmox avec Corosync et HA, le mécanisme CLBS, l'application Sona-Web, la stack de monitoring et l'automatisation via Ansible et PXE. La partie Stockage détaille le cluster Ceph avec ses composants MON, MGR et OSD, le dimensionnement du pool et la politique CRUSH. La partie Réseau expose l'architecture VxLAN gérée par Open vSwitch, le plan d'adressage complet, le routage centralisé via OPNsense et le plan de pare-feu à deux niveaux.\\
+\par Ce chapitre a présenté la conception complète de l'infrastructure Cloud privée hyperconvergée. La partie Calcul couvre les serveurs physiques (5 disques SAS par nœud), le cluster Proxmox avec Corosync et HA, le mécanisme CLBS, l'application Sona-Web, la stack de monitoring et l'automatisation via Ansible et PXE. La partie Stockage détaille le cluster Ceph avec ses douze OSDs, la capacité utilisable de 2,05 TB et la politique CRUSH. La partie Réseau expose l'architecture VxLAN gérée par Open vSwitch, le plan d'adressage complet, le routage centralisé via OPNsense et le plan de pare-feu à deux niveaux. Enfin, les services complémentaires (Alertmanager, Loki, NTP, OpenLDAP, GitLab, Rundeck) complètent l'infrastructure pour en assurer la supervision, la sécurité et la gestion unifiée.\\
 
 \par L'ensemble de ces choix de conception constitue une base cohérente et documentée pour la phase d'implémentation présentée dans le chapitre suivant.\\
