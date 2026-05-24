@@ -114,13 +114,15 @@
 
     - name: Full-clone template to new VM
       ansible.builtin.shell:
-        cmd: "qm clone {{ vm_template_id }} {{ vm_id }} --name {{ vm_name }} --full 1 --storage {{ ceph_pool }}"
+        cmd: "qm clone {{ vm_template_id }} {{ vm_id }} --name {{ vm_name }} --full 1 --storage {{ ceph_pool }} --target {{ pve_node }}"
       become: true
       register: clone_result
       changed_when: clone_result.rc == 0
-      when: vm_full_clone | bool # Full clone should be explicitly mentioned in the command as `--full 1`
+      when: vm_full_clone | bool
       tags: [clone]
 
+    # Linked clone requires the template to be on the same node as target_node.
+    # Use full clone (vm_full_clone=true) for cross-node provisioning.
     - name: Linked-clone template to new VM
       ansible.builtin.shell:
         cmd: "qm clone {{ vm_template_id }} {{ vm_id }} --name {{ vm_name }}"
