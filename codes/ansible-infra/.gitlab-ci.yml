@@ -1,0 +1,50 @@
+---
+stages:
+  - lint
+  - syntax-check
+
+variables:
+  ANSIBLE_FORCE_COLOR: "1"
+  ANSIBLE_CONFIG: "$CI_PROJECT_DIR/ansible.cfg"
+  # Prevents ansible from trying real SSH during syntax checks
+  ANSIBLE_HOST_KEY_CHECKING: "False"
+
+# ── Lint stage ──────────────────────────────────────────────────────────────
+
+yaml-lint:
+  stage: lint
+  script:
+    - yamllint .
+  rules:
+    - changes:
+        - "**/*.yml"
+        - "**/*.yaml"
+        - ".yamllint.yml"
+
+ansible-lint:
+  stage: lint
+  script:
+    - ansible-lint playbooks/
+  rules:
+    - changes:
+        - "playbooks/**"
+        - "inventory/**"
+        - "ansible.cfg"
+        - ".ansible-lint"
+
+# ── Syntax-check stage ──────────────────────────────────────────────────────
+
+syntax-check:
+  stage: syntax-check
+  script:
+    - echo "=== hardening.yml ===" && ansible-playbook --syntax-check playbooks/hardening.yml
+    - echo "=== bootstrap.yml ===" && ansible-playbook --syntax-check playbooks/bootstrap.yml
+    - echo "=== provision_vm.yml ===" && ansible-playbook --syntax-check playbooks/provision_vm.yml
+    - echo "=== provision_vm_batch.yml ===" && ansible-playbook --syntax-check playbooks/provision_vm_batch.yml
+    - echo "=== pbs.yml ===" && ansible-playbook --syntax-check playbooks/pbs.yml
+  rules:
+    - changes:
+        - "playbooks/**"
+        - "inventory/**"
+        - "secrets.yml"
+        - "ansible.cfg"

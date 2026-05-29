@@ -1,0 +1,21 @@
+---
+profile: basic
+
+# Paths to lint
+lint_paths:
+  - playbooks/
+
+exclude_paths:
+  - .git/
+
+skip_list:
+  # Shell/command modules are intentional for qm/pvesm Proxmox CLI calls
+  - command-instead-of-module
+  - no-changed-when
+  # apt_key and apt_repository deprecated warnings — will migrate when needed
+  - package-latest
+
+warn_list:
+  - yaml[line-length]
+
+use_default_rules: true

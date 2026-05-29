@@ -33,7 +33,9 @@
 #   7. Runs apt update and apt upgrade
 
 - name: Provision VM from debian-Template
-  hosts: "{{ target_node | default('pve-01') }}"
+  # Always runs on the node that owns the template config.
+  # For linked clones: VM lands here. For full clones: VM lands on target_node via --target.
+  hosts: "{{ vm_template_node | default('pve-03') }}"
   gather_facts: false
   vars_files:
     - ../secrets.yml
@@ -47,6 +49,7 @@
     # ---- Template source ----
     vm_template_name: "debian-Template"
     vm_template_id: 111
+    vm_template_node: "pve-03" # node that owns the template config
 
     # ---- Hardware defaults (mirrors the template) ----
     # Override with -e
@@ -156,6 +159,7 @@
       failed_when:
         - cloudinit_attach.rc != 0
         - "'File exists' not in cloudinit_attach.stderr"
+        - "'already exists' not in cloudinit_attach.stderr"
       changed_when: cloudinit_attach.rc == 0
       tags: [network]
 

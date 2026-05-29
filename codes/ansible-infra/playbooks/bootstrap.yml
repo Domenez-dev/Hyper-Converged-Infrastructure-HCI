@@ -1,36 +1,52 @@
 ---
 # bootstrap.yml
 #
-# Usage:
-#   ansible-playbook playbooks/bootstrap.yml -e "bootstrap_password=yourRootPassword"
+# Usage (local dev):
+#   ansible-playbook playbooks/bootstrap.yml \
+#     -e "bootstrap_password=yourRootPassword" \
+#     -e "ssh_public_key_file=~/.ssh/ansible_ed25519.pub" \
+#     --limit "gitlab,clbs"
+#
+# Usage (from Rundeck VM):
+#   ansible-playbook playbooks/bootstrap.yml \
+#     -e "bootstrap_password=yourRootPassword"
 #
 # What it does:
-#   Play 1 — connects as root (password), creates the ansible user, deploys the
-#             SSH public key, configures passwordless sudo, installs python3.
+#   Play 1 — connects as root (password), installs python3 + sudo,
+#             creates the ansible user, deploys SSH key, configures sudoers.
 #   Play 2 — connects as ansible (key), installs and enables chrony.
 #
-# After running this once per VM, the VM is fully managed by Ansible.
-# Add it to managed_vms in inventory/hosts.yml.
+# Always use --limit to target only the VMs you want to bootstrap.
 
 # ------------------------------------------------------------------
 # Play 1: Bootstrap as root
 - name: Bootstrap VM - prepare for Ansible management
   hosts: managed_vms
   gather_facts: false
+  ignore_unreachable: true
 
   vars:
     ansible_user: root
     ansible_password: "{{ bootstrap_password }}"
     ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
-    ssh_public_key: "{{ lookup('file', '/var/lib/rundeck/.ssh/ansible_ed25519.pub') }}"
+    ssh_public_key_file: "~/.ssh/ansible_ed25519.pub"
+    ssh_public_key: "{{ lookup('file', ssh_public_key_file) }}"
 
   tasks:
     - name: Wait for SSH
       ansible.builtin.wait_for_connection:
         timeout: 60
 
-    - name: Install python3 (required by Ansible modules)
-      ansible.builtin.raw: apt-get update -qq && apt-get install -y python3
+    - name: Install python3 (skip apt-get update failure if repos are broken)
+      ansible.builtin.raw: |
+        if ! command -v python3 >/dev/null 2>&1; then
+          apt-get update -qq 2>/dev/null || true
+          apt-get install -y python3
+        fi
+      changed_when: true
+
+    - name: Install sudo
+      ansible.builtin.raw: apt-get install -y sudo
       changed_when: true
 
     - name: Create ansible user
@@ -69,6 +85,7 @@
   hosts: managed_vms
   gather_facts: true
   become: true
+  ignore_unreachable: true
 
   tasks:
     - name: Install chrony
