@@ -3,7 +3,7 @@
 ,
 [4],"Pande, A. (2025, February 23). « Proxmox vs. Harvester: Can the enterprise-grade platform beat the community favorite?» XDA Developers. https://www.xda-developers.com/proxmox-vs-harvester/"
 [5],SUSE. (s. d.). « Harvester HCI documentation ». Harvester HCI. https://harvesterhci.io/
-[6],"Proxmox Server Solutions. (s. d.). « Proxmox virtual environment overview ». Proxmox. 
+[6],"Proxmox Server Solutions. (s. d.). « Proxmox virtual environment overview ». Proxmox.
 https://www.proxmox.com/en/products/proxmox-virtual-environment/overview"
 ,
 [8],Open vSwitch Authors. (s. d.). « What is Open vSwitch ? ». Documentation Open vSwitch. https://docs.openvswitch.org/en/latest/intro/what-is-ovs/
@@ -32,14 +32,14 @@ https://www.proxmox.com/en/products/proxmox-virtual-environment/overview"
 [31],https://docs.ceph.com/en/latest/rados/configuration/network-config-ref/,
 [32],"Van der Ster, D., & Wiebalck, A. (2025). Ceph at CERN in the multi-datacentre era. EPJ Web of Conferences, 337, 01331. https://doi.org/10.1051/epjconf/202533701331",
 [33],Proxmox Server Solutions. (2024). Proxmox VE Ceph Server. https://pve.proxmox.com/wiki/Ceph_Server,
-34,https://artheodoc.wordpress.com/wp-content/uploads/2023/03/le_pare-feu_integre_de_proxmox.pdf,pdf sur la configuration du pare-feu 
+34,https://artheodoc.wordpress.com/wp-content/uploads/2023/03/le_pare-feu_integre_de_proxmox.pdf,pdf sur la configuration du pare-feu
 35,https://pve.proxmox.com/pve-docs/pve-admin-guide.html#chapter_pve_firewall,pare-feu
 36,https://doc.ataxya.net/books/proxmox-ve/page/securisation-basique-de-son-proxmox,pare-feu
 37,"Live Virtual Machine Migration Based on Improved Pre-copy Approach, Proc. Software Engineering and Service Sciences https://ieeexplore.ieee.org/document/5552416",payant
 38,"Terry C. Wilcox Jr, Dynamic Load Balancing Of Virtual Machines Hosted On Xen, Department of Computer Science, Brigham Young University, M.S. Thesis, April 2009. https://scholarsarchive.byu.edu/cgi/viewcontent.cgi?article=2653&context=etd",
 39,https://www.techwrix.com/containers-vs-vms-choosing-the-right-approach-for-your-proxmox-ve-part-4/,
 40,https://docs.gitlab.com/install/requirements/,
-41,,
+41,https://www.researchgate.net/publication/285489396_VMware_distributed_resource_management_Design_implementation_and_lessons_learned,
 42,,
 43,,
 44,,

@@ -227,7 +227,7 @@ scrape_configs:
     \label{fig:prometheus-targets}
 \end{figure}
 
-\par La figure~\ref{fig:prometheus-targets} présente la page \textit{Targets} de l'interface web Prometheus. Chacune des cibles déclarées dans le fichier \texttt{prometheus.yml} — les trois endpoints Ceph MGR et le service CLBS — affiche l'état \texttt{UP}, confirmant que la collecte des métriques est opérationnelle sur l'ensemble du cluster.\\
+\par La figure~\ref{fig:prometheus-targets} présente la page \textit{Targets} de l'interface web Prometheus. Chacune des cibles déclarées dans le fichier \texttt{prometheus.yml} --- les trois endpoints Ceph MGR et le service CLBS --- affiche l'état \texttt{UP}, confirmant que la collecte des métriques est opérationnelle sur l'ensemble du cluster.\\
 
 \subsubsection{Déploiement de Grafana}
 
@@ -704,7 +704,7 @@ ovs-vsctl add-port vmbr1 eno1
 \par Le fichier \texttt{/etc/network/interfaces} du nœud PVE-01 centralise l'ensemble de la configuration réseau. Pour en faciliter la lecture, il est présenté ici en cinq parties logiques correspondant aux différents rôles des interfaces : la base physique, les réseaux d'infrastructure Ceph et Corosync, les réseaux de migration et de sauvegarde, puis les réseaux applicatifs et leurs bridges Linux. La figure~\ref{fig:pve01-overview} ci-dessous offre une vue synthétique de cette organisation en quatre couches avant que chacune ne soit détaillée.\\
 
 % ------------------------------------------------------------------
-% Figure TikZ externalisée — fichier : figures/fig_pve01_overview.tex
+% Figure TikZ externalisée --- fichier : figures/fig_pve01_overview.tex
 % ------------------------------------------------------------------
 \input{image/ch4/fig_pve01_overview}
 
@@ -1033,7 +1033,7 @@ tcpdump -i em1 port 67 or port 68
     \label{fig:fw-datacenter-aliases}
 \end{figure}
 
-\par La figure~\ref{fig:fw-datacenter-aliases} présente la liste des alias configurés dans l'interface Proxmox sous \textit{Datacenter → Firewall → Aliases}. Chaque alias associe un nom symbolique à une adresse IP, simplifiant la lecture et la maintenance des règles de filtrage sans nécessiter de modifier chaque règle individuellement en cas de changement d'adresse.\\
+\par La figure~\ref{fig:fw-datacenter-aliases} présente la liste des alias configurés dans l'interface Proxmox sous \textit{Datacenter -> Firewall -> Aliases}. Chaque alias associe un nom symbolique à une adresse IP, simplifiant la lecture et la maintenance des règles de filtrage sans nécessiter de modifier chaque règle individuellement en cas de changement d'adresse.\\
 
 \par Des IPSets ont également été créés pour regrouper les adresses appartenant à un même domaine de sécurité. Comme le montre la figure~\ref{fig:fw-datacenter-ipsets}, ces groupes permettent d'appliquer une règle à un ensemble de machines en une seule définition.\\
 
@@ -1044,7 +1044,7 @@ tcpdump -i em1 port 67 or port 68
     \label{fig:fw-datacenter-ipsets}
 \end{figure}
 
-\par La figure~\ref{fig:fw-datacenter-ipsets} présente les IPSets définis dans Proxmox sous \textit{Datacenter → Firewall → IPSet}. On y distingue notamment les groupes d'adresses des nœuds de gestion et des instances Flask, utilisés pour filtrer les flux de manière centralisée sans dupliquer les adresses dans chaque règle individuelle.\\
+\par La figure~\ref{fig:fw-datacenter-ipsets} présente les IPSets définis dans Proxmox sous \textit{Datacenter -> Firewall -> IPSet}. On y distingue notamment les groupes d'adresses des nœuds de gestion et des instances Flask, utilisés pour filtrer les flux de manière centralisée sans dupliquer les adresses dans chaque règle individuelle.\\
 
 \par Des groupes de sécurité ont enfin été créés pour encapsuler les règles de ports associées à chaque service d'infrastructure. La figure~\ref{fig:fw-security-groups} illustre ces groupes et leurs règles respectives.\\
 
@@ -1055,7 +1055,7 @@ tcpdump -i em1 port 67 or port 68
     \label{fig:fw-security-groups}
 \end{figure}
 
-\par La figure~\ref{fig:fw-security-groups} présente les groupes de sécurité configurés sous \textit{Datacenter → Firewall → Security Groups}. Les groupes définis regroupent les règles nécessaires à chaque service : \texttt{proxmox-management} pour les ports SSH (22), Web UI (8006), VNC (5900--5999) et SPICE (3128) ; \texttt{corosync-cluster} pour les ports UDP 5404--5405 du heartbeat ; \texttt{vxlan-overlay} pour le port UDP 4789 indispensable aux tunnels VxLAN ; et \texttt{ceph-storage} pour les ports MON (3300, 6789) et OSD (6800--7300).\\
+\par La figure~\ref{fig:fw-security-groups} présente les groupes de sécurité configurés sous \textit{Datacenter -> Firewall -> Security Groups}. Les groupes définis regroupent les règles nécessaires à chaque service : \texttt{proxmox-management} pour les ports SSH (22), Web UI (8006), VNC (5900--5999) et SPICE (3128) ; \texttt{corosync-cluster} pour les ports UDP 5404--5405 du heartbeat ; \texttt{vxlan-overlay} pour le port UDP 4789 indispensable aux tunnels VxLAN ; et \texttt{ceph-storage} pour les ports MON (3300, 6789) et OSD (6800--7300).\\
 
 \par Deux règles complémentaires ont été ajoutées au niveau datacenter pour
 couvrir des besoins opérationnels spécifiques non couverts par les groupes
@@ -1145,7 +1145,7 @@ ssh root@192.168.10.100 \
     "iptables -L PVEFW-HOST-IN -n -v --line-numbers"
 \end{lstlisting}
 
-\par Cette commande liste la chaîne \texttt{PVEFW-HOST-IN}, générée automatiquement par Proxmox pour filtrer le trafic entrant vers l'hyperviseur. Comme le montre la figure~\ref{fig:fw-iptables-host-in}, la sortie confirme que chaque règle définie dans l'interface web est bien traduite en entrée iptables active.\\
+\par Comme le montre la figure~\ref{fig:fw-iptables-host-in}, la sortie confirme que chaque règle définie dans l'interface web est bien traduite en entrée iptables active, comme le valide le Tableau IV.5 ci-dessus.
 
 \begin{figure}[H]
     \centering
@@ -1162,7 +1162,7 @@ ssh root@192.168.10.100 \
 ssh root@192.168.10.100 "ipset list"
 \end{lstlisting}
 
-\par Comme l'illustre la figure~\ref{fig:fw-ipset-list}, la sortie liste l'ensemble des IPSets actifs avec leurs membres, confirmant que les groupes d'adresses sont correctement propagés depuis la configuration Proxmox vers le noyau Linux.\\
+\par La Figure IV.53 confirme déjà que ces IPSets sont correctement définis au niveau datacenter ; leur propagation vers le noyau Linux est assurée automatiquement par Proxmox.
 
 \begin{figure}[H]
     \centering
@@ -1232,9 +1232,281 @@ l'application.\\
 \par Cette séquence a montré que le cluster restait opérationnel malgré la défaillance, et que les mécanismes de haute disponibilité répondaient correctement à ce type d'événement. La chronologie observée était la suivante : détection de la défaillance par Corosync, déclenchement du basculement HA, redémarrage des VMs protégées sur les nœuds survivants, puis resynchronisation Ceph après le retour du nœud défaillant.\\
 
 % ============================================================
+\section{Partie IV -- Services Complémentaires d'Infrastructure}
+% ============================================================
+
+\par Cette partie présente le déploiement des services complémentaires qui complètent l'infrastructure hyperconvergée : la synchronisation temporelle, la centralisation des journaux, le système de notification, la gestion du code source et la plateforme d'automatisation opérationnelle.
+
+% ------------------------------------------------------------
+\subsection{Synchronisation Temporelle : NTP/Chrony}
+% ------------------------------------------------------------
+
+\par La cohérence temporelle est une exigence fondamentale dans un cluster distribué. Une dérive de quelques secondes entre les nœuds peut perturber le quorum Corosync, fausser les journaux de corrélation et provoquer des incohérences dans les métriques Prometheus. Un conteneur LXC dédié héberge un serveur Chrony configuré en Stratum 3, qui fait référence pour l'ensemble des nœuds Proxmox et des VMs de l'infrastructure.
+
+\subsubsection{Installation et configuration du serveur Chrony}
+
+\par Le service Chrony a été installé dans un conteneur LXC léger sur le cluster. La configuration du fichier \texttt{/etc/chrony/chrony.conf} définit les serveurs de référence amont et la plage réseau des clients autorisés.\\
+
+\begin{lstlisting}[style=sonacode,language={},caption={Configuration du serveur Chrony},label={lst:chrony-server-conf}]
+# Serveurs NTP de référence amont
+pool pool.ntp.org iburst
+
+# Autoriser les clients du réseau de management
+allow 192.168.10.0/24
+
+# Fichier de dérive
+driftfile /var/lib/chrony/drift
+
+# Activer le mode serveur local si perte de synchronisation amont
+local stratum 3
+\end{lstlisting}
+
+\par La directive \texttt{allow 192.168.10.0/24} ouvre le service aux requêtes NTP provenant de tous les nœuds et VMs du réseau de management. La directive \texttt{local stratum 3} garantit que le serveur continue à distribuer une heure de référence cohérente, même en cas de perte temporaire de connectivité vers les serveurs \texttt{pool.ntp.org}.\\
+
+\par Une fois la configuration appliquée, le service est activé et démarré.\\
+
+\begin{lstlisting}[style=sonacode,language=bash,caption={Activation du service Chrony},label={lst:chrony-enable}]
+systemctl enable chrony
+systemctl start chrony
+\end{lstlisting}
+
+\par Sur chaque nœud Proxmox et sur chaque VM, le fichier \texttt{chrony.conf} client pointe vers l'adresse IP du LXC Chrony interne en remplacement des serveurs publics, centralisant ainsi toutes les synchronisations sur la référence locale.
+
+\subsubsection{Validation de la synchronisation}
+
+\par La vérification du bon fonctionnement du serveur Chrony s'effectue depuis le LXC via deux commandes complémentaires. La première confirme la connexion aux sources NTP amont, la seconde liste les clients actifs.\\
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Sources NTP actives sur le serveur Chrony interne
+  [CAPTURE : se connecter en SSH au LXC Chrony, exécuter la commande
+  \texttt{chronyc sources -v}, capturer la sortie montrant les serveurs
+  pool.ntp.org avec l'étoile (*) indiquant la source active]}
+  \label{fig:chrony-sources}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Clients NTP synchronisés sur le serveur Chrony interne
+  [CAPTURE : sur le même LXC Chrony, exécuter \texttt{chronyc -n clients},
+  capturer la sortie listant les adresses IP des nœuds Proxmox
+  (192.168.10.100, .213, .84) et des VMs avec leur dernier accès NTP]}
+  \label{fig:chrony-clients}
+\end{figure}
+
+% ------------------------------------------------------------
+\subsection{Centralisation des Journaux : Loki et Alloy}
+% ------------------------------------------------------------
+
+\par La collecte et la centralisation des journaux système constituent un élément essentiel pour le diagnostic des incidents et l'audit de l'infrastructure. Loki, déployé dans le conteneur LXC \texttt{monitoring} existant, joue le rôle d'agrégateur de journaux. L'agent Grafana Alloy, installé sur chaque nœud Proxmox, collecte les fichiers de log locaux et les transmet à Loki pour indexation.
+
+\subsubsection{Déploiement de Loki}
+
+\par Loki a été installé dans le conteneur LXC \texttt{monitoring} (\texttt{192.168.10.99}), aux côtés de Prometheus et Grafana déjà en place. Cette co-localisation simplifie la configuration de Grafana, qui dispose ainsi de Loki comme source de données supplémentaire sans configuration réseau additionnelle.\\
+
+\begin{lstlisting}[style=sonacode,language=bash,caption={Installation de Loki},label={lst:loki-install}]
+apt install loki
+systemctl enable loki
+systemctl start loki
+\end{lstlisting}
+
+\par Loki écoute par défaut sur le port \texttt{3100}. La source de données Loki a ensuite été ajoutée dans Grafana en pointant vers \texttt{http://localhost:3100}.
+
+\subsubsection{Déploiement de l'agent Grafana Alloy}
+
+\par L'agent Grafana Alloy a été installé sur chacun des trois nœuds Proxmox. Sa configuration définit les chemins de fichiers de journaux à surveiller et l'adresse du serveur Loki cible.\\
+
+\begin{lstlisting}[style=sonacode,language={},caption={Configuration de l'agent Alloy pour la collecte des journaux},label={lst:alloy-config}]
+local.file_match "varlogs" {
+  path_targets = [{"__path__" = "/var/log/**/*.log"}]
+}
+
+loki.source.file "varlogs" {
+  targets    = local.file_match.varlogs.targets
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://192.168.10.99:3100/loki/api/v1/push"
+  }
+}
+\end{lstlisting}
+
+\par Cette configuration collecte tous les fichiers \texttt{*.log} sous \texttt{/var/log/} de chaque nœud et les transmet en flux continu vers Loki. Les labels \texttt{host} et \texttt{filename} sont automatiquement ajoutés à chaque entrée, permettant de filtrer les journaux par nœud dans Grafana.
+
+\subsubsection{Validation}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Statut de l'agent Grafana Alloy sur PVE-01
+  [CAPTURE : SSH sur PVE-01, exécuter \texttt{systemctl status alloy},
+  capturer la sortie montrant le service en état \texttt{active (running)}]}
+  \label{fig:alloy-status}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Journaux de l'infrastructure visualisés dans Grafana via LogQL
+  [CAPTURE : ouvrir Grafana dans le navigateur, aller dans Explore,
+  sélectionner la datasource Loki, saisir la requête \texttt{\{job="varlogs"\}},
+  capturer la page affichant des lignes de logs réels avec leurs labels
+  (host, job, filename visibles dans le panneau)]}
+  \label{fig:loki-grafana-explore}
+\end{figure}
+
+% ------------------------------------------------------------
+\subsection{Système de Notification : Alertmanager}
+% ------------------------------------------------------------
+
+\par La supervision active de l'infrastructure ne se limite pas à la visualisation des métriques : elle inclut la notification automatique des équipes en cas d'anomalie détectée. Le module Grafana Alerting a été configuré pour évaluer des règles d'alerte sur les métriques collectées et transmettre les notifications via un contact point Gmail utilisant le protocole SMTP.
+
+\subsubsection{Configuration des règles d'alerte}
+
+\par Les règles d'alerte sont définies directement dans Grafana sous \textit{Alerting -> Alert Rules}. Chaque règle spécifie une expression PromQL ou une requête InfluxDB, un seuil de déclenchement, une durée de maintien avant passage en état \textit{Firing}, et le groupe de contact destinataire.\\
+
+\par Parmi les règles configurées figurent notamment la détection d'une charge CPU élevée sur les nœuds Proxmox, la surveillance de l'état de santé du cluster Ceph, et la détection d'un OSD passé hors ligne. Ces règles couvrent les scenarios de défaillance les plus critiques de l'infrastructure.
+
+\subsubsection{Configuration du contact point Gmail}
+
+\par Le contact point Gmail a été créé dans Grafana sous \textit{Alerting -> Contact Points}. La configuration utilise le serveur SMTP de Google avec authentification par mot de passe d'application, garantissant la compatibilité avec les comptes protégés par la double authentification.\\
+
+\begin{lstlisting}[style=sonacode,language={},caption={Paramètres SMTP du contact point Gmail},label={lst:grafana-smtp}]
+# Dans grafana.ini ou via l'interface web :
+[smtp]
+host     = smtp.gmail.com:587
+user     = adresse@gmail.com
+password = mot_de_passe_application
+from_address = adresse@gmail.com
+starttls_policy = MandatoryStartTLS
+\end{lstlisting}
+
+\par L'activation de \texttt{MandatoryStartTLS} garantit que les identifiants SMTP ne transitent jamais en clair, conformément aux exigences de sécurité de l'infrastructure.
+
+\subsubsection{Validation}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Règles d'alerte configurées dans Grafana Alerting
+  [CAPTURE : ouvrir Grafana, aller dans Alerting -> Alert Rules,
+  capturer la liste des règles définies (ex : CPU nœud, santé Ceph)
+  avec leur état affiché (Normal / Pending / Firing)]}
+  \label{fig:grafana-alert-rules}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Contact point Gmail configuré dans Grafana pour les notifications
+  [CAPTURE : dans Grafana -> Alerting -> Contact Points, capturer la
+  configuration du contact point Gmail avec l'adresse email visible
+  (masquer le mot de passe SMTP si affiché)]}
+  \label{fig:grafana-contact-point}
+\end{figure}
+
+% ------------------------------------------------------------
+\subsection{Gestion du Code Source et CI/CD : GitLab}
+% ------------------------------------------------------------
+
+\par La traçabilité du code et l'automatisation des tests constituent des pratiques essentielles dans un environnement d'infrastructure moderne. Un LXC Turnkey GitLab CE a été déployé sur le cluster pour centraliser les dépôts de code de l'infrastructure et y associer des pipelines d'intégration continue.
+
+\subsubsection{Déploiement du LXC Turnkey GitLab CE}
+
+\par Le template Turnkey GitLab CE disponible dans le catalogue Proxmox a été utilisé pour simplifier le déploiement initial. Ce template embarque GitLab CE préconfiguré avec Nginx, PostgreSQL et les workers Sidekiq, réduisant le temps d'installation à quelques minutes.\\
+
+\par Le conteneur LXC a été créé avec les ressources suivantes : 4 vCPUs, 8 Go de RAM et 50 Go de stockage sur le pool Ceph, permettant d'héberger confortablement les dépôts et les artefacts de pipeline de l'infrastructure.\\
+
+\subsubsection{Création des dépôts}
+
+\par Deux dépôts ont été créés dans l'instance GitLab pour couvrir les besoins de versionnement de l'infrastructure. Le dépôt \texttt{clbs} contient le code source du service d'équilibrage de charge développé en Go, y compris les fichiers de configuration, les tests unitaires et le fichier de pipeline CI/CD. Le dépôt \texttt{ansible-infra} regroupe l'ensemble des playbooks Ansible, l'inventaire et les fichiers de secrets chiffrés avec Ansible Vault.\\
+
+\subsubsection{Configuration des pipelines CI/CD}
+
+\par Un fichier \texttt{.gitlab-ci.yml} a été défini dans chaque dépôt pour automatiser les vérifications à chaque push. Pour le projet \texttt{clbs}, le pipeline comprend les stages \textit{Lint} (vérification syntaxique du code Go avec \texttt{golint}), \textit{Tests} (exécution des tests unitaires avec \texttt{go test}) et \textit{Build} (compilation du binaire). Pour le projet \texttt{ansible-infra}, le pipeline effectue une vérification syntaxique des playbooks avec \texttt{ansible-lint}.
+
+\subsubsection{Validation}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Page Projects de l'instance GitLab avec les dépôts clbs et ansible-infra
+  [CAPTURE : ouvrir l'interface web GitLab dans le navigateur,
+  aller sur la page principale des projets, capturer la liste
+  affichant les deux projets avec leur dernière activité (dernier commit)]}
+  \label{fig:gitlab-projects}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Pipeline CI/CD réussi pour le projet clbs dans GitLab
+  [CAPTURE : dans GitLab -> projet clbs -> CI/CD -> Pipelines,
+  capturer un pipeline récent avec ses stages (Lint, Tests, Build)
+  tous affichés en vert (passed), montrant le numéro de pipeline
+  et le commit associé]}
+  \label{fig:gitlab-pipeline}
+\end{figure}
+
+% ------------------------------------------------------------
+\subsection{Automatisation Opérationnelle : Rundeck}
+% ------------------------------------------------------------
+
+\par La délégation de tâches opérationnelles récurrentes à une interface centralisée permet de réduire les erreurs humaines et de tracer l'ensemble des interventions sur l'infrastructure. Rundeck, déployé dans un conteneur LXC dédié, offre une interface web permettant de déclencher des playbooks Ansible sans accès SSH direct aux nœuds.
+
+\subsubsection{Déploiement du LXC Rundeck}
+
+\par Le conteneur LXC Rundeck a été créé sur le cluster Proxmox avec 2 vCPUs et 4 Go de RAM. Rundeck a été installé depuis les dépôts officiels et configuré pour écouter sur le port \texttt{4440}.\\
+
+\begin{lstlisting}[style=sonacode,language=bash,caption={Installation de Rundeck},label={lst:rundeck-install}]
+apt install -y rundeck
+systemctl enable rundeckd
+systemctl start rundeckd
+\end{lstlisting}
+
+\subsubsection{Connexion au dépôt ansible-infra}
+
+\par Dans l'interface Rundeck, un projet a été créé et configuré pour utiliser le dépôt \texttt{ansible-infra} hébergé sur l'instance GitLab locale comme source des playbooks. Cette intégration garantit que Rundeck exécute toujours la version versionnée et validée par le pipeline CI/CD des playbooks, plutôt que des copies locales non contrôlées.\\
+
+\par Les jobs Rundeck ont été définis pour chaque opération récurrente : provisionnement d'une nouvelle VM, intégration d'un nœud au cluster, déploiement d'une mise à jour de configuration. Chaque job référence le playbook Ansible correspondant dans le dépôt GitLab et expose les variables nécessaires sous forme de paramètres saisissables dans l'interface web.
+
+\subsubsection{Validation}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Interface Rundeck affichant les jobs de provisionnement Ansible
+  [CAPTURE : ouvrir l'interface web Rundeck (port 4440),
+  aller dans Jobs, capturer la liste des jobs configurés
+  (provisionnement VM, intégration nœud, etc.) avec leurs noms visibles]}
+  \label{fig:rundeck-jobs}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Résultat d'exécution d'un job Rundeck avec le log Ansible
+  [CAPTURE : dans Rundeck -> Activity, ouvrir le détail d'une exécution
+  récente, capturer la page affichant le statut \texttt{Succeeded} et les
+  tâches Ansible déroulées avec leurs états (ok, changed, skipped)]}
+  \label{fig:rundeck-execution}
+\end{figure}
+
+\par Le service OpenLDAP, prévu en section III.7.4 pour centraliser
+l'authentification de Proxmox, Grafana, GitLab et Rundeck, n'a pas été
+déployé dans le cadre de ce projet. Son intégration constitue une
+perspective d'évolution à court terme de l'infrastructure.
+
+% ============================================================
 \section{Conclusion}
 % ============================================================
 
 \par Ce chapitre a présenté l'implémentation réelle de l'infrastructure hyperconvergée open source mise en place dans le cadre du projet. La couche calcul a permis de déployer Proxmox, le cluster, le monitoring, l'automatisation et les services applicatifs. La couche stockage a été assurée par Ceph avec réplication et tolérance aux pannes. Enfin, la couche réseau a été construite avec Open vSwitch, les tunnels VxLAN, OPNsense et les services d'adressage associés.\\
+
+\par Les services complémentaires déployés dans la Partie IV --- synchronisation temporelle, centralisation des journaux, notifications, versionnement du code et automatisation opérationnelle --- complètent l'infrastructure en lui apportant les briques transverses indispensables à son exploitation en conditions réelles.\\
 
 \par Les différents tests réalisés ont confirmé la cohérence de l'architecture proposée et sa capacité à répondre aux objectifs du projet dans un environnement de laboratoire structuré. Le chapitre suivant présentera l'évaluation des performances obtenues ainsi qu'une analyse des résultats expérimentaux.\\
