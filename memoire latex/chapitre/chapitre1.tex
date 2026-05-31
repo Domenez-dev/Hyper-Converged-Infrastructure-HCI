@@ -8,13 +8,28 @@
 
 \section{Présentation de Sonatrach}
 
-\par Sonatrach est une entreprise publique algérienne créée le 31 décembre 1963, peu après l'indépendance de l'Algérie. Elle a été fondée dans le but de gérer, développer et exploiter les ressources hydrocarbures du pays, qui représentent une richesse stratégique pour l'économie nationale. À ses débuts, Sonatrach se consacrait essentiellement au transport et à la commercialisation du pétrole brut extrait en Algérie~\cite{ref1}.\\
+\par Sonatrach est une entreprise publique algérienne créée le 31 décembre 1963, peu après l’indépendance de l’Algérie. Elle a été fondée dans le but de gérer, développer et exploiter les ressources hydrocarbures du pays, qui représentent une richesse stratégique pour l’économie nationale. À ses débuts, Sonatrach se consacrait essentiellement au transport et à la commercialisation du pétrole brut extrait en Algérie. \\
 
-\par Avec le temps, Sonatrach a évolué pour devenir la plus grande entreprise en Afrique dans le domaine des hydrocarbures. Elle intervient aujourd'hui dans l'ensemble de la chaîne de valeur pétrolière et gazière : exploration, production, transport, transformation et commercialisation. L'entreprise est également active dans la pétrochimie et les énergies renouvelables.\\
+\par Avec le temps, Sonatrach a évolué pour devenir la plus grande entreprise en Afrique dans le domaine des hydrocarbures. Elle intervient aujourd’hui dans l’ensemble de la chaîne de valeur pétrolière et gazière : exploration, production, transport, transformation et commercialisation. L’entreprise est également active dans la pétrochimie et les énergies renouvelables. \\
 
-\par Sonatrach entretient de nombreuses collaborations internationales avec des compagnies pétrolières et gazières étrangères, impliquées dans de grands projets de partenariat via des joint-ventures et accords technologiques avec des entreprises européennes, américaines, asiatiques et africaines. Ces coopérations ont permis un transfert de savoir-faire et de technologie vers l'Algérie.\\
+\par Dans les années 1970, suite à la nationalisation des hydrocarbures, Sonatrach a renforcé son rôle stratégique en prenant le contrôle total des ressources naturelles du pays. Cela a permis à l’Algérie de mieux contrôler ses revenus énergétiques et d’investir davantage dans son développement économique et social. \\
 
-\par Le projet est réalisé au sein du Centre d'innovation de Sonatrach. Cette direction joue un rôle stratégique dans l'innovation technologique et l'optimisation des processus internes. Elle dispose d'infrastructures informatiques avancées, notamment des solutions de virtualisation et de stockage haute capacité, destinées à soutenir les travaux de simulation, de test et de pré-production.\\
+\par Sonatrach entretient de nombreuses collaborations internationales avec des compagnies pétrolières et gazières étrangères. Elle est impliquée dans de grands projets de partenariat à travers des joint-ventures et accords technologiques, notamment avec des entreprises européennes, américaines, asiatiques et africaines. Ces coopérations ont permis un transfert de savoir-faire et de technologie vers l’Algérie. \\
+
+\par Sonatrach joue également un rôle clé dans la stratégie énergétique de l’Algérie en matière de sécurité énergétique, de transition vers une économie plus durable, et de développement de nouveaux secteurs tels que le gaz naturel liquéfié (GNL), le gaz de schiste et les énergies renouvelables. \\
+
+\par Aujourd’hui, Sonatrach est un acteur majeur sur la scène énergétique mondiale, avec une présence dans plusieurs pays et une forte contribution aux exportations algériennes. Elle continue d’innover et de s’adapter aux enjeux géopolitiques et environnementaux afin de maintenir sa place dans un marché énergétique en constante évolution~\cite{ref1}.\\
+
+% Image à ajouter plus tard
+% \begin{figure}[h]
+%     \begin{center}
+%       \includegraphics[width=1\textwidth]{image-sonatrach.jpg}
+%       \caption{Légende de l'image}
+%       \label{fig:sonatrach}
+%%    \end{center}
+% \end{figure}
+
+\par Le projet est réalisé au sein du Data Center de la Direction Centrale Recherche et Développement (DC R&D) de Sonatrach. Cette direction joue un rôle stratégique dans l’innovation technologique et l’optimisation des processus liés à l’exploration et la production. Elle dispose d’infrastructures informatiques avancées, notamment des clusters de calcul et des solutions de stockage haute capacité, destinées à soutenir les travaux de simulation et de traitement sismique. C’est dans ce cadre que s’inscrit notre projet, avec pour objectif de renforcer les capacités de calcul et d’améliorer l’efficacité du traitement sismique grâce à une architecture HPC performante.\\
 
 \section{Infrastructure Existante et Contexte Technologique}
 
@@ -28,9 +43,9 @@
 
     \item \textbf{Coûts de licences croissants :} les frais de licence Nutanix suivent une trajectoire haussière, représentant une charge financière significative et récurrente pour l'entreprise, indépendamment du niveau d'utilisation réel de la plateforme.
 
-    \item \textbf{Dépendance technologique forte :} le recours exclusif à un éditeur propriétaire unique expose Sonatrach à un risque de vendor lock-in, limitant sa capacité à négocier les conditions contractuelles et à adopter librement de nouvelles technologies.
+    \item \textbf{Dépendance technologique forte :} le recours exclusif à un éditeur propriétaire unique expose Sonatrach à un risque de `vendor lock-in`, limitant sa capacité à négocier les conditions contractuelles et à adopter librement de nouvelles technologies.
 
-    \item \textbf{Manque de souveraineté technique :} les évolutions de la plateforme, les mises à jour et les décisions d'architecture sont entièrement soumises à la roadmap de l'éditeur, sans possibilité d'adaptation aux besoins spécifiques de l'entreprise.
+    \item \textbf{Manque de souveraineté technique :} les évolutions de la plateforme, les mises à jour et les décisions d'architecture sont entièrement soumises à l'orientation technique de l'éditeur, sans possibilité d'adaptation aux besoins spécifiques de l'entreprise.
 
     \item \textbf{Inadaptation aux petits déploiements :} pour les environnements de test, de développement et de pré-production, le déploiement de Nutanix sur de petits clusters de 3 à 4 n\oe{}uds est disproportionné par rapport aux besoins réels, tant en complexité qu'en coût.
 
@@ -50,7 +65,7 @@
 
     \item \textbf{Gestion unifiée des ressources :} calcul, stockage et réseau doivent être administrés depuis une interface centralisée unique, réduisant la complexité opérationnelle et les besoins en compétences spécialisées multiples.
 
-    \item \textbf{Équilibrage dynamique de charge :} à l'image du mécanisme DRS de VMware, la plateforme doit être capable de redistribuer automatiquement les charges de travail entre les n\oe{}uds en fonction de l'utilisation des ressources, optimisant ainsi l'efficacité globale du cluster.
+    \item \textbf{Équilibrage dynamique de charge :} la plateforme doit être capable de redistribuer automatiquement les charges de travail entre les n\oe{}uds en fonction de l'utilisation des ressources, optimisant ainsi l'efficacité globale du cluster.
 
     \item \textbf{Souveraineté et indépendance technologique :} en s'appuyant exclusivement sur des technologies open source, l'entreprise reprend le contrôle total de son infrastructure, avec la liberté d'auditer, de modifier et d'adapter la solution à ses besoins propres.
 
@@ -90,13 +105,13 @@
 
     \item \textbf{Déployer un cluster de trois n\oe{}uds physiques à haute disponibilité} sur les serveurs Dell PowerEdge R720 fournis par Sonatrach, avec gestion centralisée, administration simplifiée et support de la migration à chaud.
 
-    \item \textbf{Configurer Proxmox VE sur chaque serveur physique} en exploitant pleinement les ressources matérielles disponibles (256 GB RAM, 5 disques SAS par n\oe{}ud).
+    \item \textbf{Configurer Proxmox VE sur chaque serveur physique} en exploitant pleinement les ressources matérielles disponibles (256 Go de RAM, 5 disques SAS par n\oe{}ud).
 
-    \item \textbf{Concevoir et mettre en place un système de stockage distribué Ceph} en utilisant les disques SAS 600 GB de chaque n\oe{}ud comme OSD, et les disques 300 GB pour le système d'exploitation et les métadonnées Ceph (WAL/DB).
+    \item \textbf{Concevoir et mettre en place un système de stockage distribué Ceph} en s'appuyant sur les disques SAS 600 Go de chaque n\oe{}ud pour le stockage distribué, et les disques 300 Go pour le système d'exploitation.
 
     \item \textbf{Implémenter une segmentation réseau avancée} via Open vSwitch, en configurant une architecture multi-VLAN séparant les flux de gestion, de réplication, de migration et de production sur l'infrastructure physique réelle.
 
-    \item \textbf{Développer un mécanisme d'équilibrage dynamique de la charge (DRS)}, capable de redistribuer automatiquement les machines virtuelles selon les métriques de performance en temps réel.
+    \item \textbf{Développer un mécanisme d'équilibrage dynamique de la charge}, capable de redistribuer automatiquement les machines virtuelles selon les métriques de performance en temps réel.
 
     \item \textbf{Valider la solution} à travers un scénario de haute disponibilité démontrant la tolérance aux pannes sans perte de données ni interruption de service.
 
@@ -106,19 +121,19 @@
 
 \section{Périmètre et Limitations du Projet}
 
-\par Ce projet vise le déploiement d'un cluster hyperconvergé open source destiné aux environnements de test, de développement et de pré-production. L'infrastructure est déployée sur un cluster physique de trois serveurs Dell PowerEdge R720 mis à disposition par Sonatrach, offrant les ressources matérielles nécessaires à l'exécution de l'hyperviseur Proxmox VE en \textit{bare-metal}, du stockage distribué Ceph et des VMs de démonstration.\\
+\par Ce projet vise le déploiement d'un cluster hyperconvergé open source destiné aux environnements de test, de développement et de pré-production. L'infrastructure est déployée sur un cluster physique de trois serveurs Dell PowerEdge R720 mis à disposition par Sonatrach, offrant les ressources matérielles nécessaires à l'exécution de l'hyperviseur Proxmox VE directement sur le matériel physique, du stockage distribué Ceph et des machines virtuelles de démonstration.\\
 
 \par Le passage à une architecture physique distribuée lève la contrainte majeure du point de défaillance unique (SPOF) matériel. Néanmoins, le périmètre de ce projet se limite volontairement à un environnement de laboratoire structuré, ce qui implique les contraintes suivantes :\\
 
 \begin{itemize}
 
-    \item \textbf{Échelle du cluster (Scale) :} Bien que le cluster repose sur trois serveurs physiques de classe entreprise offrant une excellente capacité de calcul (256 Go de RAM par n\oe{}ud), il représente la configuration minimale recommandée (3 n\oe{}uds) pour maintenir un quorum stable avec Corosync et Ceph.
+    \item \textbf{Capacité de stockage :} La taille du pool de stockage distribué est techniquement contrainte par les disques physiques alloués au stockage (3 disques de 600 Go par serveur). Avec une réplication de facteur 3, le cluster offre environ 1,8 To d'espace utilisable. Cela rend cette infrastructure parfaitement adaptée aux charges de développement et de validation, mais insuffisante pour des charges de données à très grande échelle.
 
-    \item \textbf{Capacité de stockage :} La taille du pool Ceph est techniquement contrainte par les disques physiques alloués aux OSDs (3 disques de 600 Go par serveur). Avec une réplication de facteur 3, le cluster offre environ 1,8 To d'espace utilisable. Cela rend cette infrastructure parfaitement adaptée aux charges de test et de développement, mais insuffisante pour des \textit{workloads} de données à très grande échelle.
+    \item \textbf{Limite de configuration du commutateur :} la segmentation réseau avancée repose sur une configuration précise des commutateurs physiques (affectation des ports aux VLANs, mode trunk). Cette configuration est du ressort exclusif de l'équipe réseau de Sonatrach et ne peut être modifiée dans le cadre de ce projet.
 
-    \item \textbf{Absence de multitenancy :} Proxmox VE, dans la configuration mise en \oe{}uvre, est orienté Cloud privé. La gestion \textit{multi-tenant} stricte (isolation forte entre différents clients ou départements totalement hermétiques), propre aux environnements Cloud publics, n'entre pas dans le périmètre de ce projet.
+    \item \textbf{Absence de multilocation :} Proxmox VE, dans la configuration mise en \oe{}uvre, est orienté Cloud privé. La gestion multilocataire stricte (isolation forte entre différents clients ou départements totalement hermétiques), propre aux environnements Cloud publics, n'entre pas dans le périmètre de ce projet.
 
-    \item \textbf{Maintenance à long terme :} La gestion opérationnelle continue de l'infrastructure (cycle de mises à jour, configuration d'un serveur Proxmox Backup Server externe sécurisé, gestion des pannes matérielles physiques) n'est pas couverte par la phase de déploiement de ce projet et constitue une perspective d'évolution naturelle pour l'équipe d'exploitation.
+    \item \textbf{Maintenance à long terme :} La gestion opérationnelle continue de l'infrastructure (cycle de mises à jour, configuration d'un serveur de sauvegarde externe sécurisé, gestion des pannes matérielles physiques) n'est pas couverte par la phase de déploiement de ce projet et constitue une perspective d'évolution naturelle pour l'équipe d'exploitation.
 
 \end{itemize}
 
