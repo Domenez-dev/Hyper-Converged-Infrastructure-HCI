@@ -1,7 +1,8 @@
 \documentclass[a4paper,12pt]{report}
-%------------- package -----------------------
+% package
 \usepackage[french]{babel}
 \frenchbsetup{StandardLists=true}
+\addto\captionsfrench{\renewcommand{\tablename}{Tableau}}
 \usepackage[utf8x]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{fancyhdr}
@@ -143,12 +144,12 @@
 \makeatother
 
 
-%------------------ memoire -------------------------
+% memoire
 \begin{document}
 
-%------------------ page de garde -------------------
+% page de garde
 \input{./pagedegarde.tex}
-%-------------------remerciments---------------------
+%remerciments
 \input{./merci.tex}
 
 %================ TABLE OF CONTENTS =================
@@ -169,9 +170,9 @@
 \listoftables
 \addcontentsline{toc}{chapter}{Liste des tableaux}
 
-%-------------------acronymes------------------------
+%acronymes
 \input{./acronymes.tex}
-%-------------------l'en tête -----------------------
+%l'en tête
 \pagestyle{fancy}
 \lhead{\leftmark}
 \chead{}
@@ -179,10 +180,10 @@
 \renewcommand{\headrulewidth}{2pt}
 \renewcommand{\footrulewidth}{0.8pt}
 
- %-------------------introduction--------------------
+ %introduction
 \input{./introduction.tex}
 \pagenumbering{arabic}
-%------------------les chapitres---------------------
+%les chapitres
 \begin{justify}
 \input{chapitre/chapitre1.tex}
 \input{chapitre/chapitre2.tex}

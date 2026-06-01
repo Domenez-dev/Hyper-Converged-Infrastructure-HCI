@@ -1,10 +1,10 @@
-\chapter{Présentation du Contexte}
+\chapter{Conception de la Solution Proposée}
 \thispagestyle{empty}
 \newpage
 
 \section{Introduction}
 
-\par Ce chapitre présente la conception détaillée de l'infrastructure Cloud privée hyperconvergée proposée. Sur la base des technologies retenues dans le chapitre précédent --- Proxmox VE, Ceph et Open vSwitch --- nous décrivons ici les choix architecturaux guidant la construction de chaque couche de l'infrastructure. Nous présentons également la conception du mécanisme d'équilibrage dynamique de charge CLBS, ainsi que les outils d'automatisation retenus pour le déploiement et le provisionnement.\\
+\par Ce chapitre présente la conception détaillée de l'infrastructure Cloud privée hyperconvergée proposée. Sur la base des technologies retenues dans le chapitre précédent (Proxmox VE, Ceph et Open vSwitch), nous décrivons ici les choix architecturaux guidant la construction de chaque couche de l'infrastructure. Nous présentons également la conception du mécanisme d'équilibrage dynamique de charge CLBS, ainsi que les outils d'automatisation retenus pour le déploiement et le provisionnement.\\
 
 \par L'objectif de ce chapitre est de fournir une vision complète et cohérente de l'architecture avant toute phase d'implémentation, en justifiant chaque décision par des contraintes techniques, des recommandations officielles ou des exigences fonctionnelles identifiées précédemment.\\
 
@@ -57,13 +57,16 @@
 \par Chaque serveur dispose de cinq disques SAS répartis selon leurs rôles respectifs, conformément aux recommandations Proxmox concernant la séparation des entrées/sorties système et de stockage :\\
 
 \begin{itemize}
-    \item \textbf{Disque système (\texttt{sda} --- 1 × 300 GB SAS) :} dédié au système d'exploitation Proxmox VE. Cette séparation garantit que les opérations de réplication Ceph ne perturbent pas les I/O système du nœud.
+    \item \textbf{Disque système (\texttt{sda}, 1 × 300 GB SAS) :} dédié au système d'exploitation Proxmox VE. Cette séparation garantit que les opérations de réplication Ceph ne perturbent pas les I/O système du nœud.
     \item \textbf{Disques OSD Ceph (1 × 300 GB SAS + 3 × 600 GB SAS) :} les quatre disques restants sont affectés comme OSDs Ceph. Chaque nœud contribue ainsi avec quatre OSDs au cluster de stockage distribué, soit douze OSDs au total dans le cluster.
 \end{itemize}
+
+\par Le tableau~\ref{tab:dim-r720} récapitule le dimensionnement matériel de chaque serveur Dell PowerEdge R720 ainsi que les ressources totales du cluster.\\
 
 \begin{table}[H]
 \centering
 \caption{Dimensionnement physique des serveurs Dell PowerEdge R720}
+\label{tab:dim-r720}
 \begin{tabular}{|p{3.5cm}|p{3cm}|p{3cm}|p{4cm}|}
 \hline
 \textbf{Composant} & \textbf{Par nœud} & \textbf{Total cluster} & \textbf{Justification} \\
@@ -76,20 +79,25 @@ Disque OS (\texttt{sda}) & 1 × 300 GB SAS & 3 × 300 GB & Isolation I/O hôte /
 \hline
 Disques OSD (\texttt{sdb--sde}) & 1 × 300 GB + 3 × 600 GB SAS & 12 OSDs (6,3 TB brut) & Stockage distribué Ceph \\
 \hline
-IP Management & Tableau 3-2 & & Réseau Sonatrach 192.168.10.0/24 \\
+IP Management & voir tableau~\ref{tab:ip-management} & & Réseau Sonatrach 192.168.10.0/24 \\
 \hline
 \end{tabular}
 \end{table}
 
 \subsection{Architecture du Cluster Proxmox}
 
+\par Le cluster Proxmox regroupe les trois nœuds physiques en une entité unique administrée de façon centralisée. Cette section en détaille l'organisation, le mécanisme de quorum assuré par Corosync, le fonctionnement de la haute disponibilité et les scénarios de défaillance pris en charge.\\
+
 \subsubsection{Organisation du Cluster}
 
 \par Le cluster Proxmox est constitué de trois nœuds physiques identiques, interconnectés via le réseau Sonatrach. Le trafic Corosync est transporté sur un réseau logique dédié (VxLAN ID 20) afin de garantir la stabilité du quorum indépendamment des autres flux. Cette organisation à trois nœuds est le minimum requis pour garantir un quorum stable et éviter les situations de split-brain.\\
 
+\par Le tableau~\ref{tab:ip-management} indique les adresses IP de management attribuées à chacun des trois nœuds du cluster.\\
+
 \begin{table}[H]
 \centering
 \caption{Adresses IP de management des nœuds Proxmox}
+\label{tab:ip-management}
 \begin{tabular}{|l|l|l|}
 \hline
 \textbf{Nœud} & \textbf{Nom d'hôte} & \textbf{Adresse IP Management} \\
@@ -115,9 +123,12 @@ Nœud 3 & PVE-03 & 192.168.10.84 \\
 
 \subsubsection{Matrice des Scénarios de Défaillance}
 
+\par Le tableau~\ref{tab:matrice-defaillance} recense les principaux scénarios de défaillance envisagés, en précisant pour chacun le composant affecté, le comportement attendu de l'infrastructure et l'objectif de temps de rétablissement (RTO).\\
+
 \begin{table}[H]
 \centering
 \caption{Matrice des scénarios de défaillance et comportements attendus}
+\label{tab:matrice-defaillance}
 \begin{tabular}{|p{2.8cm}|p{2.5cm}|p{6.5cm}|p{1.8cm}|}
 \hline
 \textbf{Scénario} & \textbf{Composant affecté} & \textbf{Comportement} & \textbf{RTO} \\
@@ -140,6 +151,8 @@ Panne CLBS & VM CLBS & Aucun impact applicatif. Le service redémarre automatiqu
 \end{table}
 
 \subsection{Mécanisme d'Équilibrage Dynamique : CLBS}
+
+\par Cette section présente le mécanisme d'équilibrage dynamique de charge CLBS développé pour ce projet : le besoin auquel il répond, sa base algorithmique, les adaptations apportées à l'algorithme d'origine et sa logique de décision.\\
 
 \subsubsection{Contexte et Besoin}
 
@@ -211,6 +224,8 @@ toutes les 60 secondes :
 \end{lstlisting}
 
 \par La figure~\ref{lst:clbs-pseudo} présente le pseudocode de l'algorithme CLBS sous sa forme condensée. Chaque cycle commence par la récupération des métriques CPU et RAM lissées sur 5 minutes depuis InfluxDB, afin d'éviter les décisions basées sur des pics instantanés. Le double critère de déclenchement (dépassement de la bande modérée ET seuil absolu de 50\%) garantit qu'aucune migration n'est effectuée dans un cluster globalement sous-chargé. La sélection de la VM cible repose sur le vecteur de transfert du CSLB, et le score pondéré 0.7/0.3 en faveur du CPU reflète le fait que la pression CPU est généralement plus contraignante que la RAM dans les charges de virtualisation.\\
+
+\begin{figure}[H]
     \begin{center}
         % Alt: Organigramme de décision du service CLBS (évaluation, classification, sélection VM, migration)
         \input{image/ch3/clbs-flowchart.tex}
@@ -222,6 +237,8 @@ toutes les 60 secondes :
 \par La figure~\ref{fig:clbs-flowchart} présente le cycle de décision complet du service CLBS. A chaque intervalle de 60 secondes, le service évalue la charge de chaque noeud par rapport aux bandes modérées calculées dynamiquement, sélectionne la VM la mieux adaptée au transfert selon le vecteur de charge, choisit le noeud destination en maximisant le score pondéré CPU/RAM, et déclenche la migration via l'API Proxmox si toutes les conditions sont réunies. Les mécanismes anti-oscillation et le circuit breaker sont également représentés.\\
 
 \subsection{Application de Démonstration : Sona-Web}
+
+\par L'application Sona-Web sert de cas d'usage pour valider les capacités de haute disponibilité et de migration à chaud de l'infrastructure. Cette section en décrit l'architecture applicative, puis le scénario de validation associé.\\
 
 \subsubsection{Architecture Applicative}
 
@@ -266,7 +283,7 @@ GROUP BY instance_id;
 
 \par La stack de monitoring est déployée dans un conteneur LXC dédié à l'adresse \texttt{192.168.10.99}. Elle comprend trois composants complémentaires couvrant des périmètres de métriques distincts.\\
 
-\par \textbf{InfluxDB} reçoit les métriques générales de Proxmox (CPU, RAM, réseau, stockage des nœuds et des VMs) via le mécanisme natif \textit{Metric Server}, sans agent supplémentaire. Cet historique est utilisé à la fois par Grafana pour la visualisation et par le service CLBS pour ses décisions de migration.\\
+\par \textbf{InfluxDB} reçoit les métriques générales de Proxmox (CPU, RAM, réseau, stockage des nœuds et des VMs) via le mécanisme natif ``Metric Server'', sans agent supplémentaire. Cet historique est utilisé à la fois par Grafana pour la visualisation et par le service CLBS pour ses décisions de migration.\\
 
 \par \textbf{Prometheus} collecte les métriques détaillées du cluster Ceph via l'endpoint exposé par le nœud MGR actif sur le port \texttt{9283}. Les métriques applicatives du service CLBS sont également exposées sur le port \texttt{9101} de la VM dédiée.\\
 
@@ -289,28 +306,28 @@ GROUP BY instance_id;
 \par Ansible est l'outil d'automatisation principal, exécuté depuis les postes de travail des développeurs via SSH sur le réseau de management. Trois playbooks couvrent les principaux besoins d'automatisation.\\
 
 \begin{itemize}
-    \item \textbf{Playbook 1 --- Intégration d'un nouveau nœud :} automatise l'ensemble de la procédure d'intégration d'un serveur fraîchement installé (via PXE) dans le cluster existant. Il couvre la configuration réseau OVS/VxLAN, l'adhésion au cluster Corosync, l'initialisation de l'OSD Ceph, et la configuration des exports de métriques vers InfluxDB.
+    \item \textbf{Playbook 1 (Intégration d'un nouveau nœud) :} automatise l'ensemble de la procédure d'intégration d'un serveur fraîchement installé (via PXE) dans le cluster existant. Il couvre la configuration réseau OVS/VxLAN, l'adhésion au cluster Corosync, l'initialisation de l'OSD Ceph, et la configuration des exports de métriques vers InfluxDB.
 
-    \item \textbf{Playbook 2 --- Provisionnement de VMs :} automatise la création de VMs et de conteneurs LXC à partir de templates cloud-init stockés dans le pool Ceph. Il intègre la configuration réseau via DHCP OPNsense et l'assignation au bon bridge OVS selon le réseau cible (Dev, Prod ou DMZ).
+    \item \textbf{Playbook 2 (Provisionnement de VMs) :} automatise la création de VMs et de conteneurs LXC à partir de templates cloud-init stockés dans le pool Ceph. Il intègre la configuration réseau via DHCP OPNsense et l'assignation au bon bridge OVS selon le réseau cible (Dev, Prod ou DMZ).
 
-    \item \textbf{Playbook 3 --- Migration Dev vers Prod/DMZ :} gère la promotion d'une VM ou d'un ensemble de VMs vers la production ou la DMZ, en reconfigurant les interfaces réseau, les règles de pare-feu OPNsense et en vérifiant la connectivité post-migration.
+    \item \textbf{Playbook 3 (Migration Dev vers Prod/DMZ) :} gère la promotion d'une VM ou d'un ensemble de VMs vers la production ou la DMZ, en reconfigurant les interfaces réseau, les règles de pare-feu OPNsense et en vérifiant la connectivité post-migration.
 \end{itemize}
 
 \subsubsection{Pipeline PXE/TFTP}
 
 \par Dans une optique de scalabilité, un pipeline de provisionnement automatique en deux phases a été mis en place pour intégrer tout nouveau serveur physique sans intervention manuelle.\\
 
-\par \textbf{Phase 1 --- Installation automatique via PXE.} Lorsqu'un nouveau serveur est mis sous tension, la séquence suivante s'exécute automatiquement :\\
+\par \textbf{Phase 1 : Installation automatique via PXE.} Lorsqu'un nouveau serveur est mis sous tension, la séquence suivante s'exécute automatiquement :\\
 
 \begin{enumerate}
     \item Le serveur envoie une requête DHCP ; OPNsense lui attribue une adresse temporaire et lui indique l'adresse du serveur de boot ainsi que le fichier bootloader à récupérer (options DHCP 66 et 67).
     \item Le firmware PXE contacte le serveur TFTP (UDP/69) pour télécharger le bootloader (\texttt{pxelinux.0}) et le kernel Linux d'amorçage. TFTP est le seul protocole utilisable dans un firmware pre-OS.
     \item Une fois le kernel démarré en mémoire, l'image d'installation Proxmox VE (\textasciitilde{}800 Mo) est téléchargée via HTTP depuis un serveur Nginx dédié. HTTP (TCP) est retenu pour ce transfert car TFTP (UDP) est inadapté aux fichiers volumineux.
-    \item L'installateur Proxmox lit un fichier de réponses (\textit{Answer File}) hébergé sur le serveur HTTP, contenant le partitionnement, le nom d'hôte, le fuseau horaire et la langue. L'installation s'effectue sans aucune frappe clavier.
+    \item L'installateur Proxmox lit un fichier de réponses (``Answer File'') hébergé sur le serveur HTTP, contenant le partitionnement, le nom d'hôte, le fuseau horaire et la langue. L'installation s'effectue sans aucune frappe clavier.
     \item Le serveur redémarre automatiquement sur Proxmox VE fraîchement installé.
 \end{enumerate}
 
-\par \textbf{Phase 2 --- Intégration au cluster via Ansible.} À l'issue du redémarrage, le nœud dispose de Proxmox VE fonctionnel mais isolé. Un playbook Ansible prend le relais via SSH pour réaliser l'intégration complète :\\
+\par \textbf{Phase 2 : Intégration au cluster via Ansible.} À l'issue du redémarrage, le nœud dispose de Proxmox VE fonctionnel mais isolé. Un playbook Ansible prend le relais via SSH pour réaliser l'intégration complète :\\
 
 \begin{itemize}
     \item Adhésion au cluster \textbf{Corosync} ;
@@ -330,12 +347,14 @@ GROUP BY instance_id;
 
 \subsection{Architecture du Cluster Ceph}
 
+\par Le cluster Ceph fournit la couche de stockage distribuée et partagée de l'infrastructure. Cette section en présente les composants, le dimensionnement du pool de stockage et la configuration de l'algorithme CRUSH.\\
+
 \subsubsection{Composants du Cluster}
 
 \par Le cluster Ceph est composé des services suivants, répartis sur les trois nœuds physiques :\\
 
 \begin{itemize}
-    \item \textbf{Monitors (MON) :} un monitor par nœud, soit trois au total. Les monitors maintiennent la carte du cluster (\textit{cluster map}) et assurent le consensus distribué. Trois monitors garantissent un quorum stable (2/3 suffisants).
+    \item \textbf{Monitors (MON) :} un monitor par nœud, soit trois au total. Les monitors maintiennent la carte du cluster (``cluster map'') et assurent le consensus distribué. Trois monitors garantissent un quorum stable (2/3 suffisants).
     \item \textbf{Managers (MGR) :} PVE-02 héberge le MGR actif, PVE-03 le MGR en standby. Le MGR expose les métriques du cluster via un endpoint REST utilisé par Prometheus.
     \item \textbf{OSDs (Object Storage Daemons) :} quatre OSDs par nœud (disques \texttt{sdb}, \texttt{sdc}, \texttt{sdd} et \texttt{sde}), soit douze OSDs au total dans le cluster~\cite{ref33}.
 \end{itemize}
@@ -353,6 +372,7 @@ GROUP BY instance_id;
 \begin{table}[H]
 \centering
 \caption{Répartition du stockage Ceph par usage}
+\label{tab:repartition-stockage}
 \begin{tabular}{|p{7.5cm}|p{4cm}|}
 \hline
 \textbf{Usage} & \textbf{Stockage alloué} \\
@@ -392,18 +412,21 @@ Marge, snapshots et templates & \textasciitilde{}300 GB \\
 
 \par Lors de la création du cluster Ceph via Proxmox VE, une règle CRUSH par défaut est générée automatiquement, organisant les OSDs selon la hiérarchie \texttt{root > host > osd} avec la politique \texttt{chooseleaf firstn 0 type host}. Cela garantit que les trois répliques d'un objet sont placées sur trois hôtes physiques distincts.\\
 
+\par Le tableau~\ref{tab:crush-params} résume les principaux paramètres CRUSH appliqués automatiquement par Proxmox lors de la création du cluster Ceph.\\
+
 \begin{table}[H]
 \centering
 \caption{Paramètres CRUSH appliqués automatiquement par Proxmox}
+\label{tab:crush-params}
 \begin{tabular}{|p{4.5cm}|p{9cm}|}
 \hline
 \textbf{Paramètre} & \textbf{Valeur} \\
 \hline
-Domaine de défaillance & \texttt{host} --- généré automatiquement par Proxmox \\
+Domaine de défaillance & \texttt{host} (généré automatiquement par Proxmox) \\
 \hline
-Facteur de réplication (\texttt{size}) & 3 --- une réplique par nœud physique \\
+Facteur de réplication (\texttt{size}) & 3 (une réplique par nœud physique) \\
 \hline
-\texttt{min\_size} & 2 (défaut Ceph) --- pool accessible avec 2 nœuds opérationnels \\
+\texttt{min\_size} & 2 (défaut Ceph), pool accessible avec 2 nœuds opérationnels \\
 \hline
 \end{tabular}
 \end{table}
@@ -422,13 +445,15 @@ Facteur de réplication (\texttt{size}) & 3 --- une réplique par nœud physique
 
 \subsection{Topologie Réseau}
 
+\par La topologie réseau repose sur deux niveaux de segmentation complémentaires, décrits ci-dessous, ainsi que sur les bridges Open vSwitch déployés sur chaque nœud.\\
+
 \subsubsection{Deux Niveaux de Segmentation}
 
 \par La topologie retenue s'articule autour de deux niveaux complémentaires.\\
 
-\par \textbf{Niveau 1 --- Réseaux d'infrastructure (VxLAN inter-nœuds).} Pour les réseaux de contrôle (Corosync, Ceph Cluster, Ceph Public, Live Migration), des tunnels VxLAN point-à-point en maillage complet sont établis entre les trois nœuds. Chaque nœud crée deux ports VxLAN vers chacun des deux autres, garantissant une connectivité directe sans point de transit central.\\
+\par \textbf{Niveau 1 : Réseaux d'infrastructure (VxLAN inter-nœuds).} Pour les réseaux de contrôle (Corosync, Ceph Cluster, Ceph Public, Live Migration), des tunnels VxLAN point-à-point en maillage complet sont établis entre les trois nœuds. Chaque nœud crée deux ports VxLAN vers chacun des deux autres, garantissant une connectivité directe sans point de transit central.\\
 
-\par \textbf{Niveau 2 --- Réseaux applicatifs (OPNsense).} Pour les réseaux Dev, Prod et DMZ, une architecture centralisée autour d'une VM OPNsense est utilisée. Trois bridges OVS internes sont configurés sur chaque nœud. OPNsense dispose de quatre interfaces virtuelles : WAN connectée au réseau de management (\texttt{192.168.10.65}, gateway \texttt{192.168.10.36}), et trois interfaces LAN connectées aux bridges Dev, Prod et DMZ.\\
+\par \textbf{Niveau 2 : Réseaux applicatifs (OPNsense).} Pour les réseaux Dev, Prod et DMZ, une architecture centralisée autour d'une VM OPNsense est utilisée. Trois bridges OVS internes sont configurés sur chaque nœud. OPNsense dispose de quatre interfaces virtuelles : WAN connectée au réseau de management (\texttt{192.168.10.65}, gateway \texttt{192.168.10.36}), et trois interfaces LAN connectées aux bridges Dev, Prod et DMZ.\\
 
 \begin{figure}[H]
     \begin{center}
@@ -443,9 +468,12 @@ Facteur de réplication (\texttt{size}) & 3 --- une réplique par nœud physique
 
 \subsubsection{Bridges Open vSwitch par Nœud}
 
+\par Le tableau~\ref{tab:bridges-ovs} décrit les bridges Open vSwitch configurés sur chaque nœud, le VxLAN associé, le sous-réseau correspondant et le rôle de chacun.\\
+
 \begin{table}[H]
 \centering
 \caption{Bridges OVS et tunnels VxLAN par nœud Proxmox}
+\label{tab:bridges-ovs}
 \begin{tabular}{|p{2.5cm}|p{3cm}|p{3cm}|p{4.5cm}|}
 \hline
 \textbf{Bridge OVS} & \textbf{VxLAN associé} & \textbf{Sous-réseau} & \textbf{Rôle} \\
@@ -467,11 +495,11 @@ Facteur de réplication (\texttt{size}) & 3 --- une réplique par nœud physique
 
 \par \textbf{Réseaux VxLAN d'infrastructure :}
 \begin{itemize}
-    \item \textbf{VxLAN 10 --- Management (192.168.10.0/24) :} Web UI Proxmox, SSH, API (réseau physique existant).
-    \item \textbf{VxLAN 20 --- Corosync (192.168.20.0/24) :} Heartbeats et quorum cluster.
-    \item \textbf{VxLAN 30 --- Ceph Cluster (10.10.30.0/24) :} Réplication OSD interne.
-    \item \textbf{VxLAN 40 --- Ceph Public (10.10.40.0/24) :} Accès des VMs au stockage RBD.
-    \item \textbf{VxLAN 50 --- Live Migration (10.10.50.0/24) :} Migrations à chaud et CLBS.
+    \item \textbf{VxLAN 10, Management (192.168.10.0/24) :} Web UI Proxmox, SSH, API (réseau physique existant).
+    \item \textbf{VxLAN 20, Corosync (192.168.20.0/24) :} Heartbeats et quorum cluster.
+    \item \textbf{VxLAN 30, Ceph Cluster (10.10.30.0/24) :} Réplication OSD interne.
+    \item \textbf{VxLAN 40, Ceph Public (10.10.40.0/24) :} Accès des VMs au stockage RBD.
+    \item \textbf{VxLAN 50, Live Migration (10.10.50.0/24) :} Migrations à chaud et CLBS.
 \end{itemize}
 
 \par \textbf{Réseaux applicatifs internes :}
@@ -481,9 +509,12 @@ Facteur de réplication (\texttt{size}) & 3 --- une réplique par nœud physique
     \item \textbf{Réseau DMZ (172.16.80.0/24, gateway 172.16.80.1) :} services exposés, dont HAProxy.
 \end{itemize}
 
+\par Le tableau~\ref{tab:adressage-statique} détaille l'adressage IP statique attribué à chaque nœud Proxmox sur les différents réseaux logiques de l'infrastructure.\\
+
 \begin{table}[H]
 \centering
 \caption{Adressage IP statique des nœuds Proxmox par réseau logique}
+\label{tab:adressage-statique}
 \begin{tabular}{|l|l|l|l|l|l|}
 \hline
 \textbf{Nœud} & \textbf{Management} & \textbf{VxLAN 20} & \textbf{VxLAN 30} & \textbf{VxLAN 40} & \textbf{VxLAN 50} \\
@@ -498,6 +529,8 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \end{table}
 
 \subsection{VM OPNsense : Routeur et Pare-feu Centralisé}
+
+\par La VM OPNsense centralise le routage et le filtrage des réseaux applicatifs. Cette section détaille ses interfaces et leurs rôles, puis les mécanismes assurant sa haute disponibilité.\\
 
 \subsubsection{Interfaces et Rôles}
 
@@ -519,6 +552,8 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \par Pour une architecture de production nécessitant un basculement transparent, une configuration active/passive avec le protocole CARP (natif dans OPNsense) réduirait ce délai à moins de 5 secondes.\\
 
 \subsection{Architecture du Pare-feu}
+
+\par La sécurité réseau de l'infrastructure repose sur deux niveaux de filtrage complémentaires : le pare-feu OPNsense pour les flux entre réseaux applicatifs, et le pare-feu natif de Proxmox au niveau de l'hyperviseur.\\
 
 \subsubsection{Pare-feu OPNsense : Filtrage Inter-réseaux}
 
@@ -587,7 +622,7 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
   leglbl/.style={font=\footnotesize, anchor=west}
 ]
 
-% ---- PVE-01 ----
+%  PVE-01
 \draw[draw=bleu, very thick, rounded corners=6pt, fill=bleu!3]
   (0.0, 0.0) rectangle (6.5,-7.8);
 \node[font=\small\bfseries\color{bleu}] at (3.25,-0.38) {PVE-01};
@@ -599,7 +634,7 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \node[osd, anchor=west] at (0.45,-5.50) {OSD $\times$ 4~(sdb--sde)};
 \node[cephsvc, anchor=west] at (0.45,-6.22) {Ceph MON};
 
-% ---- PVE-02 ----
+%  PVE-02
 \draw[draw=bleu, very thick, rounded corners=6pt, fill=bleu!3]
   (7.0, 0.0) rectangle (13.5,-7.8);
 \node[font=\small\bfseries\color{bleu}] at (10.25,-0.38) {PVE-02};
@@ -611,7 +646,7 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \node[osd, anchor=west] at (7.45,-5.50) {OSD $\times$ 4~(sdb--sde)};
 \node[cephsvc, anchor=west] at (7.45,-6.22) {Ceph MON + MGR (actif)};
 
-% ---- PVE-03 ----
+%  PVE-03
 \draw[draw=bleu, very thick, rounded corners=6pt, fill=bleu!3]
   (14.0, 0.0) rectangle (20.5,-7.8);
 \node[font=\small\bfseries\color{bleu}] at (17.25,-0.38) {PVE-03};
@@ -621,11 +656,11 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \node[osd, anchor=west] at (14.45,-3.75) {OSD $\times$ 4~(sdb--sde)};
 \node[cephsvc, anchor=west] at (14.45,-4.47) {Ceph MON + MGR (standby)};
 
-% ---- Network bar ----
+%  Network bar
 \node[netbar, minimum width=20.5cm] at (10.25,-8.8)
   {Ceph RBD Pool partagé~~\textbar~~VxLAN overlay (VNI 10--90)~~\textbar~~Réseau Sonatrach 192.168.10.0/24};
 
-% ---- Legend ----
+%  Legend
 \node[vm,      minimum width=1.8cm, anchor=west] at ( 0.0,-10.2) {VM};
 \node[leglbl]  at ( 2.3,-10.2) {Machine virtuelle (KVM)};
 \node[lxc,     minimum width=1.8cm, anchor=west] at ( 6.2,-10.2) {LXC};

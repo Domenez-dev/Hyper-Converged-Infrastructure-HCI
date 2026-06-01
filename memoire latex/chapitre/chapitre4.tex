@@ -1,5 +1,5 @@
 % ============================================================
-% Chapitre 4 — Implémentation de la Solution Proposée
+% Chapitre 4 : Implémentation de la Solution Proposée
 % Version modifiée : citations figures corrigées, nouvelles
 % figures ajoutées, TikZ externalisé dans figures/
 % ============================================================
@@ -104,9 +104,7 @@ nmcli connection up "Wired connection 1"
 
 \par Des tests simples comme \texttt{ping 8.8.8.8}, \texttt{ping google.com} et \texttt{apt update} ont confirmé que les nœuds disposaient correctement d'un accès Internet.\\
 
-% ----------------------------------------
 \subsection{Formation du cluster Proxmox et haute disponibilité}
-% ----------------------------------------
 
 \par Après avoir installé et connecté les trois nœuds à Internet, l'étape suivante a consisté à les regrouper en un cluster unifié et à configurer les mécanismes de haute disponibilité.
 
@@ -169,15 +167,13 @@ pvecm status
 
 \par La figure~\ref{fig:live-migration-after} confirme que la VM a été déplacée avec succès vers le nœud PVE-03 sans interruption du service. Le journal de tâches affiche les étapes successives de la migration, incluant le transfert de l'état mémoire et la commutation finale.\\
 
-% ----------------------------------------
 \subsection{Déploiement de la stack de monitoring}
-% ----------------------------------------
 
 \par Afin de superviser l'état global de l'infrastructure, une stack de monitoring a été déployée dans un conteneur LXC dédié appelé \texttt{monitoring}, avec l'adresse \texttt{192.168.10.99}. Ce conteneur centralise InfluxDB, Prometheus et Grafana.\\
 
 \subsubsection{Déploiement d'InfluxDB}
 
-\par InfluxDB a été installé pour recevoir les métriques envoyées directement par Proxmox à travers le système natif \textit{Metric Server}. Un bucket nommé \texttt{proxmox-metrics} a été créé afin de stocker les mesures CPU, mémoire, réseau et stockage de chaque nœud du cluster.\\
+\par InfluxDB a été installé pour recevoir les métriques envoyées directement par Proxmox à travers le système natif ``Metric Server''. Un bucket nommé \texttt{proxmox-metrics} a été créé afin de stocker les mesures CPU, mémoire, réseau et stockage de chaque nœud du cluster.\\
 
 \par Une fois la configuration validée dans l'interface web Proxmox, les métriques ont commencé à être transmises automatiquement sans agent supplémentaire. Comme le montre la figure~\ref{fig:influxdb-data-explorer}, la présence des séries temporelles dans l'interface InfluxDB a confirmé le bon fonctionnement de ce mécanisme.\\
 
@@ -227,17 +223,19 @@ scrape_configs:
     \label{fig:prometheus-targets}
 \end{figure}
 
-\par La figure~\ref{fig:prometheus-targets} présente la page \textit{Targets} de l'interface web Prometheus. Chacune des cibles déclarées dans le fichier \texttt{prometheus.yml} -- les trois endpoints Ceph MGR et le service CLBS -- affiche l'état \texttt{UP}, confirmant que la collecte des métriques est opérationnelle sur l'ensemble du cluster.\\
+\par La figure~\ref{fig:prometheus-targets} présente la page ``Targets'' de l'interface web Prometheus. Chacune des cibles déclarées dans le fichier \texttt{prometheus.yml} (les trois endpoints Ceph MGR et le service CLBS) affiche l'état \texttt{UP}, confirmant que la collecte des métriques est opérationnelle sur l'ensemble du cluster.\\
 
 \subsubsection{Déploiement de Grafana}
 
-\par Grafana a été ajouté comme couche de visualisation unifiée pour les métriques de Proxmox, Ceph et CLBS. Deux sources de données ont été configurées : InfluxDB pour les métriques de Proxmox, et Prometheus pour les métriques Ceph et applicatives.\\
+\par Grafana a été ajouté comme couche de visualisation unifiée pour les métriques de Proxmox, Ceph et CLBS. Deux sources de données ont été configurées : InfluxDB pour les métriques de Proxmox, et Prometheus pour les métriques Ceph et applicatives. Le tableau~\ref{tab:grafana-dashboards} récapitule les tableaux de bord configurés ainsi que leur source de données respective.\\
 
 \begin{table}[H]
 \centering
+\caption{Tableaux de bord Grafana configurés}
+\label{tab:grafana-dashboards}
 \begin{tabular}{|l|l|l|}
 \hline
-\textbf{Dashboard} & \textbf{Source} & \textbf{Métriques principales} \\
+\textbf{Tableau de bord} & \textbf{Source} & \textbf{Métriques principales} \\
 \hline
 Proxmox Cluster & InfluxDB & CPU, RAM, réseau par nœud \\
 \hline
@@ -246,7 +244,6 @@ Ceph & Prometheus & Santé cluster, pools, latence OSD \\
 CLBS & Prometheus & Historique des migrations \\
 \hline
 \end{tabular}
-\caption{Dashboards Grafana configurés}
 \end{table}
 
 \par Trois dashboards principaux ont ainsi été utilisés : un dashboard infrastructure Proxmox, un dashboard Ceph, et un dashboard personnalisé pour le service CLBS. La figure~\ref{fig:grafana-proxmox-dashboard} présente le dashboard dédié à l'infrastructure Proxmox, tandis que la figure~\ref{fig:grafana-ceph-dashboard} illustre celui consacré au cluster Ceph.\\
@@ -269,21 +266,19 @@ CLBS & Prometheus & Historique des migrations \\
 
 \par La figure~\ref{fig:grafana-ceph-dashboard} présente le dashboard Grafana dédié au cluster Ceph. On y retrouve l'état global de santé du cluster, les métriques I/O par pool, la latence des OSDs et le taux de réplication en temps réel, permettant de superviser en continu la couche stockage depuis la même interface unifiée.\\
 
-% ----------------------------------------
 \subsection{Implémentation du mécanisme CLBS}
-% ----------------------------------------
 
 \par Le mécanisme CLBS constitue l'une des contributions principales de ce projet. Il s'agit d'un service d'équilibrage proactif développé spécifiquement pour pallier l'absence de DRS natif dans Proxmox VE.
 
 \subsubsection{Structure du service}
 
-\par Le service CLBS (\textit{Cluster Load Balancing Service}) a été développé en langage Go dans une VM dédiée accessible sur le réseau de management. Son rôle est d'analyser périodiquement la charge CPU du cluster et de déclencher automatiquement des migrations live lorsque cela est nécessaire.\\
+\par Le service CLBS (``Cluster Load Balancing Service'') a été développé en langage Go dans une VM dédiée accessible sur le réseau de management. Son rôle est d'analyser périodiquement la charge CPU du cluster et de déclencher automatiquement des migrations live lorsque cela est nécessaire.\\
 
 \par Le code est structuré en plusieurs composants : un lecteur InfluxDB pour les métriques historiques, un client API Proxmox pour piloter le cluster, un calculateur de bandes de charge, et un moteur principal de décision. Les paramètres de connexion sont placés dans un fichier \texttt{.env} chargé au démarrage du service.\\
 
 \subsubsection{Logique de décision}
 
-\par À chaque cycle, le service récupère la charge des nœuds, calcule les bornes de charge modérée, puis classe les nœuds dans les catégories \textit{heavy}, \textit{moderate} ou \textit{light}. Si un déséquilibre est détecté entre un nœud surchargé et un nœud léger, le moteur choisit la VM la plus adaptée à migrer.\\
+\par À chaque cycle, le service récupère la charge des nœuds, calcule les bornes de charge modérée, puis classe les nœuds dans les catégories ``heavy'', ``moderate'' ou ``light''. Si un déséquilibre est détecté entre un nœud surchargé et un nœud léger, le moteur choisit la VM la plus adaptée à migrer.\\
 
 \par Plusieurs mécanismes de protection ont été ajoutés pour éviter les migrations excessives, comme un temps de cooldown global, un cooldown individuel par VM et une suspension temporaire en cas de fréquence de migration trop élevée.\\
 
@@ -325,11 +320,9 @@ stress-ng --cpu 8
     \label{fig:clbs-migration-event}
 \end{figure}
 
-\par La figure~\ref{fig:clbs-migration-event} présente le dashboard Grafana du service CLBS après le déclenchement d'une migration automatique. On y observe l'historique de charge des nœuds par bande (heavy/moderate/light), la migration enregistrée dans la section \textit{Migration Activity}, ainsi que le cooldown restant avant le prochain cycle d'évaluation.\\
+\par La figure~\ref{fig:clbs-migration-event} présente le dashboard Grafana du service CLBS après le déclenchement d'une migration automatique. On y observe l'historique de charge des nœuds par bande (heavy/moderate/light), la migration enregistrée dans la section ``Migration Activity'', ainsi que le cooldown restant avant le prochain cycle d'évaluation.\\
 
-% ----------------------------------------
 \subsection{Déploiement de l'application Sona-Web}
-% ----------------------------------------
 
 \par L'application Sona-Web a été déployée sur l'infrastructure pour démontrer concrètement les capacités de haute disponibilité et de répartition de charge offertes par la plateforme hyperconvergée.
 
@@ -364,9 +357,7 @@ done
 
 \par La figure~\ref{fig:sonaweb-dashboard} présente le tableau de bord principal de Sona-Web, accessible via HAProxy sur le port 8080. L'interface affiche en temps réel l'instance Flask ayant traité la requête courante, le nombre total de requêtes enregistrées en base de données, ainsi que l'état de disponibilité des deux serveurs applicatifs.\\
 
-% ----------------------------------------
 \subsection{Automatisation avec Ansible}
-% ----------------------------------------
 
 \par L'automatisation est un élément clé de la reproductibilité de l'infrastructure. Les playbooks Ansible développés permettent de provisionner de nouvelles VMs en quelques minutes sans intervention manuelle.
 
@@ -459,16 +450,18 @@ qm cloudinit update {{ vm_id }}
 
 \par Un second playbook \texttt{provision\_vm\_batch.yml} permet le provisionnement en lot de plusieurs VMs à partir d'une liste définie à l'avance dans l'inventaire. Plutôt que d'exécuter le playbook unitaire pour chaque machine, ce playbook itère sur une liste de définitions YAML et parallélise les créations, réduisant le temps de provisionnement d'un parc de dix VMs de plusieurs dizaines de minutes à quelques minutes seulement.\\
 
-\par En complément de cette automatisation au niveau logiciel, un pipeline PXE/TFTP (\textit{Preboot eXecution Environment} / \textit{Trivial File Transfer Protocol}) a été mis en place pour couvrir l'étape la plus amont du cycle de vie d'un nœud physique : l'installation initiale du système d'exploitation. L'objectif est de pouvoir enregistrer un nouveau serveur Dell PowerEdge R720 vierge dans l'infrastructure sans aucune intervention manuelle, en s'appuyant uniquement sur le démarrage réseau.
+\par En complément de cette automatisation au niveau logiciel, un pipeline PXE/TFTP (``Preboot eXecution Environment'' / ``Trivial File Transfer Protocol'') a été mis en place pour couvrir l'étape la plus amont du cycle de vie d'un nœud physique : l'installation initiale du système d'exploitation. L'objectif est de pouvoir enregistrer un nouveau serveur Dell PowerEdge R720 vierge dans l'infrastructure sans aucune intervention manuelle, en s'appuyant uniquement sur le démarrage réseau.
 
 \paragraph{Pourquoi PXE et TFTP ?}
 
-\par Le démarrage réseau PXE repose sur une contrainte fondamentale : au moment du boot, la machine ne dispose d'aucun système d'exploitation, d'aucune pile TCP complète, et d'aucune bibliothèque logicielle. Le client PXE, intégré directement dans le firmware de la carte réseau, ne dispose que de quelques dizaines de kilo-octets de mémoire et d'une pile réseau UDP minimale. Cette contrainte exclut l'usage de protocoles comme FTP, SSH ou HTTP avec TLS, qui nécessitent tous un OS opérationnel. TFTP, défini par la RFC~1350 et opérant sur le port UDP/69, est le seul protocole compatible avec cet environnement \textit{pre-OS} : son implémentation ne dépasse pas quelques kilo-octets, et il ne requiert ni authentification ni connexion TCP.\\
+\par Le démarrage réseau PXE repose sur une contrainte fondamentale : au moment du boot, la machine ne dispose d'aucun système d'exploitation, d'aucune pile TCP complète, et d'aucune bibliothèque logicielle. Le client PXE, intégré directement dans le firmware de la carte réseau, ne dispose que de quelques dizaines de kilo-octets de mémoire et d'une pile réseau UDP minimale. Cette contrainte exclut l'usage de protocoles comme FTP, SSH ou HTTP avec TLS, qui nécessitent tous un OS opérationnel. TFTP, défini par la RFC~1350 et opérant sur le port UDP/69, est le seul protocole compatible avec cet environnement ``pre-OS'' : son implémentation ne dépasse pas quelques kilo-octets, et il ne requiert ni authentification ni connexion TCP.\\
 
-\par En revanche, la limitation inhérente à TFTP -- un mécanisme de transfert \textit{stop-and-wait} d'un bloc de 512 octets à la fois -- le rend inadapté au transfert de fichiers volumineux. En pratique, TFTP est strictement réservé aux fichiers de démarrage (bootloader et kernel), dont la taille totale n'excède généralement pas 40~Mo. Les fichiers volumineux, comme l'image d'installation ISO (environ 800~Mo) ou le fichier de réponses automatiques (\textit{preseed}), sont ensuite téléchargés via HTTP dès que le kernel Linux est en mémoire et dispose d'une pile TCP complète.
+\par En revanche, la limitation inhérente à TFTP (un mécanisme de transfert ``stop-and-wait'' d'un bloc de 512 octets à la fois) le rend inadapté au transfert de fichiers volumineux. En pratique, TFTP est strictement réservé aux fichiers de démarrage (bootloader et kernel), dont la taille totale n'excède généralement pas 40~Mo. Les fichiers volumineux, comme l'image d'installation ISO (environ 800~Mo) ou le fichier de réponses automatiques (``preseed''), sont ensuite téléchargés via HTTP dès que le kernel Linux est en mémoire et dispose d'une pile TCP complète. Le tableau~\ref{tab:pxe-protocols} compare les protocoles utilisés aux différentes étapes du pipeline de démarrage réseau.
 
 \begin{table}[H]
 \centering
+\caption{Comparaison des protocoles utilisés dans le pipeline PXE}
+\label{tab:pxe-protocols}
 \begin{tabular}{|l|l|l|l|}
 \hline
 \textbf{Protocole} & \textbf{Transport} & \textbf{Nécessite un OS} & \textbf{Usage dans le pipeline} \\
@@ -482,13 +475,11 @@ FTP & TCP & Oui & Inutilisable en pre-OS \\
 SSH/SFTP & TCP & Oui & Post-installation uniquement \\
 \hline
 \end{tabular}
-\caption{Comparaison des protocoles utilisés dans le pipeline PXE}
-\label{tab:pxe-protocols}
 \end{table}
 
 \paragraph{Architecture du pipeline}
 
-\par L'architecture retenue repose sur quatre composants principaux, hébergés dans des conteneurs LXC dédiés sur le cluster Proxmox. Le serveur DHCP (OPNsense) est chargé de fournir une adresse IP au nœud en démarrage réseau et de lui indiquer, via les options 66 et 67, l'adresse du serveur TFTP et le nom du fichier bootloader à télécharger. Un conteneur LXC dédié héberge le serveur TFTP (\texttt{tftpd-hpa}) ainsi que les fichiers de boot. Un second conteneur LXC héberge un serveur HTTP Nginx qui met à disposition l'image d'installation et le fichier \textit{preseed}. Enfin, le nœud physique cible amorce la séquence depuis son firmware.\\
+\par L'architecture retenue repose sur quatre composants principaux, hébergés dans des conteneurs LXC dédiés sur le cluster Proxmox. Le serveur DHCP (OPNsense) est chargé de fournir une adresse IP au nœud en démarrage réseau et de lui indiquer, via les options 66 et 67, l'adresse du serveur TFTP et le nom du fichier bootloader à télécharger. Un conteneur LXC dédié héberge le serveur TFTP (\texttt{tftpd-hpa}) ainsi que les fichiers de boot. Un second conteneur LXC héberge un serveur HTTP Nginx qui met à disposition l'image d'installation et le fichier ``preseed''. Enfin, le nœud physique cible amorce la séquence depuis son firmware.\\
 
 \par La séquence complète de démarrage réseau se déroule en six étapes successives :
 
@@ -497,7 +488,7 @@ SSH/SFTP & TCP & Oui & Post-installation uniquement \\
     \item OPNsense répond avec une adresse IP et les paramètres PXE.
     \item Le client PXE télécharge le bootloader (\texttt{pxelinux.0} en mode BIOS Legacy, \texttt{grubx64.efi} en mode UEFI) via TFTP.
     \item Le bootloader charge le menu de boot puis récupère via TFTP le kernel Linux (\texttt{vmlinuz}) et l'image disque initiale (\texttt{initrd.img}).
-    \item Le kernel s'exécute en mémoire vive et prend le contrôle de la machine ; il télécharge ensuite l'image d'installation et le fichier \textit{preseed} via HTTP depuis le serveur Nginx.
+    \item Le kernel s'exécute en mémoire vive et prend le contrôle de la machine ; il télécharge ensuite l'image d'installation et le fichier ``preseed'' via HTTP depuis le serveur Nginx.
     \item L'installation de Proxmox VE se déroule de manière entièrement automatisée, sans aucune intervention manuelle.
 \end{enumerate}
 
@@ -536,7 +527,7 @@ cp initrd.img /var/lib/tftpboot/
 
 \paragraph{Menu de boot PXE}
 
-\par Le fichier de configuration du menu de boot PXE définit les entrées disponibles au démarrage réseau. L'entrée \texttt{install-auto} déclenche l'installation entièrement automatisée de Proxmox VE en pointant vers le fichier \textit{preseed} hébergé sur le serveur HTTP.\\
+\par Le fichier de configuration du menu de boot PXE définit les entrées disponibles au démarrage réseau. L'entrée \texttt{install-auto} déclenche l'installation entièrement automatisée de Proxmox VE en pointant vers le fichier ``preseed'' hébergé sur le serveur HTTP.\\
 
 \begin{lstlisting}[style=sonacode,language={},caption={Menu de boot PXE},label={lst:pxe-menu}]
 DEFAULT menu.c32
@@ -703,9 +694,7 @@ ovs-vsctl add-port vmbr1 eno1
 
 \par Le fichier \texttt{/etc/network/interfaces} du nœud PVE-01 centralise l'ensemble de la configuration réseau. Pour en faciliter la lecture, il est présenté ici en cinq parties logiques correspondant aux différents rôles des interfaces : la base physique, les réseaux d'infrastructure Ceph et Corosync, les réseaux de migration et de sauvegarde, puis les réseaux applicatifs et leurs bridges Linux. La figure~\ref{fig:pve01-overview} ci-dessous offre une vue synthétique de cette organisation en quatre couches avant que chacune ne soit détaillée.\\
 
-% --------------------------------------------
 % Figure TikZ externalisée -- fichier : figures/fig_pve01_overview.tex
-% --------------------------------------------
 \input{image/ch4/fig_pve01_overview}
 
 \par La figure~\ref{fig:pve01-overview} illustre l'organisation en quatre couches de la configuration réseau de PVE-01 : le bridge de management (Partie 1), les VxLAN d'infrastructure Corosync et Ceph interne (Partie 2), les VxLAN de migration, Ceph public et sauvegarde (Partie 3), et enfin les VxLAN applicatifs avec leurs bridges Linux (Partie 4).\\
@@ -933,9 +922,7 @@ source /etc/network/interfaces.d/*
 
 \par Les bridges Linux \texttt{vmbr60}, \texttt{vmbr70} et \texttt{vmbr80} constituent la jonction entre le plan de données OVS et les interfaces réseau des VMs Proxmox. Chaque bridge est relié à l'interface interne OVS du VxLAN correspondant, formant ainsi un chemin de commutation continu depuis la VM applicative jusqu'à l'interface physique du nœud, à travers le tunnel VxLAN vers les autres nœuds du cluster. Cette architecture permet de transporter plusieurs réseaux logiques isolés sur le même réseau physique, sans dépendre d'un switch physique configuré en VLAN.\\
 
-% ----------------------------------------
 \subsection{Déploiement de la VM OPNsense}
-% ----------------------------------------
 
 \par OPNsense joue un rôle central dans l'architecture réseau en assurant le routage inter-réseaux, le NAT sortant et le service DHCP pour les trois zones applicatives.
 
@@ -943,10 +930,12 @@ source /etc/network/interfaces.d/*
 
 \par OPNsense a été déployé sous forme de machine virtuelle sur le cluster Proxmox. Son disque système est stocké sur le pool Ceph, ce qui permet de bénéficier du stockage distribué et de la haute disponibilité.\\
 
-\par La VM dispose de 4 Go de RAM, de 2 vCPUs et d'un disque de 20 Go. Quatre interfaces réseau lui ont été attribuées afin de jouer le rôle de routeur et pare-feu pour les différents segments de l'infrastructure.\\
+\par La VM dispose de 4 Go de RAM, de 2 vCPUs et d'un disque de 20 Go. Quatre interfaces réseau lui ont été attribuées afin de jouer le rôle de routeur et pare-feu pour les différents segments de l'infrastructure. Le tableau~\ref{tab:opnsense-interfaces} récapitule ces interfaces avec leur bridge Proxmox, leur rôle et leur adresse IP.\\
 
 \begin{table}[H]
 \centering
+\caption{Interfaces de la VM OPNsense}
+\label{tab:opnsense-interfaces}
 \begin{tabular}{|l|l|l|l|}
 \hline
 \textbf{Interface VM} & \textbf{Bridge Proxmox} & \textbf{Rôle} & \textbf{Adresse IP} \\
@@ -960,8 +949,6 @@ net2 (em2) & vmbr70 & LAN Prod & 172.16.70.1/24 \\
 net3 (em3) & vmbr80 & LAN DMZ & 172.16.80.1/24 \\
 \hline
 \end{tabular}
-\caption{Interfaces de la VM OPNsense}
-\label{tab:opnsense-interfaces}
 \end{table}
 
 \par Comme le montre la figure~\ref{fig:opnsense-interfaces}, la console de gestion OPNsense permet de vérifier l'assignation correcte de ces quatre interfaces.\\
@@ -979,14 +966,14 @@ net3 (em3) & vmbr80 & LAN DMZ & 172.16.80.1/24 \\
 
 \par Le NAT sortant automatique a été activé dans OPNsense afin de permettre aux réseaux internes de sortir vers Internet via l'interface WAN. Cette configuration a simplifié le routage pour les VMs hébergées sur les réseaux Dev, Prod et DMZ.\\
 
-% ----------------------------------------
 \subsection{Configuration du service DHCP}
-% ----------------------------------------
 
-\par Le service DHCP a été activé via \texttt{dnsmasq} sur les interfaces LAN internes. Ce choix a été retenu car il est simple à configurer et convient bien à un environnement de laboratoire.\\
+\par Le service DHCP a été activé via \texttt{dnsmasq} sur les interfaces LAN internes. Ce choix a été retenu car il est simple à configurer et convient bien à un environnement de laboratoire. Le tableau~\ref{tab:dhcp-ranges} présente les plages d'adresses DHCP configurées pour chacun des réseaux internes.\\
 
 \begin{table}[H]
 \centering
+\caption{Plages DHCP configurées sur OPNsense}
+\label{tab:dhcp-ranges}
 \begin{tabular}{|l|l|l|l|}
 \hline
 \textbf{Interface} & \textbf{Plage début} & \textbf{Plage fin} & \textbf{Gateway} \\
@@ -998,8 +985,6 @@ OPT1 (Prod) & 172.16.70.10 & 172.16.70.250 & 172.16.70.1 \\
 OPT2 (DMZ) & 172.16.80.10 & 172.16.80.250 & 172.16.80.1 \\
 \hline
 \end{tabular}
-\caption{Plages DHCP configurées sur OPNsense}
-\label{tab:dhcp-ranges}
 \end{table}
 
 \par Le bon fonctionnement de DHCP a été vérifié par une capture réseau sur l'interface LAN d'OPNsense pendant le démarrage d'une VM de test.\\
@@ -1010,11 +995,9 @@ tcpdump -i em1 port 67 or port 68
 
 \par Cette commande capture les échanges DHCP sur l'interface \texttt{em1} d'OPNsense. La sortie affiche successivement les messages Discover, Offer, Request et Acknowledge, validant le cycle complet d'attribution d'adresse IP à la machine virtuelle de test.\\
 
-\par Cette vérification a montré le cycle normal des échanges DHCP, depuis le \textit{Discover} jusqu'au \textit{Offer}, puis l'attribution effective de l'adresse IP à la machine virtuelle.\\
+\par Cette vérification a montré le cycle normal des échanges DHCP, depuis le ``Discover'' jusqu'au ``Offer'', puis l'attribution effective de l'adresse IP à la machine virtuelle.\\
 
-% ----------------------------------------
 \subsection{Configuration du pare-feu Proxmox}
-% ----------------------------------------
 
 \par En complément du filtrage assuré par OPNsense au niveau applicatif, le pare-feu natif Proxmox a été configuré au niveau de l'hyperviseur pour protéger les réseaux d'infrastructure et restreindre les accès à la plateforme de gestion.
 
@@ -1033,7 +1016,7 @@ tcpdump -i em1 port 67 or port 68
     \label{fig:fw-datacenter-aliases}
 \end{figure}
 
-\par La figure~\ref{fig:fw-datacenter-aliases} présente la liste des alias configurés dans l'interface Proxmox sous \textit{Datacenter -> Firewall -> Aliases}. Chaque alias associe un nom symbolique à une adresse IP, simplifiant la lecture et la maintenance des règles de filtrage sans nécessiter de modifier chaque règle individuellement en cas de changement d'adresse.\\
+\par La figure~\ref{fig:fw-datacenter-aliases} présente la liste des alias configurés dans l'interface Proxmox sous ``Datacenter -> Firewall -> Aliases''. Chaque alias associe un nom symbolique à une adresse IP, simplifiant la lecture et la maintenance des règles de filtrage sans nécessiter de modifier chaque règle individuellement en cas de changement d'adresse.\\
 
 \par Des IPSets ont également été créés pour regrouper les adresses appartenant à un même domaine de sécurité. Comme le montre la figure~\ref{fig:fw-datacenter-ipsets}, ces groupes permettent d'appliquer une règle à un ensemble de machines en une seule définition.\\
 
@@ -1044,7 +1027,7 @@ tcpdump -i em1 port 67 or port 68
     \label{fig:fw-datacenter-ipsets}
 \end{figure}
 
-\par La figure~\ref{fig:fw-datacenter-ipsets} présente les IPSets définis dans Proxmox sous \textit{Datacenter -> Firewall -> IPSet}. On y distingue notamment les groupes d'adresses des nœuds de gestion et des instances Flask, utilisés pour filtrer les flux de manière centralisée sans dupliquer les adresses dans chaque règle individuelle.\\
+\par La figure~\ref{fig:fw-datacenter-ipsets} présente les IPSets définis dans Proxmox sous ``Datacenter -> Firewall -> IPSet''. On y distingue notamment les groupes d'adresses des nœuds de gestion et des instances Flask, utilisés pour filtrer les flux de manière centralisée sans dupliquer les adresses dans chaque règle individuelle.\\
 
 \par Des groupes de sécurité ont enfin été créés pour encapsuler les règles de ports associées à chaque service d'infrastructure. La figure~\ref{fig:fw-security-groups} illustre ces groupes et leurs règles respectives.\\
 
@@ -1055,12 +1038,12 @@ tcpdump -i em1 port 67 or port 68
     \label{fig:fw-security-groups}
 \end{figure}
 
-\par La figure~\ref{fig:fw-security-groups} présente les groupes de sécurité configurés sous \textit{Datacenter -> Firewall -> Security Groups}. Les groupes définis regroupent les règles nécessaires à chaque service : \texttt{proxmox-management} pour les ports SSH (22), Web UI (8006), VNC (5900--5999) et SPICE (3128) ; \texttt{corosync-cluster} pour les ports UDP 5404--5405 du heartbeat ; \texttt{vxlan-overlay} pour le port UDP 4789 indispensable aux tunnels VxLAN ; et \texttt{ceph-storage} pour les ports MON (3300, 6789) et OSD (6800--7300).\\
+\par La figure~\ref{fig:fw-security-groups} présente les groupes de sécurité configurés sous ``Datacenter -> Firewall -> Security Groups''. Les groupes définis regroupent les règles nécessaires à chaque service : \texttt{proxmox-management} pour les ports SSH (22), Web UI (8006), VNC (5900--5999) et SPICE (3128) ; \texttt{corosync-cluster} pour les ports UDP 5404--5405 du heartbeat ; \texttt{vxlan-overlay} pour le port UDP 4789 indispensable aux tunnels VxLAN ; et \texttt{ceph-storage} pour les ports MON (3300, 6789) et OSD (6800--7300).\\
 
 \par Deux règles complémentaires ont été ajoutées au niveau datacenter pour
 couvrir des besoins opérationnels spécifiques non couverts par les groupes
 de sécurité précédents. D'une part, une règle ICMP autorisant les requêtes
-\textit{ping} depuis le réseau de management a été intégrée dans le groupe
+``ping'' depuis le réseau de management a été intégrée dans le groupe
 \texttt{proxmox-management}. Cette règle est indispensable aux diagnostics
 de connectivité entre nœuds, notamment pour vérifier rapidement la
 joignabilité d'un hôte lors d'une intervention. D'autre part, le port
@@ -1085,12 +1068,14 @@ bon fonctionnement du job \texttt{ceph} déclaré dans
     \label{fig:fw-node-rules-web}
 \end{figure}
 
-\par La figure~\ref{fig:fw-node-rules-web} présente la vue \textit{Firewall} du nœud PVE-01 dans l'interface Proxmox. On y observe les groupes de sécurité appliqués et les règles spécifiques au nœud, définissant notamment les accès autorisés en entrée par réseau source et par port de service.\\
+\par La figure~\ref{fig:fw-node-rules-web} présente la vue ``Firewall'' du nœud PVE-01 dans l'interface Proxmox. On y observe les groupes de sécurité appliqués et les règles spécifiques au nœud, définissant notamment les accès autorisés en entrée par réseau source et par port de service.\\
 
 \par Des règles supplémentaires spécifiques à chaque nœud complètent ce filtrage, comme résumé dans le tableau~\ref{tab:fw-node-rules}.\\
 
 \begin{table}[H]
 \centering
+\caption{Règles de pare-feu au niveau nœud (appliquées sur PVE-01, PVE-02, PVE-03)}
+\label{tab:fw-node-rules}
 \begin{tabular}{|l|l|l|l|l|}
 \hline
 \textbf{Direction} & \textbf{Action} & \textbf{Source} & \textbf{Port / Protocole} & \textbf{Description} \\
@@ -1118,8 +1103,6 @@ IN & ACCEPT & 192.168.10.0/24 & 4789 UDP & Tunnels VxLAN \\
 IN & DROP & any & any & Règle par défaut \\
 \hline
 \end{tabular}
-\caption{Règles de pare-feu au niveau nœud (appliquées sur PVE-01, PVE-02, PVE-03)}
-\label{tab:fw-node-rules}
 \end{table}
 
 % === MODIFICATION 2 : paragraphe explicatif mis à jour ===
@@ -1145,7 +1128,7 @@ ssh root@192.168.10.100 \
     "iptables -L PVEFW-HOST-IN -n -v --line-numbers"
 \end{lstlisting}
 
-\par Comme le montre la figure~\ref{fig:fw-iptables-host-in}, la sortie confirme que chaque règle définie dans l'interface web est bien traduite en entrée iptables active, comme le valide le Tableau IV.5 ci-dessus.
+\par Comme le montre la figure~\ref{fig:fw-iptables-host-in}, la sortie confirme que chaque règle définie dans l'interface web est bien traduite en entrée iptables active, comme le valide le tableau~\ref{tab:fw-node-rules} ci-dessus.
 
 \begin{figure}[H]
     \centering
@@ -1162,7 +1145,7 @@ ssh root@192.168.10.100 \
 ssh root@192.168.10.100 "ipset list"
 \end{lstlisting}
 
-\par La Figure IV.53 confirme déjà que ces IPSets sont correctement définis au niveau datacenter ; leur propagation vers le noyau Linux est assurée automatiquement par Proxmox.
+\par La figure~\ref{fig:fw-datacenter-ipsets} confirme déjà que ces IPSets sont correctement définis au niveau datacenter ; leur propagation vers le noyau Linux est assurée automatiquement par Proxmox.
 
 \begin{figure}[H]
     \centering
@@ -1177,11 +1160,13 @@ ssh root@192.168.10.100 "ipset list"
 
 \subsubsection{Règles au niveau des VMs}
 
-\par Chaque VM dispose de règles de pare-feu adaptées à son rôle. Le principe appliqué est celui du moindre privilège : seuls les ports strictement nécessaires sont ouverts en entrée, et les flux sortants sont autorisés uniquement vers les destinations légitimes.\\
+\par Chaque VM dispose de règles de pare-feu adaptées à son rôle. Le principe appliqué est celui du moindre privilège : seuls les ports strictement nécessaires sont ouverts en entrée, et les flux sortants sont autorisés uniquement vers les destinations légitimes. Le tableau~\ref{tab:fw-vm-rules} détaille ces règles pour chaque VM applicative.\\
 
 % === MODIFICATION 3 : tableau tab:fw-vm-rules mis à jour ===
 \begin{table}[H]
 \centering
+\caption{Règles de pare-feu par VM applicative}
+\label{tab:fw-vm-rules}
 \begin{tabular}{|l|l|l|l|l|}
 \hline
 \textbf{VM} & \textbf{Direction} & \textbf{Action} & \textbf{Source} & \textbf{Port / Protocole} \\
@@ -1207,8 +1192,6 @@ PostgreSQL (205) & IN & ACCEPT & app1, app2 & 5432 TCP \\
 PostgreSQL (205) & IN & ACCEPT & management-net & 22 TCP \\
 \hline
 \end{tabular}
-\caption{Règles de pare-feu par VM applicative}
-\label{tab:fw-vm-rules}
 \end{table}
 
 \par Ces règles garantissent que chaque VM ne communique qu'avec les
@@ -1223,9 +1206,7 @@ internes. Tout autre flux est implicitement bloqué par la politique par
 défaut, assurant une isolation stricte entre les composants de
 l'application.\\
 
-% ----------------------------------------
 \subsection{Validation de la haute disponibilité réseau et applicative}
-% ----------------------------------------
 
 \par Un scénario de panne a été réalisé afin de tester le comportement global de l'infrastructure en cas de perte d'un nœud physique. L'arrêt brutal de PVE-01 a permis d'observer la détection de panne par Corosync, le redémarrage des services protégés sur un autre nœud, puis la resynchronisation automatique après le retour du serveur.\\
 
@@ -1237,9 +1218,7 @@ l'application.\\
 
 \par Cette partie présente le déploiement des services complémentaires qui complètent l'infrastructure hyperconvergée : la synchronisation temporelle, la centralisation des journaux, le système de notification, la gestion du code source et la plateforme d'automatisation opérationnelle.
 
-% ----------------------------------------
 \subsection{Synchronisation Temporelle : NTP/Chrony}
-% ----------------------------------------
 
 \par La cohérence temporelle est une exigence fondamentale dans un cluster distribué. Une dérive de quelques secondes entre les nœuds peut perturber le quorum Corosync, fausser les journaux de corrélation et provoquer des incohérences dans les métriques Prometheus. Un conteneur LXC dédié héberge un serveur Chrony configuré en Stratum 3, qui fait référence pour l'ensemble des nœuds Proxmox et des VMs de l'infrastructure.
 
@@ -1296,9 +1275,7 @@ systemctl start chrony
   \label{fig:chrony-clients}
 \end{figure}
 
-% ----------------------------------------
 \subsection{Centralisation des Journaux : Loki et Alloy}
-% ----------------------------------------
 
 \par La collecte et la centralisation des journaux système constituent un élément essentiel pour le diagnostic des incidents et l'audit de l'infrastructure. Loki, déployé dans le conteneur LXC \texttt{monitoring} existant, joue le rôle d'agrégateur de journaux. L'agent Grafana Alloy, installé sur chaque nœud Proxmox, collecte les fichiers de log locaux et les transmet à Loki pour indexation.
 
@@ -1339,6 +1316,8 @@ loki.write "default" {
 
 \subsubsection{Validation}
 
+\par La validation du déploiement porte sur l'état de l'agent de collecte et sur la disponibilité des journaux dans Grafana. La figure~\ref{fig:alloy-status} montre l'agent Grafana Alloy actif sur PVE-01, tandis que la figure~\ref{fig:loki-grafana-explore} présente les journaux de l'infrastructure centralisés et consultables dans Grafana via Loki.\\
+
 \begin{figure}[H]
   \centering
   \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
@@ -1355,21 +1334,19 @@ loki.write "default" {
   \label{fig:loki-grafana-explore}
 \end{figure}
 
-% ----------------------------------------
 \subsection{Système de Notification : Alertmanager}
-% ----------------------------------------
 
 \par La supervision active de l'infrastructure ne se limite pas à la visualisation des métriques : elle inclut la notification automatique des équipes en cas d'anomalie détectée. Le module Grafana Alerting a été configuré pour évaluer des règles d'alerte sur les métriques collectées et transmettre les notifications via un contact point Gmail utilisant le protocole SMTP.
 
 \subsubsection{Configuration des règles d'alerte}
 
-\par Les règles d'alerte sont définies directement dans Grafana sous \textit{Alerting -> Alert Rules}. Chaque règle spécifie une expression PromQL ou une requête InfluxDB, un seuil de déclenchement, une durée de maintien avant passage en état \textit{Firing}, et le groupe de contact destinataire.\\
+\par Les règles d'alerte sont définies directement dans Grafana sous ``Alerting -> Alert Rules''. Chaque règle spécifie une expression PromQL ou une requête InfluxDB, un seuil de déclenchement, une durée de maintien avant passage en état ``Firing'', et le groupe de contact destinataire.\\
 
 \par Parmi les règles configurées figurent notamment la détection d'une charge CPU élevée sur les nœuds Proxmox, la surveillance de l'état de santé du cluster Ceph, et la détection d'un OSD passé hors ligne. Ces règles couvrent les scenarios de défaillance les plus critiques de l'infrastructure.
 
 \subsubsection{Configuration du contact point Gmail}
 
-\par Le contact point Gmail a été créé dans Grafana sous \textit{Alerting -> Contact Points}. La configuration utilise le serveur SMTP de Google avec authentification par mot de passe d'application, garantissant la compatibilité avec les comptes protégés par la double authentification.\\
+\par Le contact point Gmail a été créé dans Grafana sous ``Alerting -> Contact Points''. La configuration utilise le serveur SMTP de Google avec authentification par mot de passe d'application, garantissant la compatibilité avec les comptes protégés par la double authentification.\\
 
 \begin{lstlisting}[style=sonacode,language={},caption={Paramètres SMTP du contact point Gmail},label={lst:grafana-smtp}]
 # Dans grafana.ini ou via l'interface web :
@@ -1384,6 +1361,8 @@ starttls_policy = MandatoryStartTLS
 \par L'activation de \texttt{MandatoryStartTLS} garantit que les identifiants SMTP ne transitent jamais en clair, conformément aux exigences de sécurité de l'infrastructure.
 
 \subsubsection{Validation}
+
+\par La validation du système de notification s'appuie sur deux vérifications. La figure~\ref{fig:grafana-alert-rules} présente les règles d'alerte configurées dans Grafana Alerting ainsi que leur état, et la figure~\ref{fig:grafana-contact-point} montre le contact point Gmail associé pour l'acheminement des notifications.\\
 
 \begin{figure}[H]
   \centering
@@ -1405,9 +1384,7 @@ starttls_policy = MandatoryStartTLS
   \label{fig:grafana-contact-point}
 \end{figure}
 
-% ----------------------------------------
 \subsection{Gestion du Code Source et CI/CD : GitLab}
-% ----------------------------------------
 
 \par La traçabilité du code et l'automatisation des tests constituent des pratiques essentielles dans un environnement d'infrastructure moderne. Un LXC Turnkey GitLab CE a été déployé sur le cluster pour centraliser les dépôts de code de l'infrastructure et y associer des pipelines d'intégration continue.
 
@@ -1423,9 +1400,11 @@ starttls_policy = MandatoryStartTLS
 
 \subsubsection{Configuration des pipelines CI/CD}
 
-\par Un fichier \texttt{.gitlab-ci.yml} a été défini dans chaque dépôt pour automatiser les vérifications à chaque push. Pour le projet \texttt{clbs}, le pipeline comprend les stages \textit{Lint} (vérification syntaxique du code Go avec \texttt{golint}), \textit{Tests} (exécution des tests unitaires avec \texttt{go test}) et \textit{Build} (compilation du binaire). Pour le projet \texttt{ansible-infra}, le pipeline effectue une vérification syntaxique des playbooks avec \texttt{ansible-lint}.
+\par Un fichier \texttt{.gitlab-ci.yml} a été défini dans chaque dépôt pour automatiser les vérifications à chaque push. Pour le projet \texttt{clbs}, le pipeline comprend les stages ``Lint'' (vérification syntaxique du code Go avec \texttt{golint}), ``Tests'' (exécution des tests unitaires avec \texttt{go test}) et ``Build'' (compilation du binaire). Pour le projet \texttt{ansible-infra}, le pipeline effectue une vérification syntaxique des playbooks avec \texttt{ansible-lint}.
 
 \subsubsection{Validation}
+
+\par La validation de l'instance GitLab porte sur la présence des dépôts et sur le bon déroulement des pipelines. La figure~\ref{fig:gitlab-projects} présente la page des projets de l'instance GitLab, et la figure~\ref{fig:gitlab-pipeline} montre un pipeline CI/CD exécuté avec succès pour le projet \texttt{clbs}.\\
 
 \begin{figure}[H]
   \centering
@@ -1445,9 +1424,7 @@ starttls_policy = MandatoryStartTLS
   \label{fig:gitlab-pipeline}
 \end{figure}
 
-% ----------------------------------------
 \subsection{Automatisation Opérationnelle : Rundeck}
-% ----------------------------------------
 
 \par La délégation de tâches opérationnelles récurrentes à une interface centralisée permet de réduire les erreurs humaines et de tracer l'ensemble des interventions sur l'infrastructure. Rundeck, déployé dans un conteneur LXC dédié, offre une interface web permettant de déclencher des playbooks Ansible sans accès SSH direct aux nœuds.
 
@@ -1468,6 +1445,8 @@ systemctl start rundeckd
 \par Les jobs Rundeck ont été définis pour chaque opération récurrente : provisionnement d'une nouvelle VM, intégration d'un nœud au cluster, déploiement d'une mise à jour de configuration. Chaque job référence le playbook Ansible correspondant dans le dépôt GitLab et expose les variables nécessaires sous forme de paramètres saisissables dans l'interface web.
 
 \subsubsection{Validation}
+
+\par La validation de Rundeck porte sur la définition des jobs et sur leur exécution. La figure~\ref{fig:rundeck-jobs} présente la liste des jobs de provisionnement Ansible configurés, et la figure~\ref{fig:rundeck-execution} montre le résultat d'exécution d'un job avec son journal Ansible.\\
 
 \begin{figure}[H]
   \centering
@@ -1500,6 +1479,6 @@ perspective d'évolution à court terme de l'infrastructure.
 
 \par Ce chapitre a présenté l'implémentation réelle de l'infrastructure hyperconvergée open source mise en place dans le cadre du projet. La couche calcul a permis de déployer Proxmox, le cluster, le monitoring, l'automatisation et les services applicatifs. La couche stockage a été assurée par Ceph avec réplication et tolérance aux pannes. Enfin, la couche réseau a été construite avec Open vSwitch, les tunnels VxLAN, OPNsense et les services d'adressage associés.\\
 
-\par Les services complémentaires déployés dans la Partie IV -- synchronisation temporelle, centralisation des journaux, notifications, versionnement du code et automatisation opérationnelle -- complètent l'infrastructure en lui apportant les briques transverses indispensables à son exploitation en conditions réelles.\\
+\par Les services complémentaires déployés dans la Partie IV (synchronisation temporelle, centralisation des journaux, notifications, versionnement du code et automatisation opérationnelle) complètent l'infrastructure en lui apportant les briques transverses indispensables à son exploitation en conditions réelles.\\
 
 \par Les différents tests réalisés ont confirmé la cohérence de l'architecture proposée et sa capacité à répondre aux objectifs du projet dans un environnement de laboratoire structuré. Le chapitre suivant présentera l'évaluation des performances obtenues ainsi qu'une analyse des résultats expérimentaux.\\
