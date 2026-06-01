@@ -315,15 +315,41 @@ GROUP BY instance_id;
 
 \subsubsection{Pipeline PXE/TFTP}
 
-\par Dans une optique de scalabilité, un pipeline de provisionnement automatique en deux phases a été mis en place pour intégrer tout nouveau serveur physique sans intervention manuelle.\\
+\par Dans une optique de scalabilité, l'intégration de tout nouveau serveur physique a été conçue autour d'un pipeline de provisionnement entièrement automatique, structuré en deux phases : une installation système initiale en environnement ``pre-OS'' via PXE/TFTP, puis une intégration logique au cluster pilotée par Ansible. L'objectif est d'enregistrer un serveur Dell PowerEdge R720 vierge dans l'infrastructure sans aucune intervention manuelle, en s'appuyant uniquement sur le démarrage réseau.\\
 
-\par \textbf{Phase 1 : Installation automatique via PXE.} Lorsqu'un nouveau serveur est mis sous tension, la séquence suivante s'exécute automatiquement :\\
+\par \textbf{Pourquoi PXE et TFTP ?} Le démarrage réseau PXE (``Preboot eXecution Environment'') repose sur une contrainte fondamentale : au moment du boot, la machine ne dispose d'aucun système d'exploitation, d'aucune pile TCP complète, ni d'aucune bibliothèque logicielle. Le client PXE, intégré directement dans le firmware de la carte réseau, ne dispose que de quelques dizaines de kilo-octets de mémoire et d'une pile réseau UDP minimale. Cette contrainte exclut l'usage de protocoles comme FTP, SSH ou HTTP avec TLS, qui nécessitent tous un OS opérationnel. TFTP (``Trivial File Transfer Protocol''), défini par la RFC~1350 et opérant sur le port UDP/69, est le seul protocole compatible avec cet environnement ``pre-OS'' : son implémentation ne dépasse pas quelques kilo-octets et il ne requiert ni authentification ni connexion TCP.\\
+
+\par En revanche, la limitation inhérente à TFTP (un mécanisme de transfert ``stop-and-wait'' d'un bloc de 512 octets à la fois) le rend inadapté au transfert de fichiers volumineux. Dans la conception retenue, TFTP est donc strictement réservé aux fichiers de démarrage (bootloader et kernel), dont la taille totale n'excède généralement pas 40~Mo. Les fichiers volumineux, comme l'image d'installation ISO (environ 800~Mo) ou le fichier de réponses automatiques (``preseed''), sont ensuite téléchargés via HTTP dès que le kernel Linux est en mémoire et dispose d'une pile TCP complète. Le tableau~\ref{tab:pxe-protocols} compare les protocoles envisagés aux différentes étapes du pipeline de démarrage réseau.
+
+\begin{table}[H]
+\centering
+\caption{Comparaison des protocoles envisagés dans le pipeline PXE}
+\label{tab:pxe-protocols}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Protocole} & \textbf{Transport} & \textbf{Nécessite un OS} & \textbf{Usage dans le pipeline} \\
+\hline
+TFTP & UDP/69 & Non & Bootloader + kernel ($\leq$40~Mo) \\
+\hline
+HTTP & TCP & Oui (après kernel) & Image ISO + preseed ($\approx$800~Mo) \\
+\hline
+FTP & TCP & Oui & Inutilisable en pre-OS \\
+\hline
+SSH/SFTP & TCP & Oui & Post-installation uniquement \\
+\hline
+\end{tabular}
+\end{table}
+
+\par \textbf{Architecture du pipeline conçu.} L'architecture retenue repose sur quatre composants principaux, hébergés dans des conteneurs LXC dédiés sur le cluster Proxmox. Le serveur DHCP (OPNsense) fournit une adresse IP au nœud en démarrage réseau et lui indique, via les options 66 et 67, l'adresse du serveur TFTP et le nom du fichier bootloader à télécharger. Un conteneur LXC dédié héberge le serveur TFTP (\texttt{tftpd-hpa}) ainsi que les fichiers de boot : le bootloader, les modules Syslinux, le kernel \texttt{vmlinuz} et l'image \texttt{initrd.img}. Un second conteneur LXC héberge un serveur HTTP Nginx qui met à disposition l'image d'installation et le fichier ``preseed''. Enfin, le nœud physique cible amorce la séquence depuis son firmware.\\
+
+\par \textbf{Phase 1 : Installation automatique via PXE.} Lorsqu'un nouveau serveur est mis sous tension, la séquence de démarrage réseau se déroule en plusieurs étapes successives, sans aucune frappe clavier :\\
 
 \begin{enumerate}
-    \item Le serveur envoie une requête DHCP ; OPNsense lui attribue une adresse temporaire et lui indique l'adresse du serveur de boot ainsi que le fichier bootloader à récupérer (options DHCP 66 et 67).
-    \item Le firmware PXE contacte le serveur TFTP (UDP/69) pour télécharger le bootloader (\texttt{pxelinux.0}) et le kernel Linux d'amorçage. TFTP est le seul protocole utilisable dans un firmware pre-OS.
-    \item Une fois le kernel démarré en mémoire, l'image d'installation Proxmox VE (\textasciitilde{}800 Mo) est téléchargée via HTTP depuis un serveur Nginx dédié. HTTP (TCP) est retenu pour ce transfert car TFTP (UDP) est inadapté aux fichiers volumineux.
-    \item L'installateur Proxmox lit un fichier de réponses (``Answer File'') hébergé sur le serveur HTTP, contenant le partitionnement, le nom d'hôte, le fuseau horaire et la langue. L'installation s'effectue sans aucune frappe clavier.
+    \item La machine envoie une requête DHCP en broadcast ; OPNsense lui attribue une adresse IP et lui indique, via les options 66 et 67, l'adresse du serveur TFTP et le nom du fichier bootloader à récupérer.
+    \item Le client PXE télécharge le bootloader (\texttt{pxelinux.0} en mode BIOS Legacy, \texttt{grubx64.efi} en mode UEFI) via TFTP (UDP/69), seul protocole utilisable dans un firmware pre-OS.
+    \item Le bootloader charge le menu de boot puis récupère via TFTP le kernel Linux (\texttt{vmlinuz}) et l'image disque initiale (\texttt{initrd.img}).
+    \item Le kernel s'exécute en mémoire vive et prend le contrôle de la machine ; il télécharge ensuite l'image d'installation Proxmox VE (\textasciitilde{}800~Mo) et le fichier ``preseed'' via HTTP depuis le serveur Nginx, car TFTP est inadapté aux fichiers volumineux.
+    \item L'installateur Proxmox applique le fichier ``preseed'' (partitionnement, nom d'hôte, fuseau horaire, langue) et déroule l'installation de manière entièrement automatisée.
     \item Le serveur redémarre automatiquement sur Proxmox VE fraîchement installé.
 \end{enumerate}
 
@@ -337,7 +363,7 @@ GROUP BY instance_id;
     \item Déclaration du nœud comme cible dans \textbf{Prometheus}.
 \end{itemize}
 
-\par Ce découpage en deux phases répond à une contrainte fondamentale : PXE et TFTP interviennent dans un environnement pre-OS où aucun client SSH ne peut fonctionner, tandis qu'Ansible nécessite un système d'exploitation opérationnel. L'ensemble du pipeline permet l'ajout d'un nouveau nœud en moins de 25 minutes, sans intervention manuelle.\\
+\par Ce découpage en deux phases répond à une contrainte fondamentale : PXE et TFTP interviennent dans un environnement pre-OS où aucun client SSH ne peut fonctionner, tandis qu'Ansible nécessite un système d'exploitation opérationnel. Le pipeline ainsi conçu vise l'ajout d'un nouveau nœud en moins de 25 minutes sans intervention manuelle, et constitue le premier maillon de la chaîne d'automatisation de bout en bout, depuis un serveur vierge jusqu'à un nœud pleinement opérationnel. Sa validation expérimentale, qui requiert du matériel serveur dédié, est présentée parmi les perspectives de ce travail.\\
 
 % ============================================================
 \section{Partie II : Stockage}

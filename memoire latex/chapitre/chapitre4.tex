@@ -446,110 +446,11 @@ qm cloudinit update {{ vm_id }}
 
 \par Ces trois commandes attachent le disque cloud-init, injectent la configuration réseau (adresse IP, passerelle, DNS) et régénèrent l'ISO cloud-init afin que la VM applique automatiquement ces paramètres dès son premier démarrage, sans intervention manuelle.\\
 
-\subsubsection{Provisionnement en lot et pipeline PXE/TFTP}
+\subsubsection{Provisionnement en lot de VMs}
 
 \par Un second playbook \texttt{provision\_vm\_batch.yml} permet le provisionnement en lot de plusieurs VMs à partir d'une liste définie à l'avance dans l'inventaire. Plutôt que d'exécuter le playbook unitaire pour chaque machine, ce playbook itère sur une liste de définitions YAML et parallélise les créations, réduisant le temps de provisionnement d'un parc de dix VMs de plusieurs dizaines de minutes à quelques minutes seulement.\\
 
-\par En complément de cette automatisation au niveau logiciel, un pipeline PXE/TFTP (``Preboot eXecution Environment'' / ``Trivial File Transfer Protocol'') a été mis en place pour couvrir l'étape la plus amont du cycle de vie d'un nœud physique : l'installation initiale du système d'exploitation. L'objectif est de pouvoir enregistrer un nouveau serveur Dell PowerEdge R720 vierge dans l'infrastructure sans aucune intervention manuelle, en s'appuyant uniquement sur le démarrage réseau.
-
-\paragraph{Pourquoi PXE et TFTP ?}
-
-\par Le démarrage réseau PXE repose sur une contrainte fondamentale : au moment du boot, la machine ne dispose d'aucun système d'exploitation, d'aucune pile TCP complète, et d'aucune bibliothèque logicielle. Le client PXE, intégré directement dans le firmware de la carte réseau, ne dispose que de quelques dizaines de kilo-octets de mémoire et d'une pile réseau UDP minimale. Cette contrainte exclut l'usage de protocoles comme FTP, SSH ou HTTP avec TLS, qui nécessitent tous un OS opérationnel. TFTP, défini par la RFC~1350 et opérant sur le port UDP/69, est le seul protocole compatible avec cet environnement ``pre-OS'' : son implémentation ne dépasse pas quelques kilo-octets, et il ne requiert ni authentification ni connexion TCP.\\
-
-\par En revanche, la limitation inhérente à TFTP (un mécanisme de transfert ``stop-and-wait'' d'un bloc de 512 octets à la fois) le rend inadapté au transfert de fichiers volumineux. En pratique, TFTP est strictement réservé aux fichiers de démarrage (bootloader et kernel), dont la taille totale n'excède généralement pas 40~Mo. Les fichiers volumineux, comme l'image d'installation ISO (environ 800~Mo) ou le fichier de réponses automatiques (``preseed''), sont ensuite téléchargés via HTTP dès que le kernel Linux est en mémoire et dispose d'une pile TCP complète. Le tableau~\ref{tab:pxe-protocols} compare les protocoles utilisés aux différentes étapes du pipeline de démarrage réseau.
-
-\begin{table}[H]
-\centering
-\caption{Comparaison des protocoles utilisés dans le pipeline PXE}
-\label{tab:pxe-protocols}
-\begin{tabular}{|l|l|l|l|}
-\hline
-\textbf{Protocole} & \textbf{Transport} & \textbf{Nécessite un OS} & \textbf{Usage dans le pipeline} \\
-\hline
-TFTP & UDP/69 & Non & Bootloader + kernel ($\leq$40~Mo) \\
-\hline
-HTTP & TCP & Oui (après kernel) & Image ISO + preseed ($\approx$800~Mo) \\
-\hline
-FTP & TCP & Oui & Inutilisable en pre-OS \\
-\hline
-SSH/SFTP & TCP & Oui & Post-installation uniquement \\
-\hline
-\end{tabular}
-\end{table}
-
-\paragraph{Architecture du pipeline}
-
-\par L'architecture retenue repose sur quatre composants principaux, hébergés dans des conteneurs LXC dédiés sur le cluster Proxmox. Le serveur DHCP (OPNsense) est chargé de fournir une adresse IP au nœud en démarrage réseau et de lui indiquer, via les options 66 et 67, l'adresse du serveur TFTP et le nom du fichier bootloader à télécharger. Un conteneur LXC dédié héberge le serveur TFTP (\texttt{tftpd-hpa}) ainsi que les fichiers de boot. Un second conteneur LXC héberge un serveur HTTP Nginx qui met à disposition l'image d'installation et le fichier ``preseed''. Enfin, le nœud physique cible amorce la séquence depuis son firmware.\\
-
-\par La séquence complète de démarrage réseau se déroule en six étapes successives :
-
-\begin{enumerate}
-    \item La machine envoie une requête DHCP en broadcast pour obtenir une adresse IP et les options de boot (option 66 : adresse du serveur TFTP, option 67 : nom du bootloader).
-    \item OPNsense répond avec une adresse IP et les paramètres PXE.
-    \item Le client PXE télécharge le bootloader (\texttt{pxelinux.0} en mode BIOS Legacy, \texttt{grubx64.efi} en mode UEFI) via TFTP.
-    \item Le bootloader charge le menu de boot puis récupère via TFTP le kernel Linux (\texttt{vmlinuz}) et l'image disque initiale (\texttt{initrd.img}).
-    \item Le kernel s'exécute en mémoire vive et prend le contrôle de la machine ; il télécharge ensuite l'image d'installation et le fichier ``preseed'' via HTTP depuis le serveur Nginx.
-    \item L'installation de Proxmox VE se déroule de manière entièrement automatisée, sans aucune intervention manuelle.
-\end{enumerate}
-
-\paragraph{Configuration DHCP et serveur TFTP}
-
-\par La configuration des options PXE dans OPNsense renseigne l'adresse du serveur TFTP et le nom du fichier bootloader adapté au mode firmware de la machine cible.\\
-
-\begin{lstlisting}[style=sonacode,language={},caption={Options DHCP pour le boot PXE},label={lst:dhcp-pxe-options}]
-# Option 66 - Adresse du serveur TFTP (Next Server)
-next-server 192.168.10.X;
-
-# Option 67 - Nom du fichier bootloader
-# Pour BIOS Legacy :
-filename "pxelinux.0";
-
-# Pour UEFI 64 bits :
-filename "grubx64.efi";
-\end{lstlisting}
-
-\par L'installation du serveur TFTP et la préparation de l'arborescence de fichiers de boot sont réalisées sur le conteneur LXC dédié. Le bootloader, les modules Syslinux, le kernel et l'initrd sont copiés dans le répertoire racine du service TFTP.\\
-
-\begin{lstlisting}[style=sonacode,language=bash,caption={Installation et arborescence du serveur TFTP},label={lst:tftp-setup}]
-apt install -y tftpd-hpa pxelinux syslinux-common
-
-# Création de l'arborescence TFTP
-mkdir -p /var/lib/tftpboot/pxelinux.cfg
-
-# Copie du bootloader et des modules Syslinux
-cp /usr/lib/PXELINUX/pxelinux.0      /var/lib/tftpboot/
-cp /usr/lib/syslinux/modules/bios/*.c32 /var/lib/tftpboot/
-
-# Copie du kernel et de l'initrd (extraits de l'ISO cible)
-cp vmlinuz   /var/lib/tftpboot/
-cp initrd.img /var/lib/tftpboot/
-\end{lstlisting}
-
-\paragraph{Menu de boot PXE}
-
-\par Le fichier de configuration du menu de boot PXE définit les entrées disponibles au démarrage réseau. L'entrée \texttt{install-auto} déclenche l'installation entièrement automatisée de Proxmox VE en pointant vers le fichier ``preseed'' hébergé sur le serveur HTTP.\\
-
-\begin{lstlisting}[style=sonacode,language={},caption={Menu de boot PXE},label={lst:pxe-menu}]
-DEFAULT menu.c32
-PROMPT 0
-TIMEOUT 100   # 10 secondes, puis boot automatique
-
-MENU TITLE === Boot Reseau Proxmox ===
-
-LABEL install-auto
-  MENU LABEL Installation automatique Proxmox VE
-  KERNEL vmlinuz
-  APPEND initrd=initrd.img auto=true \
-         url=http://192.168.10.X/preseed.cfg
-
-LABEL local
-  MENU LABEL Boot depuis le disque local
-  LOCALBOOT 0
-\end{lstlisting}
-
-\par Ce menu présente deux choix : une installation entièrement automatisée de Proxmox VE à partir du fichier preseed, et un démarrage local depuis le disque pour les nœuds déjà installés. Le délai de 10 secondes puis le boot automatique sur l'entrée par défaut garantit qu'aucune interaction clavier n'est requise lors du provisionnement à grande échelle.\\
-
-\par Ce pipeline PXE/TFTP constitue le premier maillon de la chaîne d'automatisation complète de l'infrastructure. Une fois le nœud installé et accessible sur le réseau de management, les playbooks Ansible prennent le relais pour configurer Proxmox, rejoindre le cluster et intégrer les réseaux VxLAN, offrant ainsi un pipeline de bout en bout depuis un serveur vierge jusqu'à un nœud pleinement opérationnel.\\
+\par Cette automatisation porte sur le provisionnement des machines virtuelles au-dessus d'un cluster déjà opérationnel. L'extension de cette même logique à l'amorçage des nœuds physiques eux-mêmes, c'est-à-dire l'installation initiale du système d'exploitation via un pipeline PXE/TFTP, a fait l'objet d'une conception détaillée dans le chapitre précédent. Sa mise en œuvre nécessitant toutefois du matériel serveur dédié, indisponible dans le cadre de ce projet, sa validation expérimentale est présentée parmi les perspectives d'évolution de l'infrastructure.\\
 
 % ============================================================
 \section{Partie II: Couche Stockage}

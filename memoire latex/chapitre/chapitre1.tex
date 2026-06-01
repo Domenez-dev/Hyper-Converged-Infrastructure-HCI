@@ -37,19 +37,19 @@
 
 \subsection{Infrastructure actuelle de Sonatrach}
 
-\par Sonatrach dispose actuellement d'une infrastructure hyperconvergée basée sur la solution propriétaire Nutanix, déployée à l'échelle nationale sur plusieurs wilayas et utilisée pour les environnements de production critiques. Cette solution est reconnue pour sa stabilité, ses performances et la richesse de ses fonctionnalités, notamment en matière de gestion centralisée, de haute disponibilité et de scalabilité.\\
+\par Sonatrach dispose actuellement d'une infrastructure hyperconvergée reposant sur deux solutions propriétaires complémentaires : Nutanix et VMware vSAN. Nutanix, déployé à l'échelle nationale sur plusieurs wilayas, équipe les infrastructures de grande envergure et les environnements de production critiques, tandis que VMware vSAN est privilégié pour les déploiements de plus petite taille. Ces deux solutions sont reconnues pour leur stabilité, leurs performances et la richesse de leurs fonctionnalités, notamment en matière de gestion centralisée, de haute disponibilité et de scalabilité.\\
 
-\par Cependant, cette infrastructure présente des contraintes structurelles qui deviennent de plus en plus préoccupantes dans une perspective d'évolution à long terme :\\
+\par Cependant, ces solutions propriétaires présentent des contraintes structurelles communes qui deviennent de plus en plus préoccupantes dans une perspective d'évolution à long terme :\\
 
 \begin{itemize}
 
-    \item \textbf{Coûts de licences croissants :} les frais de licence Nutanix suivent une trajectoire haussière, représentant une charge financière significative et récurrente pour l'entreprise, indépendamment du niveau d'utilisation réel de la plateforme.
+    \item \textbf{Coûts de licences croissants :} les frais de licence de ces plateformes propriétaires, Nutanix comme VMware, suivent une trajectoire haussière, représentant une charge financière significative et récurrente pour l'entreprise, indépendamment du niveau d'utilisation réel des plateformes.
 
-    \item \textbf{Dépendance technologique forte :} le recours exclusif à un éditeur propriétaire unique expose Sonatrach à un risque de ``vendor lock-in'', limitant sa capacité à négocier les conditions contractuelles et à adopter librement de nouvelles technologies.
+    \item \textbf{Dépendance technologique forte :} le recours exclusif à des éditeurs propriétaires expose Sonatrach à un risque de ``vendor lock-in'', limitant sa capacité à négocier les conditions contractuelles et à adopter librement de nouvelles technologies.
 
-    \item \textbf{Manque de souveraineté technique :} les évolutions de la plateforme, les mises à jour et les décisions d'architecture sont entièrement soumises à l'orientation technique de l'éditeur, sans possibilité d'adaptation aux besoins spécifiques de l'entreprise.
+    \item \textbf{Manque de souveraineté technique :} les évolutions des plateformes, les mises à jour et les décisions d'architecture sont entièrement soumises à l'orientation technique des éditeurs, sans possibilité d'adaptation aux besoins spécifiques de l'entreprise.
 
-    \item \textbf{Inadaptation aux petits déploiements :} pour les environnements de test, de développement et de pré-production, le déploiement de Nutanix sur de petits clusters de 3 à 4 n\oe{}uds est disproportionné par rapport aux besoins réels, tant en complexité qu'en coût.
+    \item \textbf{Inadaptation aux petits déploiements :} pour les environnements de test, de développement et de pré-production, le déploiement d'une solution propriétaire de ce type sur de petits clusters de 3 à 4 n\oe{}uds reste disproportionné par rapport aux besoins réels, tant en complexité qu'en coût.
 
 \end{itemize}
 
