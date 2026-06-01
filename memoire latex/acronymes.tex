@@ -1,8 +1,11 @@
 \chapter*{Liste des abréviations}
 \addcontentsline{toc}{chapter}{Liste des abréviations}
 
-\begin{flushleft}
-\begin{tabular}{lcl}
+% longtable : la liste se poursuit automatiquement sur les pages suivantes
+% et démarre juste sous le titre (pas de page vide ni de débordement).
+\setlength{\LTleft}{0pt}
+\setlength{\LTright}{\fill}
+\begin{longtable}{lcl}
 API  && : Application Programming Interface\\
 BSD  && : Berkeley Software Distribution\\
 CD   && : Continuous Deployment\\
@@ -56,5 +59,4 @@ VLAN && : Virtual Local Area Network\\
 VM   && : Virtual Machine\\
 VxLAN && : Virtual eXtensible LAN\\
 WAL  && : Write-Ahead Log\\
-\end{tabular}
-\end{flushleft}
+\end{longtable}

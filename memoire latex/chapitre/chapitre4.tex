@@ -16,7 +16,7 @@
 \par Les opérations ont été réalisées avec plusieurs outils complémentaires : l'interface web Proxmox VE, la ligne de commande Linux, les fichiers de configuration système, OPNsense, Ceph, ainsi que des playbooks Ansible pour automatiser certaines tâches répétitives. Des captures d'écran sont prévues aux points importants afin d'illustrer visuellement les résultats obtenus.\\
 
 % ============================================================
-\section{Partie I -- Couche Calcul}
+\section{Partie I: Couche Calcul}
 % ============================================================
 
 \par Cette partie couvre l'ensemble des opérations réalisées au niveau de la couche de calcul de l'infrastructure : installation de Proxmox VE, formation du cluster, déploiement du monitoring, implémentation du mécanisme CLBS, et déploiement des services applicatifs.
@@ -552,7 +552,7 @@ LABEL local
 \par Ce pipeline PXE/TFTP constitue le premier maillon de la chaîne d'automatisation complète de l'infrastructure. Une fois le nœud installé et accessible sur le réseau de management, les playbooks Ansible prennent le relais pour configurer Proxmox, rejoindre le cluster et intégrer les réseaux VxLAN, offrant ainsi un pipeline de bout en bout depuis un serveur vierge jusqu'à un nœud pleinement opérationnel.\\
 
 % ============================================================
-\section{Partie II -- Couche Stockage}
+\section{Partie II: Couche Stockage}
 % ============================================================
 
 \par La couche stockage repose entièrement sur Ceph, déployé directement en intégration native avec Proxmox VE. Cette section présente le déploiement du cluster Ceph et la validation de sa tolérance aux pannes.
@@ -662,7 +662,7 @@ ceph df
 \par Après le retour du nœud défaillant, Ceph a automatiquement lancé la resynchronisation des données et l'état du cluster est revenu à \texttt{HEALTH\_OK}. Ce test valide le bon comportement de la couche stockage distribuée.\\
 
 % ============================================================
-\section{Partie III -- Couche Réseau}
+\section{Partie III: Couche Réseau}
 % ============================================================
 
 \par La couche réseau est construite autour d'Open vSwitch et des tunnels VxLAN, permettant de créer plusieurs réseaux logiques isolés sur le même réseau physique Sonatrach. OPNsense assure le routage centralisé et le filtrage entre les différents segments.
@@ -699,7 +699,7 @@ ovs-vsctl add-port vmbr1 eno1
 
 \par La figure~\ref{fig:pve01-overview} illustre l'organisation en quatre couches de la configuration réseau de PVE-01 : le bridge de management (Partie 1), les VxLAN d'infrastructure Corosync et Ceph interne (Partie 2), les VxLAN de migration, Ceph public et sauvegarde (Partie 3), et enfin les VxLAN applicatifs avec leurs bridges Linux (Partie 4).\\
 
-\paragraph{Partie 1 -- Interface physique et bridge de management}
+\paragraph{Partie 1: Interface physique et bridge de management}
 
 \par Cette première partie définit l'interface physique \texttt{nic0} ainsi que le bridge OVS principal \texttt{vmbr0}, qui sert de point d'ancrage à l'ensemble des tunnels VxLAN. L'adresse de management \texttt{192.168.10.100/24} est attribuée directement sur ce bridge.\\
 
@@ -728,7 +728,7 @@ iface nic3 inet manual
 
 \par Le bridge \texttt{vmbr0} est de type \texttt{OVSBridge} et encapsule \texttt{nic0} comme port physique de sortie. C'est sur ce même bridge que tous les tunnels VxLAN seront connectés, ce qui permet de les transporter sur l'unique interface physique disponible.\\
 
-\paragraph{Partie 2 -- VxLAN Corosync (clé 20) et stockage Ceph interne (clé 30)}
+\paragraph{Partie 2: VxLAN Corosync (clé 20) et stockage Ceph interne (clé 30)}
 
 \par Ces deux VxLAN transportent respectivement le trafic de heartbeat Corosync entre les nœuds du cluster, et le trafic de réplication interne Ceph entre les OSDs. Chaque tunnel est créé en mode point-à-point, avec une interface interne OVS associée pour l'adressage IP local.\\
 
@@ -774,7 +774,7 @@ iface vxlan30-int inet static
 
 \par Le VxLAN 20 isole le trafic Corosync du reste du réseau, garantissant que les heartbeats entre nœuds ne soient jamais perturbés par le trafic applicatif. Le VxLAN 30 isole quant à lui le trafic de réplication Ceph, dont la bande passante peut être importante lors de la resynchronisation d'un OSD.\\
 
-\paragraph{Partie 3 -- Ceph public (clé 40), migration live (clé 50) et sauvegarde (clé 90)}
+\paragraph{Partie 3: Ceph public (clé 40), migration live (clé 50) et sauvegarde (clé 90)}
 
 \par Ces trois VxLAN couvrent respectivement le réseau public Ceph utilisé pour les accès RBD des VMs, le réseau dédié aux migrations live de VMs entre nœuds, et le réseau de sauvegarde. Leur séparation évite toute interférence entre ces flux lors des opérations intensives.\\
 
@@ -839,7 +839,7 @@ iface vxlan90-int inet static
 
 \par La séparation du réseau public Ceph (VxLAN 40) du réseau de réplication interne (VxLAN 30) suit les recommandations de Ceph pour les environnements de production : le trafic client et le trafic OSD-OSD n'entrent pas en contention. Le VxLAN 50, dédié aux migrations live, préserve la qualité de service lors des déplacements de VMs par le mécanisme CLBS.\\
 
-\paragraph{Partie 4 -- Réseaux applicatifs (clés 60, 70, 80) et bridges Linux}
+\paragraph{Partie 4: Réseaux applicatifs (clés 60, 70, 80) et bridges Linux}
 
 \par Les trois derniers VxLAN portent le trafic des zones applicatives Dev (clé 60), Prod (clé 70) et DMZ (clé 80). Chacun dispose d'une interface interne OVS et d'un bridge Linux associé (\texttt{vmbr60}, \texttt{vmbr70}, \texttt{vmbr80}), qui constitue le point de connexion effectif pour les interfaces réseau des VMs applicatives.\\
 
@@ -1213,7 +1213,7 @@ l'application.\\
 \par Cette séquence a montré que le cluster restait opérationnel malgré la défaillance, et que les mécanismes de haute disponibilité répondaient correctement à ce type d'événement. La chronologie observée était la suivante : détection de la défaillance par Corosync, déclenchement du basculement HA, redémarrage des VMs protégées sur les nœuds survivants, puis resynchronisation Ceph après le retour du nœud défaillant.\\
 
 % ============================================================
-\section{Partie IV -- Services Complémentaires d'Infrastructure}
+\section{Partie IV: Services Complémentaires d'Infrastructure}
 % ============================================================
 
 \par Cette partie présente le déploiement des services complémentaires qui complètent l'infrastructure hyperconvergée : la synchronisation temporelle, la centralisation des journaux, le système de notification, la gestion du code source et la plateforme d'automatisation opérationnelle.
@@ -1258,22 +1258,11 @@ systemctl start chrony
 \begin{figure}[H]
   \centering
   \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Sources NTP actives sur le serveur Chrony interne
-  [CAPTURE : se connecter en SSH au LXC Chrony, exécuter la commande
-  \texttt{chronyc sources -v}, capturer la sortie montrant les serveurs
-  pool.ntp.org avec l'étoile (*) indiquant la source active]}
-  \label{fig:chrony-sources}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Clients NTP synchronisés sur le serveur Chrony interne
-  [CAPTURE : sur le même LXC Chrony, exécuter \texttt{chronyc -n clients},
-  capturer la sortie listant les adresses IP des nœuds Proxmox
-  (192.168.10.100, .213, .84) et des VMs avec leur dernier accès NTP]}
+  \caption{Clients NTP synchronisés sur le serveur Chrony interne}
   \label{fig:chrony-clients}
 \end{figure}
+
+\par La figure~\ref{fig:chrony-clients} illustre la sortie de la commande \texttt{chronyc -n clients}, exécutée sur le conteneur LXC hébergeant le serveur Chrony. Cette commande liste l'ensemble des clients NTP actifs, notamment les nœuds Proxmox (\texttt{192.168.10.100}, \texttt{192.168.10.213}, \texttt{192.168.10.84}) ainsi que les différentes machines virtuelles et conteneurs de l'infrastructure, avec pour chacun la date du dernier accès NTP enregistré.\\
 
 \subsection{Centralisation des Journaux : Loki et Alloy}
 
@@ -1314,19 +1303,6 @@ loki.write "default" {
 
 \par Cette configuration collecte tous les fichiers \texttt{*.log} sous \texttt{/var/log/} de chaque nœud et les transmet en flux continu vers Loki. Les labels \texttt{host} et \texttt{filename} sont automatiquement ajoutés à chaque entrée, permettant de filtrer les journaux par nœud dans Grafana.
 
-\subsubsection{Validation}
-
-\par La validation du déploiement porte sur l'état de l'agent de collecte et sur la disponibilité des journaux dans Grafana. La figure~\ref{fig:alloy-status} montre l'agent Grafana Alloy actif sur PVE-01, tandis que la figure~\ref{fig:loki-grafana-explore} présente les journaux de l'infrastructure centralisés et consultables dans Grafana via Loki.\\
-
-\begin{figure}[H]
-  \centering
-  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Statut de l'agent Grafana Alloy sur PVE-01
-  [CAPTURE : SSH sur PVE-01, exécuter \texttt{systemctl status alloy},
-  capturer la sortie montrant le service en état \texttt{active (running)}]}
-  \label{fig:alloy-status}
-\end{figure}
-
 \begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{image/ch4/grafana syslog dashboard.png}
@@ -1362,7 +1338,7 @@ starttls_policy = MandatoryStartTLS
 
 \subsubsection{Validation}
 
-\par La validation du système de notification s'appuie sur deux vérifications. La figure~\ref{fig:grafana-alert-rules} présente les règles d'alerte configurées dans Grafana Alerting ainsi que leur état, et la figure~\ref{fig:grafana-contact-point} montre le contact point Gmail associé pour l'acheminement des notifications.\\
+\par La validation du système de notification s'appuie sur deux vérifications. La figure~\ref{fig:grafana-alert-rules} présente les règles d'alerte configurées dans Grafana Alerting ainsi que leur état. Le contact point associé pour l'acheminement des notifications est configuré via Gmail, en utilisant l'adresse email de destination directement dans l'interface Grafana Alerting.\\
 
 \begin{figure}[H]
   \centering
@@ -1373,16 +1349,7 @@ starttls_policy = MandatoryStartTLS
   avec leur état affiché (Normal / Pending / Firing)]}
   \label{fig:grafana-alert-rules}
 \end{figure}
-
-\begin{figure}[H]
-  \centering
-  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Contact point Gmail configuré dans Grafana pour les notifications
-  [CAPTURE : dans Grafana -> Alerting -> Contact Points, capturer la
-  configuration du contact point Gmail avec l'adresse email visible
-  (masquer le mot de passe SMTP si affiché)]}
-  \label{fig:grafana-contact-point}
-\end{figure}
+% CAPTURE : A demain + recherche des regle alertmanager
 
 \subsection{Gestion du Code Source et CI/CD : GitLab}
 
@@ -1411,17 +1378,6 @@ starttls_policy = MandatoryStartTLS
   \includegraphics[width=1\textwidth]{image/ch4/gitlab.png}
   \caption{Page Projects de l'instance GitLab avec les dépôts de l'infrastructure}
   \label{fig:gitlab-projects}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Pipeline CI/CD réussi pour le projet clbs dans GitLab
-  [CAPTURE : dans GitLab -> projet clbs -> CI/CD -> Pipelines,
-  capturer un pipeline récent avec ses stages (Lint, Tests, Build)
-  tous affichés en vert (passed), montrant le numéro de pipeline
-  et le commit associé]}
-  \label{fig:gitlab-pipeline}
 \end{figure}
 
 \subsection{Automatisation Opérationnelle : Rundeck}
@@ -1457,6 +1413,7 @@ systemctl start rundeckd
   (provisionnement VM, intégration nœud, etc.) avec leurs noms visibles]}
   \label{fig:rundeck-jobs}
 \end{figure}
+% CAPTURE : a demain
 
 \begin{figure}[H]
   \centering

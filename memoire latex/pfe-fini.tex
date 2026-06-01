@@ -27,9 +27,9 @@
 \usepackage{tabularx}
 \usepackage{setspace}
 \usepackage{abstract}
-\usepackage{subfig}
 \usepackage{layout}
 \usepackage{ragged2e}
+\usepackage{longtable}% tableaux pouvant s'étendre sur plusieurs pages (liste des abréviations)
 
 % Tikz for graphs
 \usepackage{tikz}
@@ -79,6 +79,7 @@
 %================ TITLES =================
 \usepackage{titlesec}
 \usepackage{tocloft}
+\usepackage{subfig}% chargé après tocloft pour éviter le conflit de compteurs lofdepth/lotdepth
 \setlength{\cftfignumwidth}{3.5em}
 
 \titleformat{\chapter}[display]
@@ -104,6 +105,17 @@
 {\thesubsubsection}
 {1em}
 {}
+
+%======== SOUS-TITRES DE PARAGRAPHE ========
+% Remplace les \textbf employés comme sous-titres : couleur + gras + espace après,
+% pour qu'ils se distinguent clairement du texte courant (sans numérotation ni entrée TdM).
+\makeatletter
+\newcommand{\paratitle}[1]{%
+  \par\addvspace{2.5ex}%
+  \noindent{\normalfont\normalsize\bfseries\color{bleuuu}#1}%
+  \par\nobreak\vskip 1.2ex%
+  \@afterheading}
+\makeatother
 
 %================ NUMBERING =================
 \setcounter{secnumdepth}{3}
@@ -131,6 +143,7 @@
   \let\c@lstlisting\c@figure
   \let\thelstlisting\thefigure
   \let\ftype@lstlisting\ftype@figure
+  \let\l@lstlisting\l@figure% même largeur de numéro que les figures dans la table des figures (espace après les numéros à 2 chiffres)
 }
 \makeatother
 

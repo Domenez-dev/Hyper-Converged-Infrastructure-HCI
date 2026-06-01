@@ -194,19 +194,19 @@ Coût de licence & Gratuit & Gratuit & Gratuit (Enterprise payant) \\
 
 \subsection{Proxmox VE : L'hyperviseur}
 
-\textbf{Présentation générale}
+\paratitle{Présentation générale}
 
 \par Proxmox Virtual Environment (VE) est une plateforme de virtualisation open source basée sur un noyau Linux Debian modifié. Elle supporte deux types de virtualisation : \textbf{KVM} (``Kernel-based Virtual Machine'') pour les machines virtuelles complètes, compatibles avec tout système d'exploitation (Linux, Windows, BSD), et \textbf{LXC} (``Linux Containers'') pour les conteneurs légers partageant le noyau de l'hôte. L'ensemble est administré via une interface web centralisée accessible sur le port 8006, qui unifie la gestion des VMs, conteneurs, stockage, réseau et haute disponibilité depuis un point d'entrée unique.\\
 
-\textbf{La pile de virtualisation : KVM, QEMU et libvirt}
+\paratitle{La pile de virtualisation : KVM, QEMU et libvirt}
 
 \par La virtualisation des machines dans Proxmox repose sur une pile logicielle à trois niveaux qui collaborent étroitement.\\
 
-\textbf{KVM -- Kernel-based Virtual Machine}
+\paratitle{KVM: Kernel-based Virtual Machine}
 
-\par KVM est un module du noyau Linux (chargé via \texttt{kvm.ko} et \texttt{kvm\_intel.ko} ou \texttt{kvm\_amd.ko} selon le processeur) qui transforme le noyau Linux lui-même en hyperviseur de type 1~\cite{refKVM}.\\KVM expose au système des périphériques virtuels (\texttt{/dev/kvm}) et exploite les extensions matérielles de virtualisation du processeur -- \textbf{Intel VT-x} ou \textbf{AMD-V} -- pour exécuter le code des VMs directement sur le CPU physique sans émulation. Cela signifie que les instructions non privilégiées de la VM s'exécutent à la vitesse native du processeur, tandis que les instructions privilégiées (accès mémoire, I/O) sont interceptées et gérées par le noyau hôte. Le résultat est une performance CPU très proche du bare metal, typiquement entre 95\% et 99\% des performances natives mesurées en benchmarks.\\
+\par KVM est un module du noyau Linux (chargé via \texttt{kvm.ko} et \texttt{kvm\_intel.ko} ou \texttt{kvm\_amd.ko} selon le processeur) qui transforme le noyau Linux lui-même en hyperviseur de type 1~\cite{refKVM}.\\KVM expose au système des périphériques virtuels (\texttt{/dev/kvm}) et exploite les extensions matérielles de virtualisation du processeur \textbf{Intel VT-x} ou \textbf{AMD-V} pour exécuter le code des VMs directement sur le CPU physique sans émulation. Cela signifie que les instructions non privilégiées de la VM s'exécutent à la vitesse native du processeur, tandis que les instructions privilégiées (accès mémoire, I/O) sont interceptées et gérées par le noyau hôte. Le résultat est une performance CPU très proche du bare metal, typiquement entre 95\% et 99\% des performances natives mesurées en benchmarks.\\
 
-\textbf{QEMU -- Quick EMUlator}
+\paratitle{QEMU: Quick EMUlator}
 
 \par QEMU est l'émulateur de machine qui accompagne KVM~\cite{refQEMU}. Il opère en espace utilisateur et assure plusieurs fonctions essentielles :\\
 
@@ -224,7 +224,7 @@ Coût de licence & Gratuit & Gratuit & Gratuit (Enterprise payant) \\
 
 \par Lorsque KVM est disponible, QEMU délègue l'exécution du code de la VM à KVM et n'émule que les périphériques. C'est cette combinaison KVM+QEMU qui constitue l'hyperviseur réel.\\
 
-\textbf{libvirt : couche d'abstraction de la virtualisation Linux}
+\paratitle{libvirt : couche d'abstraction de la virtualisation Linux}
 
 \par libvirt est une bibliothèque open source et une API unifiée de gestion de la virtualisation sous Linux~\cite{refLibvirt}. Elle offre une interface commune au-dessus de plusieurs hyperviseurs (KVM, QEMU, LXC, Xen) et est utilisée par de nombreux outils de la communauté : \texttt{virt-manager}, OpenStack Nova, ou encore oVirt. libvirt simplifie la création, la gestion du cycle de vie et la supervision des VMs en s'affranchissant des spécificités de chaque hyperviseur.\\
 
@@ -275,7 +275,7 @@ Coût de licence & Gratuit & Gratuit & Gratuit (Enterprise payant) \\
 
 \par La figure~\ref{fig:kvm-qemu-stack} illustre les cinq niveaux de la pile de virtualisation Proxmox. KVM, intégré au noyau Linux, exploite les extensions matérielles VT-x et AMD-V pour exécuter le code des VMs directement sur le CPU physique. QEMU opère en espace utilisateur et émule les périphériques. Proxmox VE orchestre l'ensemble via son API REST et unifie la gestion du cluster, du stockage Ceph et du réseau Open vSwitch.\\
 
-\textbf{Les conteneurs Linux : LXC}
+\paratitle{Les conteneurs Linux : LXC}
 
 \par LXC (``Linux Containers'') est une technologie de virtualisation légère reposant sur deux mécanismes natifs du noyau Linux : les \textbf{namespaces} et les \textbf{cgroups}. Contrairement aux machines virtuelles KVM qui émulent un matériel complet avec un noyau invité indépendant, les conteneurs LXC partagent le noyau de l'hôte. Cette approche réduit significativement la consommation de ressources : un conteneur démarre en quelques secondes et son surcoût en mémoire est de l'ordre de quelques dizaines de mégaoctets.\\
 
@@ -306,13 +306,13 @@ Cas d'usage & Applications nécessitant un noyau spécifique & Services Linux st
 \end{tabular}
 \end{table}
 
-\textbf{Gestion du cluster : Corosync et le quorum}
+\paratitle{Gestion du cluster : Corosync et le quorum}
 
 \par La gestion du cluster Proxmox repose sur \textbf{Corosync}, un framework de communication de cluster qui assure le consensus entre les n\oe{}uds via un mécanisme de quorum~\cite{ref20}. Corosync envoie des messages ``heartbeat'' à intervalles réguliers entre les n\oe{}uds, sur un réseau dédié, pour détecter les défaillances. Un cluster Proxmox nécessite un minimum de \textbf{3 n\oe{}uds} pour garantir un quorum stable.\\
 
 \par Le quorum définit le nombre minimum de n\oe{}uds qui doivent être en accord pour que le cluster soit considéré comme opérationnel. Avec 3 n\oe{}uds, la majorité est de 2 : si un n\oe{}ud tombe, les 2 restants ont toujours quorum et le cluster continue de fonctionner. Si 2 n\oe{}uds tombent simultanément, le n\oe{}ud isolé n'a plus quorum et se met en retrait pour éviter le ``split-brain'', une situation où deux parties du cluster croient chacune être la seule à fonctionner et modifient les données de manière concurrente.\\
 
-\textbf{Haute disponibilité (HA Manager)}
+\paratitle{Haute disponibilité (HA Manager)}
 
 \par Proxmox intègre un gestionnaire de haute disponibilité natif composé de deux services~\cite{refHA} :\\
 
@@ -326,7 +326,7 @@ Cas d'usage & Applications nécessitant un noyau spécifique & Services Linux st
 
 \par Lorsqu'un n\oe{}ud devient inaccessible (perte de heartbeat Corosync), le CRM déclenche le \textbf{fencing} (isolation forcée du n\oe{}ud défaillant via le watchdog matériel ou logiciel), puis ordonne le redémarrage des VMs protégées sur les n\oe{}uds survivants. Le délai typique de basculement est de 60 à 120 secondes. Les VMs enregistrées dans le HA Manager avec leurs disques sur un stockage partagé (Ceph RBD) peuvent être redémarrées sur n'importe quel n\oe{}ud du cluster sans déplacement de données.\\
 
-\textbf{Live Migration}
+\paratitle{Live Migration}
 
 \par La migration à chaud (``live migration'') permet de déplacer une VM en cours d'exécution d'un n\oe{}ud physique vers un autre sans interruption de service perceptible par l'utilisateur. Proxmox implémente ce mécanisme via QEMU en trois phases :\\
 
@@ -342,11 +342,11 @@ Cas d'usage & Applications nécessitant un noyau spécifique & Services Linux st
 
 \par Cette fonctionnalité est le mécanisme central d'un service d'équilibrage dynamique de charge, qui déclenche automatiquement des migrations à chaud pour redistribuer la charge CPU entre les n\oe{}uds. Le trafic de migration doit transiter sur un segment réseau dédié, isolé des autres flux pour garantir la bande passante nécessaire sans impacter les charges de travail de production.\\
 
-\textbf{Interface de gestion et API REST}
+\paratitle{Interface de gestion et API REST}
 
 \par Proxmox expose une \textbf{API REST complète} sur le port 8006 (HTTPS), utilisée aussi bien par l'interface web que par des outils externes. Chaque opération réalisable depuis l'interface graphique est accessible via l'API : création de VMs, gestion du stockage, déclenchement de migrations, consultation des métriques en temps réel. Cette API permet notamment d'interroger l'état des n\oe{}uds, de lister les VMs en cours d'exécution, et de déclencher des migrations programmatiquement via des appels HTTP authentifiés par ticket de session.\\
 
-\textbf{Récapitulatif de la pile technique Proxmox}
+\paratitle{Récapitulatif de la pile technique Proxmox}
 
 \par Le tableau~\ref{tab:pile-proxmox} récapitule les principaux composants de la pile technique Proxmox VE présentés ci-dessus, en rappelant le rôle de chacun au sein de l'infrastructure.\\
 
@@ -377,7 +377,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \par Ceph est une solution libre de stockage distribuée (Software-Defined Storage) qui s'impose aujourd'hui comme une référence dans le domaine des infrastructures open source~\cite{ref27}. Conçu pour répondre aux besoins de fiabilité, d'extensibilité et de performance, Ceph constitue le choix idéal pour assurer la couche de stockage d'une infrastructure hyperconvergée telle que celle que nous proposons. Sa capacité à fonctionner sur du matériel standard (serveurs x86) et son architecture auto-réparatrice en font un composant central de notre projet.\\
 
-\textbf{Architecture de Ceph}
+\paratitle{Architecture de Ceph}
 
 \par L'architecture de Ceph repose sur un composant fondamental appelé RADOS (Reliable Autonomic Distributed Object Store). RADOS constitue le c\oe{}ur du système, chargé de la gestion, de la réplication et de la répartition des données sur l'ensemble du cluster. Autour de ce c\oe{}ur gravitent plusieurs types de démons qui interagissent pour former un cluster cohérent et performant :\\
 
@@ -393,7 +393,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \end{itemize}
 
-\textbf{La gestion intelligente des données : CRUSH et Placement Groups}
+\paratitle{La gestion intelligente des données : CRUSH et Placement Groups}
 
 \par L'intelligence de Ceph réside dans sa manière unique de gérer l'emplacement des données. Contrairement aux systèmes de stockage traditionnels qui utilisent une table de correspondance centralisée, Ceph utilise un algorithme appelé CRUSH (Controlled Replication Under Scalable Hashing)~\cite{ref28}. Cet algorithme permet à un client de calculer mathématiquement l'emplacement exact d'un objet (ou de sa réplique) en se basant sur la carte CRUSH, sans avoir à interroger un serveur central. Cette approche élimine un point de défaillance unique et améliore considérablement la scalabilité.\\
 
@@ -401,7 +401,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \par Pour optimiser la gestion des milliers d'objets, Ceph les regroupe dans des unités logiques appelées Placement Groups (PGs). Les PGs constituent une abstraction intermédiaire entre l'objet et l'OSD, permettant un équilibrage efficace des données et une meilleure performance du cluster.\\
 
-\textbf{Les modes de protection des données}
+\paratitle{Les modes de protection des données}
 
 \par Pour assurer la fiabilité et la disponibilité des données, Ceph propose deux mécanismes principaux, adaptés à différents besoins :\\
 
@@ -413,7 +413,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \end{itemize}
 
-\textbf{Intégration de Ceph dans une architecture hyperconvergée}
+\paratitle{Intégration de Ceph dans une architecture hyperconvergée}
 
 \par L'intégration de Ceph avec Proxmox VE, l'hyperviseur retenu, est native et profondément intégrée. Proxmox offre une interface unifiée qui permet de créer et de gérer un cluster Ceph directement depuis son interface web, simplifiant considérablement les opérations de déploiement et de maintenance.\\
 
@@ -447,13 +447,13 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \subsection{Open vSwitch (OVS) : La virtualisation réseau}
 
-\textbf{Présentation générale}
+\paratitle{Présentation générale}
 
 \par Open vSwitch (OVS) est un commutateur logiciel multicouche open source, distribué sous licence Apache 2.0, conçu pour fournir une plateforme de commutation de qualité production dans les environnements de virtualisation~\cite{ref8}. Il fonctionne selon deux composants principaux : \texttt{ovs-vswitchd}, le démon qui implémente le switch avec son module noyau Linux pour un transfert haute performance, et \texttt{ovsdb-server}, une base de données légère de configuration persistante. Parmi ses fonctionnalités natives figurent le modèle VLAN 802.1Q, le bonding avec ou sans LACP, la supervision via NetFlow et sFlow, la configuration QoS, ainsi que le support natif des protocoles de tunneling GRE, VXLAN et Geneve~\cite{ref9}.\\
 
 \par Dans un cluster HCI, OVS joue le rôle de commutateur central de chaque n\oe{}ud, assurant la segmentation de tout le trafic en flux distincts et isolés depuis un bridge virtuel unique par serveur.\\
 
-\textbf{Pourquoi segmenter le réseau dans un cluster HCI ?}
+\paratitle{Pourquoi segmenter le réseau dans un cluster HCI ?}
 
 \par La nécessité d'une segmentation réseau stricte découle de la coexistence, sur la même infrastructure physique, de trafics aux profils radicalement différents et incompatibles :\\
 
@@ -473,7 +473,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \par Les recommandations officielles de la documentation Proxmox et les guides Ceph préconisent explicitement la séparation du réseau interne Ceph (réplication entre nœuds de stockage) du réseau public Ceph (accès des VMs au stockage), ainsi que l'isolation du trafic de synchronisation du cluster sur une interface dédiée.\\
 
-\textbf{Les neuf types de trafic à isoler}
+\paratitle{Les neuf types de trafic à isoler}
 
 \par Ces contraintes conduisent à identifier neuf types de trafic aux profils distincts, chacun justifiant un segment réseau dédié. Le plan d'adressage précis et l'attribution des identifiants de tunnels sont définis dans le chapitre suivant ; ce qui importe ici est la nature du besoin qui motive chaque isolation :\\
 
@@ -499,7 +499,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \end{itemize}
 
-\textbf{Contrainte d'infrastructure rencontrée et adaptation : adoption de VXLAN}
+\paratitle{Contrainte d'infrastructure rencontrée et adaptation : adoption de VXLAN}
 
 \par L'architecture initiale reposait sur une segmentation par \textbf{VLANs 802.1Q}, nécessitant que le switch physique soit configuré en mode ``trunk'' pour propager les tags VLAN entre les trois n\oe{}uds. Cette approche est standard et parfaitement supportée par OVS.\\
 
@@ -507,7 +507,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \par Face à cette contrainte, l'approche retenue est le remplacement des VLANs 802.1Q par des tunnels \textbf{VXLAN} (``Virtual eXtensible LAN'', RFC 7348)~\cite{refVXLAN}.\\
 
-\textbf{VXLAN : principe de fonctionnement}
+\paratitle{VXLAN : principe de fonctionnement}
 
 \par VXLAN est un protocole d'encapsulation réseau qui encapsule des trames Ethernet de niveau 2 dans des paquets UDP/IP de niveau 4, permettant de créer des réseaux virtuels superposés (``overlay networks'') par-dessus un réseau physique existant, sans nécessiter aucune modification de ce dernier.\\
 
@@ -515,7 +515,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \par Chaque réseau logique est identifié par un \textbf{VNI} (``VXLAN Network Identifier''), un entier sur 24 bits, l'équivalent fonctionnel du tag VLAN. Chacun de ces neuf types de trafic se traduit en un tunnel VXLAN distinct, identifié par un VNI unique, créé et géré nativement par OVS sur chacun des nœuds. L'attribution précise des VNIs et des plages d'adressage est détaillée dans le chapitre suivant.\\
 
-\textbf{Impact sur l'architecture et bilan}
+\paratitle{Impact sur l'architecture et bilan}
 
 \par L'adoption de VXLAN ne remet pas en cause l'architecture réseau à neuf segments définie initialement. Les neuf segments logiques (management, Corosync, Ceph interne, Ceph public, migration à chaud, VMs de production, test/dev, DMZ, backup) sont intégralement conservés, chacun matérialisé par un identifiant VNI dédié au lieu d'un tag VLAN. OVS assure la création, la gestion et l'isolation de ces tunnels de manière transparente, sans aucune intervention sur l'infrastructure réseau physique de l'entreprise.\\
 

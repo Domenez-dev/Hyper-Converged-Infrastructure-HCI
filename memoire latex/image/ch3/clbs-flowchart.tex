@@ -1,8 +1,8 @@
-
-% In the figure:
+% Organigramme de décision du service CLBS (réduit pour laisser apparaître le titre)
+\scalebox{0.8}{%
 \begin{tikzpicture}[
   node distance=0.8cm and 1.5cm,
-  box/.style={rectangle, rounded corners, draw=black, fill=blue!10, 
+  box/.style={rectangle, rounded corners, draw=black, fill=blue!10,
                text width=5cm, align=center, minimum height=0.8cm, font=\small},
   decision/.style={diamond, draw=black, fill=orange!20, aspect=2,
                    text width=3cm, align=center, font=\small},
@@ -33,4 +33,5 @@
   \draw[arrow] (found) -- node[right]{\small Oui} (migrate);
   \draw[arrow] (migrate) -- (log);
   \draw[arrow] (log) -- (end);
-\end{tikzpicture}
+\end{tikzpicture}%
+}
