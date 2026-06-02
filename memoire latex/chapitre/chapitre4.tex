@@ -1,10 +1,10 @@
 % ============================================================
-% Chapitre 4 : Implémentation de la Solution Proposée
+% Chapitre 4 : Implémentation et Discussion des Résultats de la Solution Proposée
 % Version modifiée : citations figures corrigées, nouvelles
 % figures ajoutées, TikZ externalisé dans figures/
 % ============================================================
 
-\chapter{Implémentation de la Solution Proposée}
+\chapter{Implémentation et Discussion des Résultats de la Solution Proposée}
 \thispagestyle{empty}
 \newpage
 
@@ -359,11 +359,15 @@ done
 
 \subsection{Automatisation avec Ansible}
 
-\par L'automatisation est un élément clé de la reproductibilité de l'infrastructure. Les playbooks Ansible développés permettent de provisionner de nouvelles VMs en quelques minutes sans intervention manuelle.
+\par L'automatisation est un élément clé de la reproductibilité de l'infrastructure. Les playbooks Ansible développés permettent de
+provisionner de nouvelles VMs en quelques minutes et d'assurer leur intégration complète dans le cluster sans intervention
+manuelle.
 
 \subsubsection{Environnement et structure du projet}
 
-\par Afin de simplifier le provisionnement des machines virtuelles et de rendre l'infrastructure plus reproductible, un environnement Ansible a été mis en place. Les connexions se font via SSH depuis les postes des développeurs vers le réseau de management, sans installation d'agent sur les nœuds cibles.\\
+\par Afin de simplifier le provisionnement des machines virtuelles et de rendre l'infrastructure plus reproductible, un
+environnement Ansible a été mis en place. Les connexions se font via SSH depuis les postes des développeurs vers le réseau de
+management, sans installation d'agent sur les nœuds cibles.\\
 
 \begin{lstlisting}[style=sonacode,language={},caption={Structure du projet Ansible},label={lst:ansible-tree}]
 ansible-infra/
@@ -373,11 +377,15 @@ ansible-infra/
 │   ├── hosts.yml
 │   └── proxmox_nodes.yml
 └── playbooks/
+    ├── bootstrap.yml
+    ├── ntp_sync.yml
     ├── provision_vm.yml
     └── provision_vm_batch.yml
 \end{lstlisting}
 
-\par Cette arborescence organise le projet en trois parties : les fichiers de configuration globaux à la racine, le répertoire \texttt{inventory/} définissant les hôtes cibles, et le répertoire \texttt{playbooks/} contenant les scripts d'automatisation. Le fichier \texttt{secrets.yml} est chiffré avec Ansible Vault pour protéger les identifiants sensibles.\\
+\par Cette arborescence organise le projet en trois parties : les fichiers de configuration globaux à la racine, le répertoire
+\texttt{inventory/} définissant les hôtes cibles, et le répertoire \texttt{playbooks/} contenant les scripts d'automatisation. Le
+fichier \texttt{secrets.yml} est chiffré avec Ansible Vault pour protéger les identifiants sensibles.\\
 
 \begin{lstlisting}[style=sonacode,language=ini,caption={Fichier ansible.cfg},label={lst:ansible-cfg}]
 [defaults]
@@ -392,11 +400,14 @@ become      = True
 become_user = root
 \end{lstlisting}
 
-\par Ce fichier définit l'utilisateur distant \texttt{ansible}, la clé SSH privée Ed25519 et l'élévation automatique de privilèges vers \texttt{root}. La désactivation de \texttt{host\_key\_checking} simplifie le déploiement en environnement de laboratoire où les hôtes changent fréquemment.\\
+\par Ce fichier définit l'utilisateur distant \texttt{ansible}, la clé SSH privée Ed25519 et l'élévation automatique de privilèges
+vers \texttt{root}. La désactivation de \texttt{host\_key\_checking} simplifie le déploiement en environnement de laboratoire où
+les hôtes changent fréquemment.\\
 
 \subsubsection{Inventaire}
 
-\par L'inventaire regroupe les nœuds Proxmox, les VMs permanentes, ainsi qu'un groupe dynamique destiné aux nouvelles VMs provisionnées par les playbooks.\\
+\par L'inventaire regroupe les nœuds Proxmox, les VMs permanentes administrées manuellement, ainsi qu'un groupe dynamique destiné
+aux nouvelles VMs provisionnées à chaud par les playbooks.\\
 
 \begin{lstlisting}[style=sonacode,language=yaml,caption={Extrait de l'inventaire hosts.yml},label={lst:ansible-hosts}]
 all:
@@ -406,21 +417,26 @@ all:
         pve-01: {ansible_host: 192.168.10.100}
         pve-02: {ansible_host: 192.168.10.213}
         pve-03: {ansible_host: 192.168.10.84}
-    vms:
+    managed_vms:
       hosts:
-        monitoring:
-          ansible_host: 192.168.10.99
+        ha-proxy:  {ansible_host: 192.168.10.111}
+        app-1:     {ansible_host: 192.168.10.112}
+        postgres:  {ansible_host: 192.168.10.115}
     provisioned_vms:
       hosts: {}
 \end{lstlisting}
 
-\par L'inventaire est structuré en trois groupes : \texttt{proxmox\_nodes} pour les nœuds physiques, \texttt{vms} pour les VMs permanentes, et \texttt{provisioned\_vms} initialement vide, alimenté dynamiquement par les playbooks de provisionnement au fur et à mesure de la création de nouvelles machines.\\
+\par L'inventaire est structuré en trois groupes : \texttt{proxmox\_nodes} pour les nœuds physiques, \texttt{managed\_vms} pour les
+VMs permanentes, et \texttt{provisioned\_vms} initialement vide, alimenté dynamiquement via \texttt{add\_host} au moment de la
+création de nouvelles machines.\\
 
 \subsubsection{Playbook de provisionnement}
 
-\par Le playbook principal automatise la création d'une VM à partir d'un template Debian déjà préparé. Il configure les ressources matérielles, le réseau, le cloud-init, le démarrage de la VM, puis sa validation après boot.\\
+\par Le playbook \texttt{provision\_vm.yml} automatise la création d'une VM à partir d'un template Debian stocké dans le pool Ceph.
+Il configure les ressources matérielles, le réseau via cloud-init, démarre la VM, puis la valide après boot.\\
 
-\begin{lstlisting}[style=sonacode,language=bash,caption={Exemple d'utilisation du playbook provision\_vm.yml},label={lst:ansible-vm-create}]
+\begin{lstlisting}[style=sonacode,language=bash,caption={Exemples d'utilisation du playbook
+provision\_vm.yml},label={lst:ansible-vm-create}]
 ansible-playbook playbooks/provision_vm.yml \
   -e "vm_id=110 vm_name=web-01"
 
@@ -428,29 +444,92 @@ ansible-playbook playbooks/provision_vm.yml \
   -e "vm_id=115 vm_name=db-01 vm_cores=4 vm_memory=8192"
 \end{lstlisting}
 
-\par Ces deux exemples montrent la flexibilité du playbook : le premier crée une VM web avec les ressources par défaut, le second provisionne une VM base de données avec 4 vCPUs et 8~Go de RAM. L'adresse IP est calculée automatiquement à partir du VMID.\\
+\par Ces deux exemples montrent la flexibilité du playbook : le premier crée une VM web avec les ressources par défaut, le second
+provisionne une VM base de données avec 4 vCPUs et 8~Go de RAM. L'adresse IP est calculée automatiquement à partir du VMID.\\
 
-\begin{lstlisting}[style=sonacode,language=yaml,caption={Formule d'attribution automatique de l'adresse IP},label={lst:auto-ip-formula}]
+\begin{lstlisting}[style=sonacode,language=yaml,caption={Formule d'attribution automatique de l'adresse
+IP},label={lst:auto-ip-formula}]
 vm_ip: "172.16.60.{{ vm_id | int - 90 }}"
 \end{lstlisting}
 
-\par Cette formule génère automatiquement une adresse IP cohérente à partir du VMID, évitant les conflits d'adressage. Par exemple, la VM avec l'ID 110 recevra l'adresse \texttt{172.16.60.20}.\\
+\par Cette formule génère automatiquement une adresse IP cohérente à partir du VMID, évitant les conflits d'adressage. Par exemple,
+la VM avec l'identifiant 110 reçoit l'adresse \texttt{172.16.60.20}.\\
 
-\par La configuration cloud-init repose sur trois commandes successives : attachement du disque cloud-init, injection de la configuration réseau, puis régénération de l'ISO cloud-init.\\
+\par La configuration cloud-init repose sur trois commandes successives : attachement du disque cloud-init, injection de la
+configuration réseau, puis régénération de l'ISO cloud-init.\\
 
 \begin{lstlisting}[style=sonacode,language=bash,caption={Configuration cloud-init d'une VM Proxmox},label={lst:cloud-init-qm}]
 qm set {{ vm_id }} --ide2 {{ ceph_pool }}:cloudinit
-qm set {{ vm_id }} --ipconfig0 ip={{ vm_cidr }},gw={{ vm_gw }} --nameserver {{ vm_dns }}
+qm set {{ vm_id }} --ipconfig0 ip={{ vm_cidr }},gw={{ vm_gw }} \
+                   --nameserver {{ vm_dns }}
 qm cloudinit update {{ vm_id }}
 \end{lstlisting}
 
-\par Ces trois commandes attachent le disque cloud-init, injectent la configuration réseau (adresse IP, passerelle, DNS) et régénèrent l'ISO cloud-init afin que la VM applique automatiquement ces paramètres dès son premier démarrage, sans intervention manuelle.\\
+\par Ces trois commandes attachent le disque cloud-init, injectent la configuration réseau (adresse IP, passerelle, DNS) et
+régénèrent l'ISO afin que la VM applique ces paramètres dès son premier démarrage. Un second play se connecte ensuite directement à
+la VM pour vérifier l'adresse IP configurée et effectuer une mise à jour complète des paquets.\\
+
+\subsubsection{Playbook de bootstrap}
+
+\par Une VM fraîchement créée ne possède pas encore l'utilisateur \texttt{ansible} ni sa clé SSH : elle ne peut donc pas être prise
+en charge par les autres playbooks. Le playbook \texttt{bootstrap.yml} résout ce problème en prenant l'adresse IP de la cible en
+paramètre, sans qu'elle figure préalablement dans l'inventaire.\\
+
+\begin{lstlisting}[style=sonacode,language=bash,caption={Exemple d'utilisation du playbook
+bootstrap.yml},label={lst:ansible-bootstrap}]
+ansible-playbook playbooks/bootstrap.yml \
+  -e "target_hosts=192.168.10.120" \
+  -e "bootstrap_password=ROOT_PASS"
+\end{lstlisting}
+
+\par Il se connecte en \texttt{root} avec le mot de passe fourni, installe \texttt{python3} et \texttt{sudo}, crée l'utilisateur
+\texttt{ansible} avec les droits \texttt{sudo} sans mot de passe, puis déploie la clé publique SSH de gestion. À l'issue de ce
+playbook, la VM est prête à être ajoutée à l'inventaire et prise en charge par les autres playbooks.\\
+
+\subsubsection{Playbook de synchronisation NTP}
+
+\par La cohérence temporelle entre les nœuds du cluster est indispensable pour Ceph et Corosync. Le playbook \texttt{ntp\_sync.yml}
+configure \texttt{chrony} sur l'ensemble du parc en deux plays distincts.\\
+
+\par Le premier play désigne \texttt{pve-01} comme maître NTP interne : il synchronise son horloge depuis \texttt{pool.ntp.org} et
+la distribue aux sous-réseaux du cluster (\texttt{192.168.0.0/16} et \texttt{172.16.0.0/12}). Le second play configure tous les
+autres nœuds en clients, avec \texttt{pve-01} comme source préférée et \texttt{pool.ntp.org} en secours. Chaque play se termine par
+un appel à \texttt{chronyc tracking} pour vérifier l'état de synchronisation.\\
+
+\begin{lstlisting}[style=sonacode,language=bash,caption={Exemples d'utilisation du playbook ntp\_sync.yml},label={lst:ansible-ntp}]
+# Configurer tout le cluster
+ansible-playbook playbooks/ntp_sync.yml
+
+# Reconfigurer uniquement pve-02
+ansible-playbook playbooks/ntp_sync.yml --limit "pve-02"
+
+# Configurer des nœuds spécifiques uniquement
+ansible-playbook playbooks/ntp_sync.yml --limit "app-1,postgres"
+\end{lstlisting}
 
 \subsubsection{Provisionnement en lot de VMs}
 
-\par Un second playbook \texttt{provision\_vm\_batch.yml} permet le provisionnement en lot de plusieurs VMs à partir d'une liste définie à l'avance dans l'inventaire. Plutôt que d'exécuter le playbook unitaire pour chaque machine, ce playbook itère sur une liste de définitions YAML et parallélise les créations, réduisant le temps de provisionnement d'un parc de dix VMs de plusieurs dizaines de minutes à quelques minutes seulement.\\
+\par Le playbook \texttt{provision\_vm\_batch.yml} permet le provisionnement en lot de plusieurs VMs à partir d'une liste de
+définitions YAML. Il itère sur cette liste via \texttt{include\_playbook} et invoque \texttt{provision\_vm.yml} pour chaque entrée,
+en propageant les paramètres propres à chaque VM (identifiant, nom, ressources).\\
 
-\par Cette automatisation porte sur le provisionnement des machines virtuelles au-dessus d'un cluster déjà opérationnel. L'extension de cette même logique à l'amorçage des nœuds physiques eux-mêmes, c'est-à-dire l'installation initiale du système d'exploitation via un pipeline PXE/TFTP, a fait l'objet d'une conception détaillée dans le chapitre précédent. Sa mise en œuvre nécessitant toutefois du matériel serveur dédié, indisponible dans le cadre de ce projet, sa validation expérimentale est présentée parmi les perspectives d'évolution de l'infrastructure.\\
+\begin{lstlisting}[style=sonacode,language=yaml,caption={Exemple de liste de VMs pour
+provision\_vm\_batch.yml},label={lst:batch-vms}]
+vms:
+  - id: 110
+    name: web-01
+  - id: 111
+    name: db-01
+    cores: 4
+    memory: 8192
+\end{lstlisting}
+
+\par Cette automatisation porte sur le provisionnement des machines virtuelles au-dessus d'un cluster déjà opérationnel.
+L'extension de cette même logique à l'amorçage des nœuds physiques eux-mêmes, c'est-à-dire l'installation initiale du système
+d'exploitation via un pipeline PXE/TFTP, a fait l'objet d'une conception détaillée dans le chapitre précédent. Sa mise en œuvre
+nécessitant toutefois du matériel serveur dédié, indisponible dans le cadre de ce projet, sa validation expérimentale est présentée
+parmi les perspectives d'évolution de l'infrastructure.\\
+
 
 % ============================================================
 \section{Partie II: Couche Stockage}
@@ -906,9 +985,10 @@ tcpdump -i em1 port 67 or port 68
 
 \par Le pare-feu Proxmox s'organise en trois niveaux hiérarchiques : le niveau datacenter pour les règles globales communes à toute la plateforme, le niveau nœud pour les règles propres à chaque serveur physique, et le niveau VM pour les règles spécifiques à chaque machine virtuelle. Cette architecture permet d'appliquer le principe du moindre privilège à chaque couche de l'infrastructure.\\
 
+%**************************
 \subsubsection{Configuration au niveau datacenter}
 
-\par Au niveau datacenter, des alias symboliques ont été définis pour simplifier l'écriture des règles. La figure~\ref{fig:fw-datacenter-aliases} illustre les alias créés, parmi lesquels \texttt{haproxy}, \texttt{app1}, \texttt{app2} et \texttt{postgres}, chacun associé à l'adresse IP de l'instance correspondante.\\
+\par Au niveau datacenter, des alias symboliques ont été définis pour simplifier l'écriture des règles. La figure~\ref{fig:fw-datacenter-aliases} illustre les alias créés, parmi lesquels \texttt{haproxy}, \texttt{sona-web1}, \texttt{sona-web2} et \texttt{postgres}, chacun associé à l'adresse IP de l'instance correspondante.\\
 
 \begin{figure}[H]
     \centering
@@ -919,18 +999,32 @@ tcpdump -i em1 port 67 or port 68
 
 \par La figure~\ref{fig:fw-datacenter-aliases} présente la liste des alias configurés dans l'interface Proxmox sous ``Datacenter -> Firewall -> Aliases''. Chaque alias associe un nom symbolique à une adresse IP, simplifiant la lecture et la maintenance des règles de filtrage sans nécessiter de modifier chaque règle individuellement en cas de changement d'adresse.\\
 
-\par Des IPSets ont également été créés pour regrouper les adresses appartenant à un même domaine de sécurité. Comme le montre la figure~\ref{fig:fw-datacenter-ipsets}, ces groupes permettent d'appliquer une règle à un ensemble de machines en une seule définition.\\
+\par Des IPSets ont également été créés pour regrouper les adresses appartenant à un même domaine de sécurité. Ces groupes centralisent les plages d'adresses des réseaux logiques et permettent d'appliquer une règle à un ensemble de machines sans dupliquer les adresses dans chaque règle individuelle. Le tableau~\ref{tab:fw-datacenter-ipsets} récapitule les IPSets configurés.\\
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{image/ch4/fw_datacenter_ipsets.png}
-    \caption{IPSets configurés au niveau datacenter regroupant les adresses par domaine}
-    \label{fig:fw-datacenter-ipsets}
-\end{figure}
+\begin{table}[H]
+\centering
+\caption{IPSets configurés au niveau datacenter}
+\label{tab:fw-datacenter-ipsets}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Nom de l'IPSet} & \textbf{Membres} & \textbf{Utilisation} \\
+\hline
+\texttt{management-net} & 192.168.10.0/24 & Accès administration \\
+\hline
+\texttt{corosync-net} & 10.10.20.0/24 & Heartbeat cluster \\
+\hline
+\texttt{ceph-cluster-net} & 10.10.30.0/24 & Réplication Ceph interne \\
+\hline
+\texttt{ceph-public-net} & 10.10.40.0/24 & Accès RBD public \\
+\hline
+\texttt{migration-net} & 10.10.50.0/24 & Migration live \\
+\hline
+\texttt{vxlan-phys-net} & 192.168.10.0/24 & Tunnels VxLAN \\
+\hline
+\end{tabular}
+\end{table}
 
-\par La figure~\ref{fig:fw-datacenter-ipsets} présente les IPSets définis dans Proxmox sous ``Datacenter -> Firewall -> IPSet''. On y distingue notamment les groupes d'adresses des nœuds de gestion et des instances Flask, utilisés pour filtrer les flux de manière centralisée sans dupliquer les adresses dans chaque règle individuelle.\\
-
-\par Des groupes de sécurité ont enfin été créés pour encapsuler les règles de ports associées à chaque service d'infrastructure. La figure~\ref{fig:fw-security-groups} illustre ces groupes et leurs règles respectives.\\
+\par Cinq groupes de sécurité ont ensuite été créés pour encapsuler les règles de ports associées à chaque service d'infrastructure. La figure~\ref{fig:fw-security-groups} illustre ces groupes et leurs règles respectives.\\
 
 \begin{figure}[H]
     \centering
@@ -939,123 +1033,59 @@ tcpdump -i em1 port 67 or port 68
     \label{fig:fw-security-groups}
 \end{figure}
 
-\par La figure~\ref{fig:fw-security-groups} présente les groupes de sécurité configurés sous ``Datacenter -> Firewall -> Security Groups''. Les groupes définis regroupent les règles nécessaires à chaque service : \texttt{proxmox-management} pour les ports SSH (22), Web UI (8006), VNC (5900--5999) et SPICE (3128) ; \texttt{corosync-cluster} pour les ports UDP 5404--5405 du heartbeat ; \texttt{vxlan-overlay} pour le port UDP 4789 indispensable aux tunnels VxLAN ; et \texttt{ceph-storage} pour les ports MON (3300, 6789) et OSD (6800--7300).\\
+\par La figure~\ref{fig:fw-security-groups} présente les cinq groupes de sécurité configurés sous ``Datacenter -> Firewall -> Security Groups''. Le groupe \texttt{proxmox-management} regroupe les ports SSH (22), Web UI (8006) et ICMP depuis le réseau de management, ainsi que le port 9283 TCP permettant à Prometheus de collecter les métriques du module MGR Ceph. Le groupe \texttt{corosync-cluster} couvre les ports UDP 5404--5405 du heartbeat, limités au réseau \texttt{10.10.20.0/24}. Le groupe \texttt{vxlan-overlay} ouvre le port UDP 4789 indispensable aux tunnels VxLAN. Le groupe \texttt{ceph-storage} autorise les communications OSD (TCP 6800--7300) et les moniteurs (TCP 3300, 6789) depuis les réseaux Ceph dédiés. Enfin, le groupe \texttt{migration-live} autorise tout trafic TCP en provenance du réseau de migration \texttt{10.10.50.0/24}, car Proxmox utilise des ports dynamiques lors du transfert de l'état mémoire des VMs.\\
 
-\par Deux règles complémentaires ont été ajoutées au niveau datacenter pour
-couvrir des besoins opérationnels spécifiques non couverts par les groupes
-de sécurité précédents. D'une part, une règle ICMP autorisant les requêtes
-``ping'' depuis le réseau de management a été intégrée dans le groupe
-\texttt{proxmox-management}. Cette règle est indispensable aux diagnostics
-de connectivité entre nœuds, notamment pour vérifier rapidement la
-joignabilité d'un hôte lors d'une intervention. D'autre part, le port
-\texttt{9283} TCP a été ouvert dans le groupe \texttt{ceph-storage} depuis
-le réseau de management, afin de permettre à Prometheus de collecter les
-métriques exposées par le module MGR Ceph. Ce port est celui sur lequel le
-daemon \texttt{ceph-mgr} expose son endpoint \texttt{/metrics} lorsque le
-module Prometheus est activé, et son ouverture conditionne directement le
-bon fonctionnement du job \texttt{ceph} déclaré dans
-\texttt{prometheus.yml}.\\
+\par Cette approche par groupes de sécurité et IPSets garantit une politique de sécurité cohérente sur l'ensemble du cluster sans dupliquer les règles : toute modification d'un groupe se propage automatiquement sur les trois nœuds physiques.\\
 
 \subsubsection{Configuration au niveau nœud}
 
-\par Le deuxième niveau du pare-feu Proxmox s'applique directement à chaque nœud physique du cluster. Les règles définies à ce niveau protègent l'hyperviseur lui-même, indépendamment des VMs qu'il héberge. Elles filtrent les accès aux services système de Proxmox et aux protocoles de cluster, en autorisant uniquement les sources légitimes.\\
+\par Le deuxième niveau du pare-feu Proxmox s'applique directement à chaque nœud physique du cluster. Les règles définies à ce niveau protègent l'hyperviseur lui-même, indépendamment des VMs qu'il héberge. La politique par défaut adoptée est \texttt{DROP} en entrée et \texttt{ACCEPT} en sortie.\\
 
-\par Sur chacun des trois nœuds PVE-01, PVE-02 et PVE-03, le pare-feu est activé et les groupes de sécurité définis au niveau datacenter sont appliqués. La figure~\ref{fig:fw-node-rules-web} illustre les règles telles qu'elles apparaissent dans l'interface web Proxmox pour le nœud PVE-01.\\
+\par Sur chacun des trois nœuds PVE-01, PVE-02 et PVE-03, le pare-feu est activé et les cinq groupes de sécurité définis au niveau datacenter sont appliqués. Cette application hérite automatiquement de toutes les règles et IPSets définis centralement, sans qu'il soit nécessaire de les redéfinir nœud par nœud. La figure~\ref{fig:fw-node-rules-web} illustre la vue pare-feu du nœud PVE-01 dans l'interface web Proxmox.\\
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{image/ch4/fw_node_rules_web.png}
-    \caption{Règles de pare-feu au niveau nœud PVE-01 dans l'interface web Proxmox}
+    \caption{Groupes de sécurité appliqués au niveau nœud PVE-01 dans l'interface web Proxmox}
     \label{fig:fw-node-rules-web}
 \end{figure}
 
-\par La figure~\ref{fig:fw-node-rules-web} présente la vue ``Firewall'' du nœud PVE-01 dans l'interface Proxmox. On y observe les groupes de sécurité appliqués et les règles spécifiques au nœud, définissant notamment les accès autorisés en entrée par réseau source et par port de service.\\
+\par La figure~\ref{fig:fw-node-rules-web} présente la vue ``Firewall'' du nœud PVE-01 dans l'interface Proxmox. On y observe les cinq groupes de sécurité référencés, dont l'application conduit à autoriser uniquement les flux d'infrastructure légitimes tout en bloquant par défaut tout autre trafic en entrée.\\
 
-\par Des règles supplémentaires spécifiques à chaque nœud complètent ce filtrage, comme résumé dans le tableau~\ref{tab:fw-node-rules}.\\
+\par Le tableau~\ref{tab:fw-node-rules} résume les flux effectivement autorisés en entrée sur chaque nœud une fois les groupes de sécurité appliqués.\\
 
 \begin{table}[H]
 \centering
-\caption{Règles de pare-feu au niveau nœud (appliquées sur PVE-01, PVE-02, PVE-03)}
+\caption{Flux autorisés au niveau nœud via les groupes de sécurité (PVE-01, PVE-02, PVE-03)}
 \label{tab:fw-node-rules}
 \begin{tabular}{|l|l|l|l|l|}
 \hline
-\textbf{Direction} & \textbf{Action} & \textbf{Source} & \textbf{Port / Protocole} & \textbf{Description} \\
+\textbf{Groupe} & \textbf{Direction} & \textbf{Action} & \textbf{Source} & \textbf{Port / Protocole} \\
 \hline
-IN & ACCEPT & 192.168.10.0/24 & 8006 TCP & Accès Web UI Proxmox \\
+\texttt{proxmox-management} & IN & ACCEPT & 192.168.10.0/24 & 8006 TCP \\
 \hline
-IN & ACCEPT & 192.168.10.0/24 & 22 TCP & Accès SSH administration \\
+\texttt{proxmox-management} & IN & ACCEPT & 192.168.10.0/24 & 22 TCP \\
 \hline
-IN & ACCEPT & 192.168.10.0/24 & ICMP & Diagnostic réseau (ping) \\
+\texttt{proxmox-management} & IN & ACCEPT & 192.168.10.0/24 & ICMP \\
 \hline
-IN & ACCEPT & 10.10.20.0/24 & 5404--5405 UDP & Heartbeat Corosync \\
+\texttt{proxmox-management} & IN & ACCEPT & 192.168.10.0/24 & 9283 TCP \\
 \hline
-IN & ACCEPT & 10.10.30.0/24 & 6800--7300 TCP & Trafic OSD Ceph interne \\
+\texttt{corosync-cluster} & IN & ACCEPT & 10.10.20.0/24 & 5404--5405 UDP \\
 \hline
-IN & ACCEPT & 10.10.30.0/24 & 3300, 6789 TCP & Moniteurs Ceph \\
+\texttt{ceph-storage} & IN & ACCEPT & 10.10.30.0/24 & 6800--7300 TCP \\
 \hline
-IN & ACCEPT & 10.10.40.0/24 & 6800--7300 TCP & Trafic OSD Ceph public \\
+\texttt{ceph-storage} & IN & ACCEPT & 10.10.30.0/24 & 3300, 6789 TCP \\
 \hline
-IN & ACCEPT & 192.168.10.0/24 & 9283 TCP & Export métriques Ceph MGR (Prometheus) \\
+\texttt{ceph-storage} & IN & ACCEPT & 10.10.40.0/24 & 6800--7300 TCP \\
 \hline
-IN & ACCEPT & 10.10.50.0/24 & any & Migration live (VxLAN 50) \\
+\texttt{vxlan-overlay} & IN & ACCEPT & 192.168.10.0/24 & 4789 UDP \\
 \hline
-IN & ACCEPT & 192.168.10.0/24 & 4789 UDP & Tunnels VxLAN \\
-\hline
-IN & DROP & any & any & Règle par défaut \\
+\texttt{migration-live} & IN & ACCEPT & 10.10.50.0/24 & any TCP \\
 \hline
 \end{tabular}
 \end{table}
 
-% === MODIFICATION 2 : paragraphe explicatif mis à jour ===
-\par L'accès à l'interface web Proxmox (port 8006) et au service SSH (port 22)
-est restreint au seul réseau de management \texttt{192.168.10.0/24},
-empêchant tout accès non autorisé depuis les réseaux applicatifs. La règle
-ICMP, limitée au même réseau, permet les diagnostics de connectivité sans
-exposer les nœuds à des requêtes provenant des VMs internes. Le port 9283
-est autorisé depuis le réseau de management uniquement, de sorte que seul
-le conteneur \texttt{monitoring} (\texttt{192.168.10.99}) peut interroger
-l'endpoint Prometheus du MGR Ceph ; cette restriction empêche toute
-exfiltration des métriques d'infrastructure depuis les réseaux applicatifs.
-Le trafic Corosync est limité au réseau VxLAN 20 (\texttt{10.10.20.0/24}),
-tandis que les communications Ceph sont isolées sur leurs VxLAN dédiés
-(30 et 40). Enfin, le réseau de migration (VxLAN 50) est autorisé sans
-restriction de port, car Proxmox utilise des ports dynamiques pour le
-transfert de l'état mémoire des VMs lors des migrations live.\\
-
-\par Afin de vérifier que les règles sont correctement appliquées au niveau noyau, la commande suivante a été exécutée directement sur PVE-01 via SSH.\\
-
-\begin{lstlisting}[style=sonacode,language=bash,caption={Vérification des règles iptables actives générées par Proxmox sur PVE-01},label={lst:fw-iptables-host}]
-ssh root@192.168.10.100 \
-    "iptables -L PVEFW-HOST-IN -n -v --line-numbers"
-\end{lstlisting}
-
-\par Comme le montre la figure~\ref{fig:fw-iptables-host-in}, la sortie confirme que chaque règle définie dans l'interface web est bien traduite en entrée iptables active, comme le valide le tableau~\ref{tab:fw-node-rules} ci-dessus.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{image/ch4/fw_iptables_host_in.png}
-    \caption{Chaîne iptables \texttt{PVEFW-HOST-IN} active sur PVE-01 (vérification SSH)}
-    \label{fig:fw-iptables-host-in}
-\end{figure}
-
-\par La figure~\ref{fig:fw-iptables-host-in} présente la sortie de la commande \texttt{iptables -L PVEFW-HOST-IN} exécutée sur PVE-01. Chaque ligne correspond à une règle de filtrage active : on y retrouve les autorisations par réseau source et par port définies dans l'interface Proxmox, traduites en règles noyau effectives, validant ainsi la cohérence entre la configuration logique et l'application réelle du filtrage.\\
-
-\par La commande complémentaire suivante a permis de lister les IPSets actifs au niveau noyau, confirmant que les groupes d'adresses définis dans Proxmox sont bien propagés dans le sous-système \texttt{ipset} du kernel.\\
-
-\begin{lstlisting}[style=sonacode,language=bash,caption={Vérification des IPSets actifs sur PVE-01},label={lst:fw-ipset-list}]
-ssh root@192.168.10.100 "ipset list"
-\end{lstlisting}
-
-\par La figure~\ref{fig:fw-datacenter-ipsets} confirme déjà que ces IPSets sont correctement définis au niveau datacenter ; leur propagation vers le noyau Linux est assurée automatiquement par Proxmox.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{image/ch4/fw_ipset_list.png}
-    \caption{IPSets actifs sur PVE-01 vérifiés via SSH (\texttt{ipset list})}
-    \label{fig:fw-ipset-list}
-\end{figure}
-
-\par La figure~\ref{fig:fw-ipset-list} présente la sortie de la commande \texttt{ipset list} sur PVE-01. Chaque IPSet affiché correspond à un groupe d'adresses défini dans l'interface Proxmox : les membres listés confirment que la configuration du pare-feu au niveau datacenter est bien synchronisée et active sur chaque nœud physique.\\
+\par L'accès à l'interface web Proxmox (port 8006) et au service SSH (port 22) est restreint au seul réseau de management \texttt{192.168.10.0/24}, empêchant tout accès non autorisé depuis les réseaux applicatifs. La règle ICMP, limitée au même réseau, permet les diagnostics de connectivité sans exposer les nœuds à des requêtes provenant des VMs internes. Le port 9283 est autorisé depuis le réseau de management uniquement, de sorte que seul le conteneur \texttt{monitoring} (\texttt{192.168.10.99}) peut interroger l'endpoint Prometheus du MGR Ceph, empêchant toute exfiltration des métriques d'infrastructure depuis les réseaux applicatifs. Le trafic Corosync est limité au réseau VxLAN 20 (\texttt{10.10.20.0/24}), tandis que les communications Ceph sont isolées sur leurs VxLAN dédiés (30 et 40). Enfin, le réseau de migration (VxLAN 50) est autorisé sans restriction de port, car Proxmox utilise des ports dynamiques pour le transfert de l'état mémoire des VMs lors des migrations live.\\
 
 \par Ces règles au niveau nœud constituent un premier rempart de défense en profondeur, garantissant que même en cas de compromission d'une VM applicative, l'hyperviseur reste inaccessible depuis les réseaux internes.\\
 
@@ -1117,53 +1147,48 @@ l'application.\\
 \section{Partie IV: Services Complémentaires d'Infrastructure}
 % ============================================================
 
-\par Cette partie présente le déploiement des services complémentaires qui complètent l'infrastructure hyperconvergée : la synchronisation temporelle, la centralisation des journaux, le système de notification, la gestion du code source et la plateforme d'automatisation opérationnelle.
+\par Cette partie présente le déploiement des services complémentaires qui complètent l'infrastructure hyperconvergée : le système de notification, la centralisation des journaux, la synchronisation temporelle, la gestion du code source et la plateforme d'automatisation opérationnelle.
 
-\subsection{Synchronisation Temporelle : NTP/Chrony}
+\subsection{Système de Notification : Alertmanager}
 
-\par La cohérence temporelle est une exigence fondamentale dans un cluster distribué. Une dérive de quelques secondes entre les nœuds peut perturber le quorum Corosync, fausser les journaux de corrélation et provoquer des incohérences dans les métriques Prometheus. Un conteneur LXC dédié héberge un serveur Chrony configuré en Stratum 3, qui fait référence pour l'ensemble des nœuds Proxmox et des VMs de l'infrastructure.
+\par La supervision active de l'infrastructure ne se limite pas à la visualisation des métriques : elle inclut la notification automatique des équipes en cas d'anomalie détectée. Le module Grafana Alerting a été configuré pour évaluer des règles d'alerte sur les métriques collectées et transmettre les notifications via un contact point Gmail utilisant le protocole SMTP.
 
-\subsubsection{Installation et configuration du serveur Chrony}
+\subsubsection{Configuration des règles d'alerte}
 
-\par Le service Chrony a été installé dans un conteneur LXC léger sur le cluster. La configuration du fichier \texttt{/etc/chrony/chrony.conf} définit les serveurs de référence amont et la plage réseau des clients autorisés.\\
+\par Les règles d'alerte sont définies directement dans Grafana sous ``Alerting -> Alert Rules''. Chaque règle spécifie une expression PromQL ou une requête InfluxDB, un seuil de déclenchement, une durée de maintien avant passage en état ``Firing'', et le groupe de contact destinataire.\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Configuration du serveur Chrony},label={lst:chrony-server-conf}]
-# Serveurs NTP de référence amont
-pool pool.ntp.org iburst
+\par Parmi les règles configurées figurent notamment la détection d'une charge CPU élevée sur les nœuds Proxmox, la surveillance de l'état de santé du cluster Ceph, et la détection d'un OSD passé hors ligne. Ces règles couvrent les scenarios de défaillance les plus critiques de l'infrastructure.
 
-# Autoriser les clients du réseau de management
-allow 192.168.10.0/24
+\subsubsection{Configuration du contact point Gmail}
 
-# Fichier de dérive
-driftfile /var/lib/chrony/drift
+\par Le contact point Gmail a été créé dans Grafana sous ``Alerting -> Contact Points''. La configuration utilise le serveur SMTP de Google avec authentification par mot de passe d'application, garantissant la compatibilité avec les comptes protégés par la double authentification.\\
 
-# Activer le mode serveur local si perte de synchronisation amont
-local stratum 3
+\begin{lstlisting}[style=sonacode,language={},caption={Paramètres SMTP du contact point Gmail},label={lst:grafana-smtp}]
+# Dans grafana.ini ou via l'interface web :
+[smtp]
+host     = smtp.gmail.com:587
+user     = adresse@gmail.com
+password = mot_de_passe_application
+from_address = adresse@gmail.com
+starttls_policy = MandatoryStartTLS
 \end{lstlisting}
 
-\par La directive \texttt{allow 192.168.10.0/24} ouvre le service aux requêtes NTP provenant de tous les nœuds et VMs du réseau de management. La directive \texttt{local stratum 3} garantit que le serveur continue à distribuer une heure de référence cohérente, même en cas de perte temporaire de connectivité vers les serveurs \texttt{pool.ntp.org}.\\
+\par L'activation de \texttt{MandatoryStartTLS} garantit que les identifiants SMTP ne transitent jamais en clair, conformément aux exigences de sécurité de l'infrastructure.
 
-\par Une fois la configuration appliquée, le service est activé et démarré.\\
+\subsubsection{Validation}
 
-\begin{lstlisting}[style=sonacode,language=bash,caption={Activation du service Chrony},label={lst:chrony-enable}]
-systemctl enable chrony
-systemctl start chrony
-\end{lstlisting}
-
-\par Sur chaque nœud Proxmox et sur chaque VM, le fichier \texttt{chrony.conf} client pointe vers l'adresse IP du LXC Chrony interne en remplacement des serveurs publics, centralisant ainsi toutes les synchronisations sur la référence locale.
-
-\subsubsection{Validation de la synchronisation}
-
-\par La vérification du bon fonctionnement du serveur Chrony s'effectue depuis le LXC via deux commandes complémentaires. La première confirme la connexion aux sources NTP amont, la seconde liste les clients actifs.\\
+\par La validation du système de notification s'appuie sur deux vérifications. La figure~\ref{fig:grafana-alert-rules} présente les règles d'alerte configurées dans Grafana Alerting ainsi que leur état. Le contact point associé pour l'acheminement des notifications est configuré via Gmail, en utilisant l'adresse email de destination directement dans l'interface Grafana Alerting.\\
 
 \begin{figure}[H]
   \centering
   \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Clients NTP synchronisés sur le serveur Chrony interne}
-  \label{fig:chrony-clients}
+  \caption{Règles d'alerte configurées dans Grafana Alerting
+  [CAPTURE : ouvrir Grafana, aller dans Alerting -> Alert Rules,
+  capturer la liste des règles définies (ex : CPU nœud, santé Ceph)
+  avec leur état affiché (Normal / Pending / Firing)]}
+  \label{fig:grafana-alert-rules}
 \end{figure}
-
-\par La figure~\ref{fig:chrony-clients} illustre la sortie de la commande \texttt{chronyc -n clients}, exécutée sur le conteneur LXC hébergeant le serveur Chrony. Cette commande liste l'ensemble des clients NTP actifs, notamment les nœuds Proxmox (\texttt{192.168.10.100}, \texttt{192.168.10.213}, \texttt{192.168.10.84}) ainsi que les différentes machines virtuelles et conteneurs de l'infrastructure, avec pour chacun la date du dernier accès NTP enregistré.\\
+% CAPTURE : A demain + recherche des regle alertmanager
 
 \subsection{Centralisation des Journaux : Loki et Alloy}
 
@@ -1211,46 +1236,62 @@ loki.write "default" {
   \label{fig:loki-grafana-explore}
 \end{figure}
 
-\subsection{Système de Notification : Alertmanager}
+\subsection{Synchronisation Temporelle : NTP/Chrony}
 
-\par La supervision active de l'infrastructure ne se limite pas à la visualisation des métriques : elle inclut la notification automatique des équipes en cas d'anomalie détectée. Le module Grafana Alerting a été configuré pour évaluer des règles d'alerte sur les métriques collectées et transmettre les notifications via un contact point Gmail utilisant le protocole SMTP.
+\par La cohérence temporelle est une exigence fondamentale dans un cluster distribué. Une dérive de quelques secondes entre les nœuds peut perturber le quorum Corosync, fausser les journaux de corrélation et provoquer des incohérences dans les métriques Prometheus. Le serveur Chrony est hébergé directement sur \textbf{PVE-01} (\texttt{192.168.10.100}), qui fait référence pour l'ensemble des nœuds Proxmox et des VMs de l'infrastructure.
 
-\subsubsection{Configuration des règles d'alerte}
+\subsubsection{Configuration du serveur Chrony sur PVE-01}
 
-\par Les règles d'alerte sont définies directement dans Grafana sous ``Alerting -> Alert Rules''. Chaque règle spécifie une expression PromQL ou une requête InfluxDB, un seuil de déclenchement, une durée de maintien avant passage en état ``Firing'', et le groupe de contact destinataire.\\
+\par La configuration du fichier \texttt{/etc/chrony/chrony.conf} sur PVE-01 définit les serveurs de référence amont, la plage réseau des clients autorisés et le comportement de repli local.\\
 
-\par Parmi les règles configurées figurent notamment la détection d'une charge CPU élevée sur les nœuds Proxmox, la surveillance de l'état de santé du cluster Ceph, et la détection d'un OSD passé hors ligne. Ces règles couvrent les scenarios de défaillance les plus critiques de l'infrastructure.
+\begin{lstlisting}[style=sonacode,language={},caption={Configuration du serveur Chrony sur PVE-01},label={lst:chrony-server-conf}]
+# Serveurs NTP de reference amont
+pool pool.ntp.org iburst
 
-\subsubsection{Configuration du contact point Gmail}
+# Autoriser les clients du reseau de management
+allow 192.168.10.0/24
 
-\par Le contact point Gmail a été créé dans Grafana sous ``Alerting -> Contact Points''. La configuration utilise le serveur SMTP de Google avec authentification par mot de passe d'application, garantissant la compatibilité avec les comptes protégés par la double authentification.\\
+# Fichier de derive
+driftfile /var/lib/chrony/drift
 
-\begin{lstlisting}[style=sonacode,language={},caption={Paramètres SMTP du contact point Gmail},label={lst:grafana-smtp}]
-# Dans grafana.ini ou via l'interface web :
-[smtp]
-host     = smtp.gmail.com:587
-user     = adresse@gmail.com
-password = mot_de_passe_application
-from_address = adresse@gmail.com
-starttls_policy = MandatoryStartTLS
+# Repli local si perte de synchronisation amont
+local stratum 10
 \end{lstlisting}
 
-\par L'activation de \texttt{MandatoryStartTLS} garantit que les identifiants SMTP ne transitent jamais en clair, conformément aux exigences de sécurité de l'infrastructure.
+\par La directive \texttt{allow 192.168.10.0/24} couvre l'ensemble des nœuds Proxmox et des clients directs du réseau de management. Les VMs hébergées sur les VLANs \texttt{172.16.60/70/80.0/24} atteignent PVE-01 via un routeur qui effectue une translation d'adresses (NAT) : leurs requêtes NTP arrivent sur PVE-01 avec l'adresse source \texttt{192.168.10.65} (interface du routeur côté management), et sont donc couvertes par la même directive \texttt{allow} sans qu'il soit nécessaire d'y ajouter les sous-réseaux VLAN. La directive \texttt{local stratum 10} garantit que PVE-01 continue à distribuer une référence temporelle cohérente en cas de perte temporaire de connectivité vers \texttt{pool.ntp.org}.
 
-\subsubsection{Validation}
+\subsubsection{Configuration des clients NTP}
 
-\par La validation du système de notification s'appuie sur deux vérifications. La figure~\ref{fig:grafana-alert-rules} présente les règles d'alerte configurées dans Grafana Alerting ainsi que leur état. Le contact point associé pour l'acheminement des notifications est configuré via Gmail, en utilisant l'adresse email de destination directement dans l'interface Grafana Alerting.\\
+\par Sur chaque nœud Proxmox et sur chaque VM, le fichier \texttt{chrony.conf} client interroge PVE-01 en priorité, puis bascule vers \texttt{pool.ntp.org} si PVE-01 est indisponible.\\
+
+\begin{lstlisting}[style=sonacode,language={},caption={Configuration Chrony côté clients (noeuds et VMs)},label={lst:chrony-client-conf}]
+# Source primaire : serveur interne PVE-01
+server 192.168.10.100 iburst prefer
+
+# Fallback : serveurs publics si PVE-01 inaccessible
+pool pool.ntp.org iburst
+
+driftfile /var/lib/chrony/drift
+\end{lstlisting}
+
+\par À la différence des conteneurs LXC qui héritent directement de l'horloge du nœud hôte, les VMs disposent d'une horloge virtuelle indépendante et nécessitent donc une synchronisation NTP explicite.
+
+\subsubsection{Déploiement via Ansible}
+
+\par La configuration NTP est appliquée sur les VMs via le playbook Ansible \texttt{ntp\_sync.yml}. Ce playbook est exécuté à la demande, en passant l'adresse IP de la VM cible, ce qui permet d'intégrer toute nouvelle machine dans la hiérarchie de synchronisation sans intervention manuelle. Le fonctionnement détaillé de l'automatisation Ansible est traité dans la section dédiée.
+
+\subsubsection{Validation de la synchronisation}
+
+\par La vérification du bon fonctionnement du serveur Chrony s'effectue depuis PVE-01 via deux commandes complémentaires. La première confirme la connexion aux sources NTP amont, la seconde liste les clients actifs.\\
 
 \begin{figure}[H]
   \centering
   \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Règles d'alerte configurées dans Grafana Alerting
-  [CAPTURE : ouvrir Grafana, aller dans Alerting -> Alert Rules,
-  capturer la liste des règles définies (ex : CPU nœud, santé Ceph)
-  avec leur état affiché (Normal / Pending / Firing)]}
-  \label{fig:grafana-alert-rules}
+  \caption{Clients NTP synchronisés sur le serveur Chrony interne (PVE-01)}
+  \label{fig:chrony-clients}
 \end{figure}
-% CAPTURE : A demain + recherche des regle alertmanager
+
+\par La figure~\ref{fig:chrony-clients} illustre la sortie de la commande \texttt{chronyc -n clients} exécutée sur PVE-01. Les nœuds Proxmox (\texttt{192.168.10.213}, \texttt{192.168.10.84}) et les VMs du réseau de management apparaissent individuellement. Les VMs hébergées sur les VLANs distants (\texttt{172.16.60/70/80.0/24}) sont regroupées sous l'adresse \texttt{192.168.10.65} en raison du NAT effectué par le routeur inter-VLAN, ce qui est un comportement attendu et non une anomalie.\\
 
 \subsection{Gestion du Code Source et CI/CD : GitLab}
 
@@ -1295,11 +1336,29 @@ systemctl enable rundeckd
 systemctl start rundeckd
 \end{lstlisting}
 
-\subsubsection{Connexion au dépôt ansible-infra}
+\subsubsection{Intégration du dépôt ansible-infra via GitLab Runner}
 
-\par Dans l'interface Rundeck, un projet a été créé et configuré pour utiliser le dépôt \texttt{ansible-infra} hébergé sur l'instance GitLab locale comme source des playbooks. Cette intégration garantit que Rundeck exécute toujours la version versionnée et validée par le pipeline CI/CD des playbooks, plutôt que des copies locales non contrôlées.\\
+\par Après le déploiement du conteneur, le dépôt \texttt{ansible-infra} a été cloné depuis l'instance GitLab locale vers \texttt{/root} sur la machine Rundeck. Un ``GitLab Runner'' a ensuite été enregistré sur ce conteneur et intégré au pipeline CI/CD du dépôt.
 
-\par Les jobs Rundeck ont été définis pour chaque opération récurrente : provisionnement d'une nouvelle VM, intégration d'un nœud au cluster, déploiement d'une mise à jour de configuration. Chaque job référence le playbook Ansible correspondant dans le dépôt GitLab et expose les variables nécessaires sous forme de paramètres saisissables dans l'interface web.
+\par Le rôle de ce runner est de synchroniser automatiquement les playbooks à chaque push validé : le pipeline copie le contenu du dépôt vers \texttt{/opt/ansible-infra}, répertoire appartenant à l'utilisateur système \texttt{rundeck} (\texttt{chown -R rundeck:rundeck /opt/ansible-infra}). Cette configuration garantit que Rundeck dispose des permissions nécessaires pour lire et exécuter les playbooks directement depuis ce répertoire, sans manipulation manuelle des fichiers.
+
+\par Les clés SSH générées précédemment pour l'utilisateur \texttt{ansible} ont été déposées dans \texttt{/opt/ansible-infra/.ssh/}, rendant ce répertoire la source unique de vérité pour à la fois les playbooks et les secrets d'authentification SSH vers les VMs gérées.
+
+\subsubsection{Définition des jobs}
+
+\par Les jobs Rundeck ont été définis pour chaque opération récurrente de l'infrastructure. Chaque job référence le playbook Ansible correspondant dans \texttt{/opt/ansible-infra} et expose les variables nécessaires sous forme de paramètres saisissables dans l'interface web, permettant à un opérateur de déclencher une opération sans connaissance de la syntaxe Ansible.
+
+\par Quatre jobs ont été configurés :
+
+\begin{itemize}
+  \item \textbf{Provision VM} : exécute \texttt{provision\_vm.yml}. Les paramètres exposés sont \texttt{vm\_id}, \texttt{vm\_name}, ainsi que des paramètres optionnels tels que \texttt{vm\_cores}, \texttt{vm\_memory} et \texttt{vm\_full\_clone} pour ajuster les ressources ou le mode de clonage.
+
+  \item \textbf{Provision VM Batch} : exécute \texttt{provision\_vm\_batch.yml} pour le provisionnement en masse. Le paramètre principal est la liste des VMs à créer, passée sous forme de structure YAML.
+
+  \item \textbf{Bootstrap VM} : exécute \texttt{bootstrap.yml} pour préparer une VM nouvellement créée à la gestion Ansible. Le paramètre exposé est \texttt{target\_hosts}, une liste d'adresses IP ou de noms d'hôtes (séparés par des virgules), permettant de cibler aussi bien des machines de l'inventaire que des IPs brutes.
+
+  \item \textbf{NTP Sync} : exécute \texttt{ntp\_sync.yml} pour configurer ou resynchroniser chrony sur les nœuds. Le paramètre exposé est également \texttt{target\_hosts}, permettant de cibler un sous-ensemble de nœuds du cluster.
+\end{itemize}
 
 \subsubsection{Validation}
 

@@ -1,52 +1,44 @@
 ---
 # bootstrap.yml
 #
-# Usage (local dev):
+# Usage:
 #   ansible-playbook playbooks/bootstrap.yml \
-#     -e "bootstrap_password=yourRootPassword" \
-#     -e "ssh_public_key_file=~/.ssh/ansible_ed25519.pub" \
-#     --limit "gitlab,clbs"
+#     -e "target_hosts=192.168.10.120" \
+#     -e "bootstrap_password=ROOT_PASS"
 #
-# Usage (from Rundeck VM):
-#   ansible-playbook playbooks/bootstrap.yml \
-#     -e "bootstrap_password=yourRootPassword"
+#   Works with raw IPs, inventory hostnames, or comma-separated lists —
+#   the host does NOT need to exist in inventory yet.
 #
-# What it does:
-#   Play 1 — connects as root (password), installs python3 + sudo,
-#             creates the ansible user, deploys SSH key, configures sudoers.
-#   Play 2 — connects as ansible (key), installs and enables chrony.
-#
-# Always use --limit to target only the VMs you want to bootstrap.
+# After running, add the VM to managed_vms in inventory/hosts.yml.
 
-# ------------------------------------------------------------------
-# Play 1: Bootstrap as root
-- name: Bootstrap VM - prepare for Ansible management
-  hosts: managed_vms
+- name: Register target(s) in memory
+  hosts: localhost
   gather_facts: false
-  ignore_unreachable: true
+  tasks:
+    - name: Add each target to bootstrap group
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: bootstrap_target
+      loop: "{{ target_hosts.split(',') }}"
+
+- name: Bootstrap VM - prepare for Ansible management
+  hosts: bootstrap_target
+  gather_facts: false
 
   vars:
     ansible_user: root
     ansible_password: "{{ bootstrap_password }}"
     ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
-    ssh_public_key_file: "~/.ssh/ansible_ed25519.pub"
-    ssh_public_key: "{{ lookup('file', ssh_public_key_file) }}"
+    _key_file: "{{ ssh_public_key_file | default('~/.ssh/ansible_ed25519.pub') }}"
+    ssh_public_key: "{{ lookup('file', _key_file) }}"
 
   tasks:
     - name: Wait for SSH
       ansible.builtin.wait_for_connection:
         timeout: 60
 
-    - name: Install python3 (skip apt-get update failure if repos are broken)
-      ansible.builtin.raw: |
-        if ! command -v python3 >/dev/null 2>&1; then
-          apt-get update -qq 2>/dev/null || true
-          apt-get install -y python3
-        fi
-      changed_when: true
-
-    - name: Install sudo
-      ansible.builtin.raw: apt-get install -y sudo
+    - name: Install python3 and sudo
+      ansible.builtin.raw: apt-get update -qq --fix-missing; apt-get install -y --fix-missing python3 sudo
       changed_when: true
 
     - name: Create ansible user
@@ -78,33 +70,3 @@
         owner: ansible
         group: ansible
         mode: "0600"
-
-# ------------------------------------------------------------------
-# Play 2: Install chrony as ansible user (key-based from here on)
-- name: Install chrony on managed VMs
-  hosts: managed_vms
-  gather_facts: true
-  become: true
-  ignore_unreachable: true
-
-  tasks:
-    - name: Install chrony
-      ansible.builtin.apt:
-        name: chrony
-        state: present
-        update_cache: true
-
-    - name: Enable and start chrony
-      ansible.builtin.service:
-        name: chrony
-        state: started
-        enabled: true
-
-    - name: Show chrony tracking status
-      ansible.builtin.command: chronyc tracking
-      register: chrony_status
-      changed_when: false
-
-    - name: Display chrony status
-      ansible.builtin.debug:
-        msg: "{{ chrony_status.stdout_lines }}"

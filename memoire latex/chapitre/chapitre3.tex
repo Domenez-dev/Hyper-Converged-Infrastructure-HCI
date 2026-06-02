@@ -12,9 +12,9 @@
 
 \par L'architecture proposée repose sur un modèle à trois couches superposées et interdépendantes, chacune apportant une dimension essentielle à l'infrastructure hyperconvergée.\\
 
-\par La première couche est la \textbf{couche physique}, constituée de trois serveurs Dell PowerEdge R720 mis à disposition par le Centre d'innovation de Sonatrach. Proxmox VE est installé directement en mode bare metal sur chacun de ces serveurs, sans couche de virtualisation intermédiaire, ce qui garantit des performances maximales.\\
+\par La première couche est la \textbf{couche physique}, constituée de trois serveurs Dell PowerEdge R720 mis à disposition par le Centre d'innovation de Sonatrach. Proxmox VE sera installé directement en mode bare metal sur chacun de ces serveurs, sans couche de virtualisation intermédiaire, ce qui garantira des performances maximales.\\
 
-\par La deuxième couche est la \textbf{couche de virtualisation et de cluster}, composée des trois nœuds Proxmox (PVE-01, PVE-02, PVE-03) interconnectés via le réseau Sonatrach. Ces nœuds forment un cluster haute disponibilité géré par Corosync. Chaque nœud exécute simultanément les daemons Ceph pour le stockage distribué et une instance Open vSwitch avec des tunnels VxLAN pour la segmentation réseau. Cette convergence des rôles est l'expression directe du principe HCI.\\
+\par La deuxième couche est la \textbf{couche de virtualisation et de cluster}, composée des trois nœuds Proxmox (PVE-01, PVE-02, PVE-03) interconnectés via le réseau Sonatrach. Ces nœuds formeront un cluster haute disponibilité géré par Corosync. Chaque nœud exécutera simultanément les daemons Ceph pour le stockage distribué et une instance Open vSwitch avec des tunnels VxLAN pour la segmentation réseau. Cette convergence des rôles est l'expression directe du principe HCI.\\
 
 \par La troisième couche est la \textbf{couche applicative et de services}, hébergeant la VM OPNsense pour le routage et le pare-feu, les VMs de démonstration Sona-Web, le mécanisme CLBS, la stack de monitoring, et les outils d'automatisation Ansible.\\
 
@@ -52,7 +52,7 @@
 
 \subsection{Infrastructure Physique}
 
-\par L'infrastructure physique est constituée de trois serveurs Dell PowerEdge R720. Ces serveurs forment les nœuds du cluster Proxmox : PVE-01, PVE-02 et PVE-03. Proxmox VE est installé directement en mode bare metal sur chacun d'eux, sans couche de virtualisation intermédiaire. Le Dell PowerEdge R720 est un serveur rack 2U de la gamme Enterprise de Dell, équipé de processeurs Intel Xeon E5-2600, adapté aux charges de virtualisation intensive et au stockage distribué.\\
+\par L'infrastructure physique est constituée de trois serveurs Dell PowerEdge R720. Ces serveurs forment les nœuds du cluster Proxmox : PVE-01, PVE-02 et PVE-03. Proxmox VE sera installé directement en mode bare metal sur chacun d'eux, sans couche de virtualisation intermédiaire. Le Dell PowerEdge R720 est un serveur rack 2U de la gamme Enterprise de Dell, équipé de processeurs Intel Xeon E5-2600, adapté aux charges de virtualisation intensive et au stockage distribué.\\
 
 \par Chaque serveur dispose de cinq disques SAS répartis selon leurs rôles respectifs, conformément aux recommandations Proxmox concernant la séparation des entrées/sorties système et de stockage :\\
 
@@ -86,11 +86,11 @@ IP Management & voir tableau~\ref{tab:ip-management} & & Réseau Sonatrach 192.1
 
 \subsection{Architecture du Cluster Proxmox}
 
-\par Le cluster Proxmox regroupe les trois nœuds physiques en une entité unique administrée de façon centralisée. Cette section en détaille l'organisation, le mécanisme de quorum assuré par Corosync, le fonctionnement de la haute disponibilité et les scénarios de défaillance pris en charge.\\
+\par Le cluster Proxmox regroupera les trois nœuds physiques en une entité unique administrée de façon centralisée. Cette section en détaille l'organisation, le mécanisme de quorum assuré par Corosync, le fonctionnement de la haute disponibilité et les scénarios de défaillance pris en charge.\\
 
 \subsubsection{Organisation du Cluster}
 
-\par Le cluster Proxmox est constitué de trois nœuds physiques identiques, interconnectés via le réseau Sonatrach. Le trafic Corosync est transporté sur un réseau logique dédié (VxLAN ID 20) afin de garantir la stabilité du quorum indépendamment des autres flux. Cette organisation à trois nœuds est le minimum requis pour garantir un quorum stable et éviter les situations de split-brain.\\
+\par Le cluster Proxmox sera constitué de trois nœuds physiques identiques, interconnectés via le réseau Sonatrach. Le trafic Corosync sera transporté sur un réseau logique dédié (VxLAN ID 20) afin de garantir la stabilité du quorum indépendamment des autres flux. Cette organisation à trois nœuds est le minimum requis pour garantir un quorum stable et éviter les situations de split-brain.\\
 
 \par Le tableau~\ref{tab:ip-management} indique les adresses IP de management attribuées à chacun des trois nœuds du cluster.\\
 
@@ -119,7 +119,7 @@ Nœud 3 & PVE-03 & 192.168.10.84 \\
 
 \par Le mécanisme de haute disponibilité de Proxmox s'appuie sur Corosync pour la détection des pannes et sur le Resource Manager HA pour les décisions de basculement. Lorsqu'un nœud est déclaré défaillant, le HA Manager identifie les VMs concernées et déclenche leur redémarrage automatique sur un nœud survivant. Ce mécanisme est rendu possible par le stockage partagé Ceph : les disques des VMs étant accessibles depuis n'importe quel nœud, le redémarrage ne nécessite aucun transfert de données préalable. Le délai de basculement est typiquement compris entre 60 et 120 secondes.\\
 
-\par Toutes les VMs de l'application Sona-Web sont configurées en mode HA, avec une priorité de basculement définie : HAProxy en premier, suivi des serveurs Flask, puis de la base PostgreSQL.\\
+\par Toutes les VMs de l'application Sona-Web seront configurées en mode HA, avec une priorité de basculement définie : HAProxy en premier, suivi des serveurs Flask, puis de la base PostgreSQL.\\
 
 \subsubsection{Matrice des Scénarios de Défaillance}
 
@@ -242,7 +242,7 @@ toutes les 60 secondes :
 
 \subsubsection{Architecture Applicative}
 
-\par Sona-Web est une application web déployée sur le cluster pour démontrer les capacités de haute disponibilité et de live migration. Elle est constituée de quatre VMs Debian 12 interconnectées :\\
+\par Sona-Web est une application web déployée sur le cluster pour démontrer les capacités de haute disponibilité et de live migration. Elle sera constituée de quatre VMs Debian 12 interconnectées :\\
 
 \begin{itemize}
     \item \textbf{HAProxy (VM-201, 192.168.10.111:8080) :} point d'entrée unique de l'application. Il distribue les requêtes HTTP entre les deux serveurs applicatifs selon l'algorithme round-robin et surveille leur disponibilité toutes les 200 ms (\texttt{GET /health}), basculant vers l'instance disponible en moins de 200 ms (\texttt{fall 1}) en cas d'indisponibilité~\cite{ref26}.
@@ -252,7 +252,7 @@ toutes les 60 secondes :
     \item \textbf{PostgreSQL (VM-204, 192.168.10.115:5432) :} base de données centralisée dont le disque est stocké sur un volume Ceph RBD, garantissant un historique cohérent quel que soit le nœud hébergeant les VMs applicatives.
 \end{itemize}
 
-\par Les quatre VMs sont membres du groupe HA \texttt{sona-group} et leurs disques résident sur le pool Ceph RBD partagé. Les adresses IP sont configurées de manière statique pour garantir leur stabilité après migration.\\
+\par Les quatre VMs seront membres du groupe HA \texttt{sona-group} et leurs disques résideront sur le pool Ceph RBD partagé. Les adresses IP seront configurées de manière statique pour garantir leur stabilité après migration.\\
 
 \begin{figure}[H]
     \begin{center}
@@ -281,13 +281,13 @@ GROUP BY instance_id;
 
 \subsection{Architecture du Monitoring}
 
-\par La stack de monitoring est déployée dans un conteneur LXC dédié à l'adresse \texttt{192.168.10.99}. Elle comprend trois composants complémentaires couvrant des périmètres de métriques distincts.\\
+\par La stack de monitoring sera déployée dans un conteneur LXC dédié à l'adresse \texttt{192.168.10.99}. Elle comprend trois composants complémentaires couvrant des périmètres de métriques distincts.\\
 
-\par \textbf{InfluxDB} reçoit les métriques générales de Proxmox (CPU, RAM, réseau, stockage des nœuds et des VMs) via le mécanisme natif ``Metric Server'', sans agent supplémentaire. Cet historique est utilisé à la fois par Grafana pour la visualisation et par le service CLBS pour ses décisions de migration.\\
+\par \textbf{InfluxDB} recevra les métriques générales de Proxmox (CPU, RAM, réseau, stockage des nœuds et des VMs) via le mécanisme natif ``Metric Server'', sans agent supplémentaire. Cet historique sera utilisé à la fois par Grafana pour la visualisation et par le service CLBS pour ses décisions de migration.\\
 
-\par \textbf{Prometheus} collecte les métriques détaillées du cluster Ceph via l'endpoint exposé par le nœud MGR actif sur le port \texttt{9283}. Les métriques applicatives du service CLBS sont également exposées sur le port \texttt{9101} de la VM dédiée.\\
+\par \textbf{Prometheus} collectera les métriques détaillées du cluster Ceph via l'endpoint exposé par le nœud MGR actif sur le port \texttt{9283}. Les métriques applicatives du service CLBS seront également exposées sur le port \texttt{9101} de la VM dédiée.\\
 
-\par \textbf{Grafana} est connecté à InfluxDB et à Prometheus comme sources de données, permettant de construire des tableaux de bord unifiés couvrant l'ensemble de l'infrastructure : utilisation des ressources par nœud, état du cluster Ceph, historique des migrations CLBS, et alertes de surcharge~\cite{ref25}.\\
+\par \textbf{Grafana} sera connecté à InfluxDB et à Prometheus comme sources de données, permettant de construire des tableaux de bord unifiés couvrant l'ensemble de l'infrastructure : utilisation des ressources par nœud, état du cluster Ceph, historique des migrations CLBS, et alertes de surcharge~\cite{ref25}.\\
 
 \subsection{Automatisation}
 
@@ -303,15 +303,16 @@ GROUP BY instance_id;
 
 \subsubsection{Ansible : Périmètre et Playbooks}
 
-\par Ansible est l'outil d'automatisation principal, exécuté depuis les postes de travail des développeurs via SSH sur le réseau de management. Trois playbooks couvrent les principaux besoins d'automatisation.\\
+\par Ansible est l'outil d'automatisation principal, exécuté depuis les postes de travail des développeurs via SSH sur le réseau de management. Quatre playbooks couvrent les principaux besoins d'automatisation liés au cycle de vie des machines virtuelles.\\
 
 \begin{itemize}
-    \item \textbf{Playbook 1 (Intégration d'un nouveau nœud) :} automatise l'ensemble de la procédure d'intégration d'un serveur fraîchement installé (via PXE) dans le cluster existant. Il couvre la configuration réseau OVS/VxLAN, l'adhésion au cluster Corosync, l'initialisation de l'OSD Ceph, et la configuration des exports de métriques vers InfluxDB.
+    \item \textbf{Playbook 1 (Provisionnement d'une VM) :} automatise la création d'une VM à partir d'un template Debian préparé dans le pool Ceph. Il couvre le clonage du template, la configuration matérielle (CPU, RAM), l'attribution d'une adresse IP statique via cloud-init, le démarrage de la VM et sa mise à jour initiale.
 
-    \item \textbf{Playbook 2 (Provisionnement de VMs) :} automatise la création de VMs et de conteneurs LXC à partir de templates cloud-init stockés dans le pool Ceph. Il intègre la configuration réseau via DHCP OPNsense et l'assignation au bon bridge OVS selon le réseau cible (Dev, Prod ou DMZ).
+    \item \textbf{Playbook 2 (Bootstrap d'une VM) :} initialise la gestion Ansible sur une machine fraîchement créée à partir de son adresse IP, sans qu'elle figure préalablement dans l'inventaire. Il installe les dépendances nécessaires, crée l'utilisateur dédié \texttt{ansible} avec les droits \texttt{sudo} appropriés et déploie la clé SSH de gestion.
 
-    \item \textbf{Playbook 3 (Migration Dev vers Prod/DMZ) :} gère la promotion d'une VM ou d'un ensemble de VMs vers la production ou la DMZ, en reconfigurant les interfaces réseau, les règles de pare-feu OPNsense et en vérifiant la connectivité post-migration.
-\end{itemize}
+    \item \textbf{Playbook 3 (Synchronisation NTP) :} configure \texttt{chrony} sur l'ensemble du cluster. Le nœud \texttt{pve-01} est désigné maître NTP interne — il se synchronise depuis \texttt{pool.ntp.org} et distribue le temps aux autres nœuds, qui le prennent comme source prioritaire avec \texttt{pool.ntp.org} en secours.
+
+    \item \textbf{Playbook 4 (Provisionnement en lot) :} permet la création simultanée de plusieurs VMs à partir d'une liste de définitions YAML, en invoquant le playbook de provisionnement unitaire pour chaque entrée de la liste. \end{itemize}
 
 \subsubsection{Pipeline PXE/TFTP}
 
@@ -373,15 +374,15 @@ SSH/SFTP & TCP & Oui & Post-installation uniquement \\
 
 \subsection{Architecture du Cluster Ceph}
 
-\par Le cluster Ceph fournit la couche de stockage distribuée et partagée de l'infrastructure. Cette section en présente les composants, le dimensionnement du pool de stockage et la configuration de l'algorithme CRUSH.\\
+\par Le cluster Ceph fournira la couche de stockage distribuée et partagée de l'infrastructure. Cette section en présente les composants, le dimensionnement du pool de stockage et la configuration de l'algorithme CRUSH.\\
 
 \subsubsection{Composants du Cluster}
 
-\par Le cluster Ceph est composé des services suivants, répartis sur les trois nœuds physiques :\\
+\par Le cluster Ceph sera composé des services suivants, répartis sur les trois nœuds physiques :\\
 
 \begin{itemize}
     \item \textbf{Monitors (MON) :} un monitor par nœud, soit trois au total. Les monitors maintiennent la carte du cluster (``cluster map'') et assurent le consensus distribué. Trois monitors garantissent un quorum stable (2/3 suffisants).
-    \item \textbf{Managers (MGR) :} PVE-02 héberge le MGR actif, PVE-03 le MGR en standby. Le MGR expose les métriques du cluster via un endpoint REST utilisé par Prometheus.
+    \item \textbf{Managers (MGR) :} PVE-02 hébergera le MGR actif, PVE-03 le MGR en standby. Le MGR exposera les métriques du cluster via un endpoint REST utilisé par Prometheus.
     \item \textbf{OSDs (Object Storage Daemons) :} quatre OSDs par nœud (disques \texttt{sdb}, \texttt{sdc}, \texttt{sdd} et \texttt{sde}), soit douze OSDs au total dans le cluster~\cite{ref33}.
 \end{itemize}
 
@@ -467,7 +468,7 @@ Facteur de réplication (\texttt{size}) & 3 (une réplique par nœud physique) \
 
 \par Le réseau Sonatrach met à disposition un sous-réseau \texttt{192.168.10.0/24} utilisé pour l'accès SSH et l'interface web Proxmox. La connectivité Internet des nœuds est assurée par un poste jouant le rôle de routeur externe à l'adresse \texttt{192.168.10.36}, qui réalise du NAT et du forwarding IP.\\
 
-\par Le switch Sonatrach n'autorise que le VLAN 10 natif et ne permet pas la configuration de VLANs supplémentaires. Pour créer les réseaux logiques nécessaires à l'infrastructure, \textbf{VxLAN (Virtual Extensible LAN)} a été retenu comme technologie d'encapsulation. VxLAN permet de créer des réseaux logiques de niveau 2 tunnelisés au-dessus du réseau IP existant, sans modifier la configuration du switch. Open vSwitch gère la création et la terminaison de ces tunnels sur chaque nœud Proxmox.\\
+\par Le switch Sonatrach n'autorise que le VLAN 10 natif et ne permet pas la configuration de VLANs supplémentaires. Pour créer les réseaux logiques nécessaires à l'infrastructure, \textbf{VxLAN (Virtual Extensible LAN)} a été retenu comme technologie d'encapsulation. VxLAN permet de créer des réseaux logiques de niveau 2 tunnelisés au-dessus du réseau IP existant, sans modifier la configuration du switch. Open vSwitch gérera la création et la terminaison de ces tunnels sur chaque nœud Proxmox.\\
 
 \subsection{Topologie Réseau}
 
@@ -560,7 +561,7 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 
 \subsubsection{Interfaces et Rôles}
 
-\par La VM OPNsense constitue le cœur du réseau applicatif. Il s'agit d'une distribution FreeBSD dédiée aux fonctions de routage et de sécurité réseau. Dans cette architecture, OPNsense est déployée avec quatre interfaces réseau virtuelles :\\
+\par La VM OPNsense constitue le cœur du réseau applicatif. Il s'agit d'une distribution FreeBSD dédiée aux fonctions de routage et de sécurité réseau. Dans cette architecture, OPNsense sera déployée avec quatre interfaces réseau virtuelles :\\
 
 \begin{itemize}
     \item \textbf{Interface WAN (192.168.10.65/24) :} connectée au bridge OVS de management, avec gateway \texttt{192.168.10.36}. Assure l'accès Internet sortant via NAT pour toutes les VMs internes.
@@ -569,11 +570,11 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
     \item \textbf{Interface LAN3 (172.16.80.1/24) :} passerelle du réseau DMZ.
 \end{itemize}
 
-\par OPNsense intègre nativement dnsmasq, utilisé comme serveur DHCP pour les trois réseaux internes. L'attribution des adresses IP aux VMs est ainsi automatisée dès leur connexion à l'un des bridges applicatifs, simplifiant le provisionnement via les playbooks Ansible.\\
+\par OPNsense intègre nativement dnsmasq, qui sera utilisé comme serveur DHCP pour les trois réseaux internes. L'attribution des adresses IP aux VMs sera ainsi automatisée dès leur connexion à l'un des bridges applicatifs, simplifiant le provisionnement via les playbooks Ansible.\\
 
 \subsubsection{Haute Disponibilité d'OPNsense}
 
-\par OPNsense étant le point central du routage et du filtrage, sa défaillance isolerait l'ensemble des réseaux internes. Sa résilience est assurée par son intégration au groupe HA Proxmox. En cas de défaillance du nœud hébergeant la VM, Corosync la détecte et le HA Manager déclenche son redémarrage sur un nœud survivant, directement depuis le volume Ceph RBD. Le délai de basculement est de 60 à 120 secondes.\\
+\par OPNsense étant le point central du routage et du filtrage, sa défaillance isolerait l'ensemble des réseaux internes. Sa résilience sera assurée par son intégration au groupe HA Proxmox. En cas de défaillance du nœud hébergeant la VM, Corosync la détecte et le HA Manager déclenche son redémarrage sur un nœud survivant, directement depuis le volume Ceph RBD. Le délai de basculement est de 60 à 120 secondes.\\
 
 \par Pour une architecture de production nécessitant un basculement transparent, une configuration active/passive avec le protocole CARP (natif dans OPNsense) réduirait ce délai à moins de 5 secondes.\\
 
@@ -702,13 +703,13 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \label{fig:uml-deployment}
 \end{figure}
 
-\par La figure~\ref{fig:uml-deployment} présente la répartition des services virtualisés sur les trois nœuds physiques du cluster. PVE-01 concentre les services réseau et de monitoring. PVE-02 héberge les services applicatifs de développement (GitLab, Rundeck, OpenLDAP) et le service CLBS. PVE-03 prend en charge les instances de l'application de démonstration et le GitLab Runner. Chaque nœud contribue avec quatre OSDs au pool Ceph partagé et héberge un Monitor Ceph. Les Managers actif et standby sont respectivement sur PVE-02 et PVE-03.\\
+\par La figure~\ref{fig:uml-deployment} présente la répartition des services virtualisés sur les trois nœuds physiques du cluster. PVE-01 concentrera les services réseau et de monitoring. PVE-02 hébergera les services applicatifs de développement (GitLab, Rundeck, OpenLDAP) et le service CLBS. PVE-03 prendra en charge les instances de l'application de démonstration et le GitLab Runner. Chaque nœud contribuera avec quatre OSDs au pool Ceph partagé et hébergera un Monitor Ceph. Les Managers actif et standby seront respectivement sur PVE-02 et PVE-03.\\
 
 % ============================================================
 \subsection{Système de Notification : Grafana Alertmanager}
 % ============================================================
 
-\par Grafana intègre nativement un système d'alerte permettant de définir des règles de déclenchement directement sur les tableaux de bord existants. Lorsqu'une condition est vérifiée, Grafana génère une alerte et la transmet via un contact point configuré. Dans notre infrastructure, les notifications sont acheminées vers une adresse Gmail via le protocole SMTP~\cite{ref25}.
+\par Grafana intègre nativement un système d'alerte permettant de définir des règles de déclenchement directement sur les tableaux de bord existants. Lorsqu'une condition est vérifiée, Grafana génère une alerte et la transmet via un contact point configuré. Dans notre infrastructure, les notifications seront acheminées vers une adresse Gmail via le protocole SMTP~\cite{ref25}.
 
 \par Les alertes couvrent les métriques critiques suivantes :\\
 
@@ -752,9 +753,9 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \subsection{Centralisation des Journaux : Loki, Alloy et Grafana}
 % ============================================================
 
-\par La centralisation des journaux repose sur la pile Loki, Alloy et Grafana. Loki est une solution de stockage de logs qui indexe uniquement les métadonnées (labels) et stocke les messages compressés, ce qui lui confère une empreinte en ressources nettement inférieure à celle d'Elasticsearch. Grafana Alloy (anciennement Grafana Agent) est l'agent de collecte déployé sur chaque nœud et VM ; il transmet les logs vers Loki. Grafana permet ensuite d'interroger et de visualiser ces journaux via le langage LogQL.
+\par La centralisation des journaux reposera sur la pile Loki, Alloy et Grafana. Loki est une solution de stockage de logs qui indexe uniquement les métadonnées (labels) et stocke les messages compressés, ce qui lui confère une empreinte en ressources nettement inférieure à celle d'Elasticsearch. Grafana Alloy (anciennement Grafana Agent) est l'agent de collecte déployé sur chaque nœud et VM ; il transmet les logs vers Loki. Grafana permet ensuite d'interroger et de visualiser ces journaux via le langage LogQL.
 
-\par Alloy est installé sur chaque nœud Proxmox et sur les VMs à superviser. Loki est hébergé dans le conteneur LXC monitoring existant, aux côtés d'InfluxDB et de Prometheus.
+\par Alloy sera installé sur chaque nœud Proxmox et sur les VMs à superviser. Loki sera hébergé dans le conteneur LXC monitoring, aux côtés d'InfluxDB et de Prometheus.
 
 \par Les services retenus pour la collecte des journaux sont les suivants :\\
 
@@ -822,7 +823,9 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 
 \par La synchronisation temporelle est un prérequis pour tout système distribué. Dans notre infrastructure, Ceph et Corosync dépendent de l'horloge système de chaque nœud : un écart supérieur à quelques secondes peut provoquer des erreurs de quorum Ceph, des incohérences dans les journaux distribués ou des refus d'authentification.
 
-\par Un serveur NTP interne est déployé dans un conteneur LXC sur le cluster. L'implémentation retenue est \textbf{Chrony}, plus réactif que ntpd classique pour les corrections de dérive d'horloge. Le serveur Chrony se synchronise sur des serveurs NTP publics (\texttt{pool.ntp.org}) et constitue la référence temporelle unique pour l'ensemble des nœuds Proxmox et des VMs. Les nœuds sont configurés comme clients NTP pointant exclusivement vers ce serveur interne.
+\par Plutôt que de dédier un conteneur LXC à ce rôle, le serveur NTP sera hébergé directement sur le nœud physique \textbf{PVE-01} (\texttt{192.168.10.100}). L'implémentation retenue est \textbf{Chrony}, plus réactif que ntpd classique pour les corrections de dérive d'horloge. PVE-01 se synchronisera sur \texttt{pool.ntp.org} et constituera la référence temporelle unique pour l'ensemble des nœuds Proxmox ainsi que pour les machines virtuelles et conteneurs LXC de l'infrastructure. Les VMs hébergées sur des VLANs distincts (\texttt{172.16.60/70/80.0/24}) atteignent PVE-01 via un routeur qui assure la translation d'adresses (NAT) depuis ces réseaux vers le réseau de management \texttt{192.168.10.0/24}.
+
+\par Les clients (nœuds PVE-02, PVE-03, VMs) appliqueront une hiérarchie de synchronisation à deux niveaux : ils interrogent d'abord PVE-01, puis \texttt{pool.ntp.org} directement en cas d'indisponibilité de PVE-01.
 
 \begin{figure}[H]
 \centering
@@ -834,40 +837,40 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
              minimum width=4.5cm, minimum height=1.0cm,
              align=center, font=\small\bfseries},
   l3/.style={draw=bleu!45, fill=bleu!4, rounded corners=3pt,
-             minimum width=2.2cm, minimum height=0.85cm,
+             minimum width=2.4cm, minimum height=0.85cm,
              align=center, font=\footnotesize},
   arrowstyle/.style={->, thick, color=bleu!60},
   lbl/.style={font=\footnotesize\itshape, color=gray, anchor=east}
 ]
   % Niveau 1
-  \node[l1] (internet) at (5, 5.5)
+  \node[l1] (internet) at (5, 6.0)
     {pool.ntp.org\\{\normalfont\footnotesize Stratum 1--2 (Internet)}};
-  \node[lbl] at (1.8, 5.5) {Niveau 1};
+  \node[lbl] at (1.8, 6.0) {Niveau 1};
 
   % Niveau 2
-  \node[l2] (chrony) at (5, 3.5)
-    {LXC Chrony\\{\normalfont\footnotesize Stratum 3 (référence interne)}};
-  \node[lbl] at (1.8, 3.5) {Niveau 2};
+  \node[l2] (pve1) at (5, 4.0)
+    {PVE-01 (192.168.10.100)\\{\normalfont\footnotesize Stratum 3 (référence interne)}};
+  \node[lbl] at (1.8, 4.0) {Niveau 2};
 
   % Niveau 3
-  \node[l3] (pve1) at (1.2, 1.5) {PVE-01};
-  \node[l3] (pve2) at (3.8, 1.5) {PVE-02};
-  \node[l3] (pve3) at (6.4, 1.5) {PVE-03};
-  \node[l3] (vms)  at (9.0, 1.5) {VMs / LXCs};
-  \node[lbl] at (1.8, 0.7) {Niveau 3};
+  \node[l3] (pve2) at (1.0, 2.0) {PVE-02};
+  \node[l3] (pve3) at (3.5, 2.0) {PVE-03};
+  \node[l3] (vms)  at (6.0, 2.0) {VMs};
+  \node[l3] (lxcs) at (8.5, 2.0) {LXCs};
+  \node[lbl] at (1.8, 1.1) {Niveau 3};
 
   % Arrows
-  \draw[arrowstyle] (internet) -- node[right, font=\footnotesize\itshape, color=gray] {NTP} (chrony);
-  \draw[arrowstyle] (chrony) -- (pve1);
-  \draw[arrowstyle] (chrony) -- (pve2);
-  \draw[arrowstyle] (chrony) -- (pve3);
-  \draw[arrowstyle] (chrony) -- (vms);
+  \draw[arrowstyle] (internet) -- node[right, font=\footnotesize\itshape, color=gray] {NTP} (pve1);
+  \draw[arrowstyle] (pve1) -- (pve2);
+  \draw[arrowstyle] (pve1) -- (pve3);
+  \draw[arrowstyle] (pve1) -- (vms);
+  \draw[arrowstyle] (pve1) -- (lxcs);
 \end{tikzpicture}
 \caption{Hiérarchie NTP : synchronisation temporelle de l'infrastructure}
 \label{fig:ntp-hierarchy}
 \end{figure}
 
-\par La figure~\ref{fig:ntp-hierarchy} présente la hiérarchie de synchronisation temporelle. Le serveur Chrony interne (Stratum 3) se synchronise sur les serveurs publics du pool NTP. Tous les nœuds Proxmox et VMs du cluster utilisent ce serveur comme unique source de temps, garantissant la cohérence temporelle requise par Ceph et Corosync.
+\par La figure~\ref{fig:ntp-hierarchy} illustre la hiérarchie de synchronisation temporelle. PVE-01 joue le rôle de référence interne (Stratum 3) en se synchronisant sur \texttt{pool.ntp.org}. Les autres nœuds et VMs interrogent PVE-01 en priorité, et basculent vers \texttt{pool.ntp.org} directement si PVE-01 est indisponible. Cette architecture garantit la cohérence temporelle requise par Ceph et Corosync.
 
 % ============================================================
 \subsection{Gestion des Identités : OpenLDAP}
@@ -881,16 +884,16 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \subsection{Gestion du Code Source et CI/CD : GitLab}
 % ============================================================
 
-\par GitLab est déployé sous forme de conteneur LXC Turnkey Linux sur le cluster Proxmox. Le template Turnkey GitLab repose sur Debian 12 et intègre GitLab Community Edition version 17, antérieure à la dernière version disponible (18.x au moment de la rédaction). Une mise à jour vers la dernière version sera réalisée après le déploiement initial, en suivant la procédure officielle de mise à niveau par paliers~\cite{ref40}.
+\par GitLab sera déployé sous forme de conteneur LXC Turnkey Linux sur le cluster Proxmox. Le template Turnkey GitLab repose sur Debian 12 et intègre GitLab Community Edition version 17, antérieure à la dernière version disponible (18.x au moment de la rédaction). Une mise à jour vers la dernière version sera réalisée après le déploiement initial, en suivant la procédure officielle de mise à niveau par paliers~\cite{ref40}.
 
-\par Les projets hébergés sur cette instance GitLab sont les suivants :\\
+\par Les projets hébergés sur cette instance GitLab seront les suivants :\\
 
 \begin{itemize}
     \item \textbf{clbs :} code source du service d'équilibrage de charge en Go.
     \item \textbf{ansible-infra :} ensemble des playbooks Ansible d'automatisation de l'infrastructure.
 \end{itemize}
 
-\par Des pipelines CI/CD GitLab sont configurés pour automatiser les vérifications de qualité de code et les tests unitaires du service CLBS, ainsi que la validation des syntaxes des playbooks Ansible. Les GitLab Runners sont déployés sous forme de conteneurs LXC sur le cluster et enregistrés dans l'instance GitLab.
+\par Des pipelines CI/CD GitLab seront configurés pour automatiser les vérifications de qualité de code et les tests unitaires du service CLBS, ainsi que la validation des syntaxes des playbooks Ansible. Les GitLab Runners seront déployés sous forme de conteneurs LXC sur le cluster et enregistrés dans l'instance GitLab.
 
 
 \begin{figure}[H]
@@ -934,7 +937,7 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 
 \par Rundeck est un outil d'automatisation opérationnelle qui expose les playbooks Ansible via une interface web. Il permet aux administrateurs d'exécuter des jobs prédéfinis sans accès direct à la ligne de commande, d'historiser les exécutions avec leurs journaux complets, et de contrôler les permissions d'exécution par utilisateur ou groupe.
 
-\par Dans notre infrastructure, Rundeck est déployé dans un conteneur LXC et connecté au dépôt \texttt{ansible-infra} hébergé sur GitLab. Les playbooks de provisionnement de VMs, d'intégration de nœuds et de promotion d'environnements sont ainsi accessibles via une interface graphique, sans nécessiter d'accès SSH direct aux nœuds Proxmox.
+\par Dans notre infrastructure, Rundeck sera déployé dans un conteneur LXC et connecté au dépôt \texttt{ansible-infra} hébergé sur GitLab. Les playbooks de provisionnement de VMs, d'intégration de nœuds et de promotion d'environnements sont ainsi accessibles via une interface graphique, sans nécessiter d'accès SSH direct aux nœuds Proxmox.
 
 % ============================================================
 \section{Conclusion}
