@@ -1,0 +1,179 @@
+% organigra2.tex
+% Pipeline d'automatisation : PXE/TFTP + Ansible
+% Requires in preamble: \usepackage{tikz}
+%   \usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+% Colors bleu / bleuu / bleuuu must be defined in preamble.
+
+\begin{tikzpicture}[
+    node distance=0.5cm and 2.8cm,
+    every node/.style={font=\footnotesize},
+    % Entry / result nodes
+    triggerbox/.style={
+        draw, rounded corners=5pt, fill=gray!14,
+        text width=3.5cm, align=center,
+        minimum height=0.85cm, draw=gray!55, line width=1pt
+    },
+    resultbox/.style={
+        draw, rounded corners=5pt, fill=bleuuu!14,
+        text width=3.5cm, align=center,
+        minimum height=0.85cm, font=\footnotesize\bfseries,
+        draw=bleuuu, line width=1.2pt
+    },
+    % Phase title banners
+    phasebox/.style={
+        draw, rounded corners=5pt, fill=bleu!15,
+        text width=3.5cm, align=center,
+        minimum height=0.9cm, font=\footnotesize\bfseries,
+        draw=bleu, line width=1.2pt
+    },
+    % Primary steps in the main flow
+    stepbox/.style={
+        draw, rounded corners=4pt, fill=white,
+        text width=3.5cm, align=center,
+        minimum height=0.78cm, draw=bleuu, line width=0.8pt
+    },
+    % Secondary/side playbook boxes
+    pbbox/.style={
+        draw, rounded corners=4pt, fill=bleuuu!8,
+        text width=4cm, align=center,
+        minimum height=0.78cm, draw=bleuuu, line width=0.8pt
+    },
+    % Annotation label (no border)
+    ann/.style={font=\scriptsize, text=gray!75, align=center},
+    % Arrows
+    mainflow/.style={->, >=Stealth, thick, draw=bleu},
+    subflow/.style={->, >=Stealth, draw=bleuu, line width=0.75pt},
+    sideflow/.style={->, >=Stealth, dashed, draw=bleuuu, line width=0.75pt},
+]
+
+% =============================================
+% MAIN SPINE (left column)
+% =============================================
+
+\node[triggerbox] (trigger)
+    {Nouveau serveur physique\\mis sous tension};
+
+% -- Phase 1 : PXE --
+\node[phasebox, below=0.7cm of trigger] (pxe)
+    {Phase 1 : PXE / TFTP\\Installation automatique};
+
+\node[stepbox, below=0.4cm of pxe] (p1)
+    {Requete DHCP\\OPNsense attribue IP temporaire\\+ options 66/67 (boot server)};
+\node[stepbox, below=0.35cm of p1] (p2)
+    {TFTP (UDP/69)\\bootloader \texttt{pxelinux.0}\\+ kernel Linux d'amorcage};
+\node[stepbox, below=0.35cm of p2] (p3)
+    {HTTP (Nginx)\\image Proxmox VE (\textasciitilde{}800 Mo)\\transfert fiable (TCP)};
+\node[stepbox, below=0.35cm of p3] (p4)
+    {Answer File (HTTP)\\partitionnement, hostname,\\timezone, langue --- sans clavier};
+\node[stepbox, below=0.35cm of p4] (p5)
+    {Redemarrage automatique\\Proxmox VE operationnel\\SSH accessible};
+
+% -- Phase 2 : Ansible --
+\node[phasebox, below=0.7cm of p5] (ansible)
+    {Phase 2 : Ansible (SSH)\\Integration au cluster};
+
+\node[stepbox, below=0.4cm of ansible] (a1)
+    {\textbf{Playbook 1} -- Integration noeud\\verification SSH + pre-requis};
+\node[stepbox, below=0.35cm of a1] (a2)
+    {Configuration reseau\\Open vSwitch + tunnels VxLAN};
+\node[stepbox, below=0.35cm of a2] (a3)
+    {Adhesion Corosync\\rejoindre le cluster existant};
+\node[stepbox, below=0.35cm of a3] (a4)
+    {Initialisation OSD Ceph\\(\texttt{sdb}) + integration pool RBD};
+\node[stepbox, below=0.35cm of a4] (a5)
+    {Rattachement groupe HA\\(\texttt{sona-ha-group}) Proxmox};
+\node[stepbox, below=0.35cm of a5] (a6)
+    {Enregistrement monitoring\\Prometheus + InfluxDB Metric Server};
+
+\node[resultbox, below=0.7cm of a6] (result)
+    {Noeud integre et operationnel\\dans le cluster\\(duree totale $<$ 25 min)};
+
+% =============================================
+% RIGHT COLUMN : secondary playbooks
+% =============================================
+
+% Playbook 2 -- aligned with ansible node
+\node[pbbox, right=2.8cm of ansible] (pb2title)
+    {\textbf{Playbook 2}\\Provisionnement VMs / LXC};
+
+\node[pbbox, below=0.35cm of pb2title] (pb2a)
+    {Clone template cloud-init\\depuis pool Ceph RBD};
+\node[pbbox, below=0.35cm of pb2a] (pb2b)
+    {Affectation bridge OVS\\(Dev / Prod / DMZ)};
+\node[pbbox, below=0.35cm of pb2b] (pb2c)
+    {DHCP OPNsense\\adressage automatique};
+\node[pbbox, below=0.35cm of pb2c] (pb2d)
+    {Activation HA Proxmox\\sur les nouvelles VMs};
+
+% Playbook 3 -- below pb2 group
+\node[pbbox, below=0.6cm of pb2d] (pb3title)
+    {\textbf{Playbook 3}\\Migration Dev vers Prod / DMZ};
+
+\node[pbbox, below=0.35cm of pb3title] (pb3a)
+    {Reconfiguration interfaces reseau\\changement de bridge OVS};
+\node[pbbox, below=0.35cm of pb3a] (pb3b)
+    {Mise a jour regles pare-feu\\OPNsense (inter-reseaux)};
+\node[pbbox, below=0.35cm of pb3b] (pb3c)
+    {Verification connectivite\\post-migration (ping + health)};
+
+% =============================================
+% GROUPING BACKGROUNDS
+% =============================================
+\begin{scope}[on background layer]
+    % Phase 1 box
+    \node[draw=bleu, rounded corners=8pt, fill=bleu!4,
+          line width=0.9pt, fit=(pxe)(p5), inner sep=6pt] {};
+    % Phase 2 box
+    \node[draw=bleuuu, rounded corners=8pt, fill=bleuuu!4,
+          line width=0.9pt, fit=(ansible)(a6), inner sep=6pt] {};
+    % Playbook 2 box
+    \node[draw=bleuuu, rounded corners=8pt, fill=bleuuu!6,
+          line width=0.9pt, fit=(pb2title)(pb2d), inner sep=6pt] {};
+    % Playbook 3 box
+    \node[draw=bleuu, rounded corners=8pt, fill=bleuuu!4,
+          line width=0.9pt, fit=(pb3title)(pb3c), inner sep=6pt] {};
+\end{scope}
+
+% =============================================
+% ARROWS -- main vertical flow
+% =============================================
+\draw[mainflow] (trigger)  -- (pxe);
+\draw[subflow]  (pxe)      -- (p1);
+\draw[subflow]  (p1)       -- (p2);
+\draw[subflow]  (p2)       -- (p3);
+\draw[subflow]  (p3)       -- (p4);
+\draw[subflow]  (p4)       -- (p5);
+\draw[mainflow] (p5)       -- node[right, ann, xshift=3pt] {SSH disponible} (ansible);
+\draw[subflow]  (ansible)  -- (a1);
+\draw[subflow]  (a1)       -- (a2);
+\draw[subflow]  (a2)       -- (a3);
+\draw[subflow]  (a3)       -- (a4);
+\draw[subflow]  (a4)       -- (a5);
+\draw[subflow]  (a5)       -- (a6);
+\draw[mainflow] (a6)       -- (result);
+
+% =============================================
+% ARROWS -- side playbook branches
+% =============================================
+% Playbook 2 triggered from Ansible phase
+\draw[sideflow] (ansible.east) -- node[above, ann] {a la demande} (pb2title.west);
+\draw[subflow]  (pb2title) -- (pb2a);
+\draw[subflow]  (pb2a)     -- (pb2b);
+\draw[subflow]  (pb2b)     -- (pb2c);
+\draw[subflow]  (pb2c)     -- (pb2d);
+
+% Playbook 3 triggered from Ansible phase (dashed, independent)
+\draw[sideflow] (ansible.east) to[out=0, in=180] (pb3title.west);
+\draw[subflow]  (pb3title) -- (pb3a);
+\draw[subflow]  (pb3a)     -- (pb3b);
+\draw[subflow]  (pb3b)     -- (pb3c);
+
+% =============================================
+% DURATION ANNOTATION
+% =============================================
+\node[ann, right=0.15cm of p3, xshift=0.4cm]
+    {\textasciitilde{}5 min};
+\node[ann, right=0.15cm of a4, xshift=0.4cm]
+    {\textasciitilde{}10 min};
+
+\end{tikzpicture}

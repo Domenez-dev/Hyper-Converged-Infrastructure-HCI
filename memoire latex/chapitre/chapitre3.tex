@@ -242,17 +242,15 @@ toutes les 60 secondes :
 
 \subsubsection{Architecture Applicative}
 
-\par Sona-Web est une application web déployée sur le cluster pour démontrer les capacités de haute disponibilité et de live migration. Elle sera constituée de quatre VMs Debian 12 interconnectées :\\
+\par Sona-Web est une application web déployée sur le cluster pour démontrer les capacités de haute disponibilité et de live migration. Elle sera constituée de quatre VMs Debian 12 interconnectées :
 
 \begin{itemize}
-    \item \textbf{HAProxy (VM-201, 192.168.10.111:8080) :} point d'entrée unique de l'application. Il distribue les requêtes HTTP entre les deux serveurs applicatifs selon l'algorithme round-robin et surveille leur disponibilité toutes les 200 ms (\texttt{GET /health}), basculant vers l'instance disponible en moins de 200 ms (\texttt{fall 1}) en cas d'indisponibilité~\cite{ref26}.
+    \item \textbf{HAProxy :} point d'entrée unique de l'application. Il distribue les requêtes HTTP entre les deux serveurs applicatifs selon l'algorithme round-robin et surveille leur disponibilité toutes les 200 ms (\texttt{GET /health}), basculant vers l'instance disponible en moins de 200 ms (\texttt{fall 1}) en cas d'indisponibilité~\cite{ref26}.
 
-    \item \textbf{Flask app-1 (VM-202, 192.168.10.112:8000) et app-2 (VM-203, 192.168.10.114:8000) :} deux instances identiques de l'application Python Flask. Chaque instance enregistre de manière asynchrone en base de données toutes les requêtes reçues.
+    \item \textbf{Flask app-1 et app-2 :} deux instances identiques de l'application Python Flask. Chaque instance enregistre de manière asynchrone en base de données toutes les requêtes reçues.
 
-    \item \textbf{PostgreSQL (VM-204, 192.168.10.115:5432) :} base de données centralisée dont le disque est stocké sur un volume Ceph RBD, garantissant un historique cohérent quel que soit le nœud hébergeant les VMs applicatives.
+    \item \textbf{PostgreSQL :} base de données centralisée dont le disque est stocké sur un volume Ceph RBD, garantissant un historique cohérent.
 \end{itemize}
-
-\par Les quatre VMs seront membres du groupe HA \texttt{sona-group} et leurs disques résideront sur le pool Ceph RBD partagé. Les adresses IP seront configurées de manière statique pour garantir leur stabilité après migration.\\
 
 \begin{figure}[H]
     \begin{center}
@@ -269,15 +267,7 @@ toutes les 60 secondes :
 
 \par Le scénario de validation se déroule en plusieurs temps : affichage de l'alternance round-robin entre app-1 et app-2, puis déclenchement d'une live migration de VM-202 (\texttt{app-1}) vers un autre nœud. Pendant la migration, Proxmox transfère l'état mémoire de la VM sans l'arrêter. Lorsque la synchronisation atteint \textasciitilde{}99\%, la VM est suspendue quelques dizaines de millisecondes le temps de transférer le delta final, puis reprend sur le nœud cible.\\
 
-\par HAProxy détecte l'indisponibilité transitoire en 200 ms maximum et redirige l'intégralité du trafic vers app-2. Une fois la migration terminée, app-1 est remise en service dès le premier health check réussi (\texttt{rise 1}). La requête suivante permet de vérifier la répartition post-migration :\\
-
-\begin{lstlisting}[style=sonacode,language=SQL,caption={Vérification de la répartition des requêtes en base},label={lst:sona-sql}]
-SELECT instance_id,
-       COUNT(*) AS total
-FROM requests
-WHERE request_time > NOW() - INTERVAL '1 hour'
-GROUP BY instance_id;
-\end{lstlisting}
+\par HAProxy détecte l'indisponibilité transitoire en 200 ms maximum et redirige l'intégralité du trafic vers app-2. Une fois la migration terminée, app-1 est remise en service dès le premier health check réussi (\texttt{rise 1}).\\
 
 \subsection{Architecture du Monitoring}
 
@@ -507,11 +497,11 @@ Facteur de réplication (\texttt{size}) & 3 (une réplique par nœud physique) \
 \hline
 \texttt{vmbr0} & Réseau physique natif & 192.168.10.0/24 & Bridge principal. Accès management, SSH, Web UI Proxmox, interface WAN d'OPNsense. \\
 \hline
-\texttt{vmbr60} & \texttt{vxlan60-int} & 172.16.60.0/24 & Réseau Dev. OPNsense y expose son interface LAN1. \\
+\texttt{vmbr60} & \texttt{vxlan60-int} & 172.16.60.0/24 & Réseau Dev.\\
 \hline
-\texttt{vmbr70} & \texttt{vxlan70-int} & 172.16.70.0/24 & Réseau Prod. OPNsense y expose son interface LAN2. \\
+\texttt{vmbr70} & \texttt{vxlan70-int} & 172.16.70.0/24 & Réseau Prod.\\
 \hline
-\texttt{vmbr80} & \texttt{vxlan80-int} & 172.16.80.0/24 & Réseau DMZ. OPNsense y expose son interface LAN3. \\
+\texttt{vmbr80} & \texttt{vxlan80-int} & 172.16.80.0/24 & Réseau DMZ.\\
 \hline
 \end{tabular}
 \end{table}
@@ -572,12 +562,6 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 
 \par OPNsense intègre nativement dnsmasq, qui sera utilisé comme serveur DHCP pour les trois réseaux internes. L'attribution des adresses IP aux VMs sera ainsi automatisée dès leur connexion à l'un des bridges applicatifs, simplifiant le provisionnement via les playbooks Ansible.\\
 
-\subsubsection{Haute Disponibilité d'OPNsense}
-
-\par OPNsense étant le point central du routage et du filtrage, sa défaillance isolerait l'ensemble des réseaux internes. Sa résilience sera assurée par son intégration au groupe HA Proxmox. En cas de défaillance du nœud hébergeant la VM, Corosync la détecte et le HA Manager déclenche son redémarrage sur un nœud survivant, directement depuis le volume Ceph RBD. Le délai de basculement est de 60 à 120 secondes.\\
-
-\par Pour une architecture de production nécessitant un basculement transparent, une configuration active/passive avec le protocole CARP (natif dans OPNsense) réduirait ce délai à moins de 5 secondes.\\
-
 \subsection{Architecture du Pare-feu}
 
 \par La sécurité réseau de l'infrastructure repose sur deux niveaux de filtrage complémentaires : le pare-feu OPNsense pour les flux entre réseaux applicatifs, et le pare-feu natif de Proxmox au niveau de l'hyperviseur.\\
@@ -588,16 +572,16 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 
 \par \textbf{Règles autorisées :}
 \begin{itemize}
-    \item Dev → WAN : autorisé pour les mises à jour et les dépôts de paquets.
-    \item DMZ → WAN : autorisé pour les services exposés nécessitant un accès sortant.
-    \item Prod → DMZ : autorisé pour la communication entre production et services exposés (HAProxy).
+    \item Dev → WAN : pour les mises à jour et les dépôts de paquets.
+    \item DMZ → WAN : pour les services exposés nécessitant un accès sortant.
+    \item Prod → DMZ : pour la communication entre production et services exposés.
 \end{itemize}
 
 \par \textbf{Règles bloquées :}
 \begin{itemize}
-    \item Dev → Prod : bloqué pour isoler les environnements de développement de la production.
-    \item Dev → DMZ : bloqué pour empêcher l'accès aux services exposés depuis le développement.
-    \item Prod → WAN direct : bloqué, le trafic de production passe obligatoirement par la DMZ.
+    \item Dev → Prod : pour isoler les environnements de développement de la production.
+    \item Dev → DMZ : pour empêcher l'accès aux services exposés depuis le développement.
+    \item Prod → WAN direct : le trafic de production passe obligatoirement par la DMZ.
 \end{itemize}
 
 \subsubsection{Pare-feu Proxmox : Filtrage au Niveau Hyperviseur}
@@ -649,53 +633,50 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
   leglbl/.style={font=\footnotesize, anchor=west}
 ]
 
-%  PVE-01
+%  PVE-01  (last item at -4.60, bottom = -5.15)
 \draw[draw=bleu, very thick, rounded corners=6pt, fill=bleu!3]
-  (0.0, 0.0) rectangle (6.5,-7.8);
+  (0.0, 0.0) rectangle (6.5,-5.15);
 \node[font=\small\bfseries\color{bleu}] at (3.25,-0.38) {PVE-01};
 \node[vm,  anchor=west] at (0.45,-1.20) {VM~HAProxy};
 \node[vm,  anchor=west] at (0.45,-2.05) {VM~OPNsense};
 \node[lxc, anchor=west] at (0.45,-2.90) {LXC~Monitoring};
-\node[lxc, anchor=west] at (0.45,-3.75) {LXC~NTP (Chrony)};
-\node[lxc, anchor=west] at (0.45,-4.60) {LXC~TFTP/PXE};
-\node[osd, anchor=west] at (0.45,-5.50) {OSD $\times$ 4~(sdb--sde)};
-\node[cephsvc, anchor=west] at (0.45,-6.22) {Ceph MON};
+\node[osd, anchor=west] at (0.45,-3.75) {OSD $\times$ 4~(sdb--sde)};
+\node[cephsvc, anchor=west] at (0.45,-4.60) {Ceph MON};
 
-%  PVE-02
+%  PVE-02  (last item at -5.45, bottom = -6.00)
 \draw[draw=bleu, very thick, rounded corners=6pt, fill=bleu!3]
-  (7.0, 0.0) rectangle (13.5,-7.8);
+  (7.0, 0.0) rectangle (13.5,-6.00);
 \node[font=\small\bfseries\color{bleu}] at (10.25,-0.38) {PVE-02};
 \node[vm,  anchor=west] at (7.45,-1.20) {VM~Flask app-1};
 \node[vm,  anchor=west] at (7.45,-2.05) {VM~CLBS};
 \node[lxc, anchor=west] at (7.45,-2.90) {LXC~GitLab CE};
 \node[lxc, anchor=west] at (7.45,-3.75) {LXC~Rundeck};
-\node[lxc, anchor=west] at (7.45,-4.60) {LXC~OpenLDAP};
-\node[osd, anchor=west] at (7.45,-5.50) {OSD $\times$ 4~(sdb--sde)};
-\node[cephsvc, anchor=west] at (7.45,-6.22) {Ceph MON + MGR (actif)};
+\node[osd, anchor=west] at (7.45,-4.60) {OSD $\times$ 4~(sdb--sde)};
+\node[cephsvc, anchor=west] at (7.45,-5.45) {Ceph MON + MGR (actif)};
 
-%  PVE-03
+%  PVE-03  (last item at -4.60, bottom = -5.15)
 \draw[draw=bleu, very thick, rounded corners=6pt, fill=bleu!3]
-  (14.0, 0.0) rectangle (20.5,-7.8);
+  (14.0, 0.0) rectangle (20.5,-5.15);
 \node[font=\small\bfseries\color{bleu}] at (17.25,-0.38) {PVE-03};
 \node[vm,  anchor=west] at (14.45,-1.20) {VM~Flask app-2};
 \node[vm,  anchor=west] at (14.45,-2.05) {VM~PostgreSQL};
 \node[lxc, anchor=west] at (14.45,-2.90) {LXC~GitLab Runner};
 \node[osd, anchor=west] at (14.45,-3.75) {OSD $\times$ 4~(sdb--sde)};
-\node[cephsvc, anchor=west] at (14.45,-4.47) {Ceph MON + MGR (standby)};
+\node[cephsvc, anchor=west] at (14.45,-4.60) {Ceph MON + MGR (standby)};
 
-%  Network bar
-\node[netbar, minimum width=20.5cm] at (10.25,-8.8)
+%  Network bar  (below the tallest box, PVE-02 at -6.00)
+\node[netbar, minimum width=20.5cm] at (10.25,-7.00)
   {Ceph RBD Pool partagé~~\textbar~~VxLAN overlay (VNI 10--90)~~\textbar~~Réseau Sonatrach 192.168.10.0/24};
 
 %  Legend
-\node[vm,      minimum width=1.8cm, anchor=west] at ( 0.0,-10.2) {VM};
-\node[leglbl]  at ( 2.3,-10.2) {Machine virtuelle (KVM)};
-\node[lxc,     minimum width=1.8cm, anchor=west] at ( 6.2,-10.2) {LXC};
-\node[leglbl]  at ( 8.5,-10.2) {Conteneur LXC};
-\node[osd,     minimum width=1.8cm, anchor=west] at (12.5,-10.2) {OSD};
-\node[leglbl]  at (14.8,-10.2) {Disque stockage Ceph};
-\node[cephsvc, minimum width=1.8cm, anchor=west] at (17.2,-10.2) {MON/MGR};
-\node[leglbl]  at (19.5,-10.2) {Service Ceph};
+\node[vm,      minimum width=1.8cm, anchor=west] at ( 0.0,-8.4) {VM};
+\node[leglbl]  at ( 2.0,-8.4) {Machine virtuelle (KVM)};
+\node[lxc,     minimum width=1.8cm, anchor=west] at ( 6.2,-8.4) {LXC};
+\node[leglbl]  at ( 8.2,-8.4) {Conteneur LXC};
+\node[osd,     minimum width=1.8cm, anchor=west] at (11.4,-8.4) {OSD};
+\node[leglbl]  at (13.4,-8.4) {Disque stockage Ceph};
+\node[cephsvc, minimum width=1.8cm, anchor=west] at (17.1,-8.4) {MON/MGR};
+\node[leglbl]  at (19.1,-8.4) {Service Ceph};
 
 \end{tikzpicture}%
 }
@@ -763,11 +744,8 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
     \item \textbf{Nœuds Proxmox :} journaux système (\texttt{auth.log}, \texttt{syslog}, \texttt{kern.log}) pour la sécurité et le diagnostic matériel.
     \item \textbf{Cluster Ceph :} journaux des démons OSD et MON pour le suivi des événements de santé, de récupération et de rebalancing.
     \item \textbf{OPNsense :} journaux du pare-feu (connexions bloquées, règles déclenchées) et du service DHCP.
-    \item \textbf{HAProxy :} journaux d'accès HTTP et événements de health check.
-    \item \textbf{Service CLBS :} décisions de migration, activations du circuit breaker, erreurs de connexion à l'API Proxmox.
     \item \textbf{Authentification SSH :} tentatives de connexion et échecs d'authentification sur les nœuds et VMs (sécurité).
-    \item \textbf{GitLab :} événements d'accès au dépôt et déclenchements de pipelines CI/CD.
-    \item \textbf{Rundeck :} exécutions de jobs et résultats des playbooks Ansible.
+    % \item \textbf{GitLab :} événements d'accès au dépôt et déclenchements de pipelines CI/CD.
 \end{itemize}
 
 \begin{figure}[H]
@@ -821,11 +799,11 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \subsection{Synchronisation Temporelle : Serveur NTP}
 % ============================================================
 
-\par La synchronisation temporelle est un prérequis pour tout système distribué. Dans notre infrastructure, Ceph et Corosync dépendent de l'horloge système de chaque nœud : un écart supérieur à quelques secondes peut provoquer des erreurs de quorum Ceph, des incohérences dans les journaux distribués ou des refus d'authentification.
+\par La synchronisation temporelle est un prérequis pour tout système distribué. Dans notre infrastructure, Ceph et Corosync dépendent de l'horloge système de chaque nœud : un écart supérieur à quelques secondes peut provoquer des erreurs de quorum Ceph, des incohérences dans les journaux distribués ou des refus d'authentification. \\
 
-\par Plutôt que de dédier un conteneur LXC à ce rôle, le serveur NTP sera hébergé directement sur le nœud physique \textbf{PVE-01} (\texttt{192.168.10.100}). L'implémentation retenue est \textbf{Chrony}, plus réactif que ntpd classique pour les corrections de dérive d'horloge. PVE-01 se synchronisera sur \texttt{pool.ntp.org} et constituera la référence temporelle unique pour l'ensemble des nœuds Proxmox ainsi que pour les machines virtuelles et conteneurs LXC de l'infrastructure. Les VMs hébergées sur des VLANs distincts (\texttt{172.16.60/70/80.0/24}) atteignent PVE-01 via un routeur qui assure la translation d'adresses (NAT) depuis ces réseaux vers le réseau de management \texttt{192.168.10.0/24}.
+\par Plutôt que de dédier un conteneur LXC à ce rôle, le serveur NTP sera hébergé directement sur le nœud physique \textbf{PVE-01} (\texttt{192.168.10.100}). L'implémentation retenue est \textbf{Chrony}, plus réactif que ntpd classique pour les corrections de dérive d'horloge. PVE-01 se synchronisera sur \texttt{pool.ntp.org} et constituera la référence temporelle unique pour l'ensemble des nœuds Proxmox ainsi que pour les machines virtuelles et conteneurs LXC de l'infrastructure. \\
 
-\par Les clients (nœuds PVE-02, PVE-03, VMs) appliqueront une hiérarchie de synchronisation à deux niveaux : ils interrogent d'abord PVE-01, puis \texttt{pool.ntp.org} directement en cas d'indisponibilité de PVE-01.
+\par Plutôt que de dédier un conteneur LXC à ce rôle, le serveur NTP sera hébergé directement  sur les nœuds physiques Proxmox. \textbf{PVE-01} (\texttt{192.168.10.100}) constitue la référence  temporelle principale et se synchronise sur \texttt{pool.ntp.org} ; en cas d'indisponibilité,  les clients basculent successivement vers \textbf{PVE-02}, puis \textbf{PVE-03}, ensuite vers  \texttt{pool.ntp.org} directement, et enfin sur l'horloge locale en dernier recours.  L'implémentation retenue est \textbf{Chrony}, dont l'algorithme de sélection de source gère  ce basculement nativement. Les VMs hébergées sur des VLANs distincts  (\texttt{172.16.60/70/80.0/24}) atteignent les nœuds PVE via \textbf{OPNsense}.\\
 
 \begin{figure}[H]
 \centering
@@ -873,12 +851,12 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \par La figure~\ref{fig:ntp-hierarchy} illustre la hiérarchie de synchronisation temporelle. PVE-01 joue le rôle de référence interne (Stratum 3) en se synchronisant sur \texttt{pool.ntp.org}. Les autres nœuds et VMs interrogent PVE-01 en priorité, et basculent vers \texttt{pool.ntp.org} directement si PVE-01 est indisponible. Cette architecture garantit la cohérence temporelle requise par Ceph et Corosync.
 
 % ============================================================
-\subsection{Gestion des Identités : OpenLDAP}
+\subsection{Gestion des Identités : Proxmox et Perspectives}
 % ============================================================
 
-\par OpenLDAP est retenu comme solution d'annuaire pour centraliser la gestion des identités de l'infrastructure. Bien que non encore déployé à ce stade du projet, OpenLDAP est prévu pour unifier l'authentification des services suivants : interface web Proxmox, Grafana, GitLab et Rundeck. Cette centralisation permet de gérer les accès depuis un point unique et d'appliquer des politiques de contrôle d'accès cohérentes sur l'ensemble des outils.
+\par La gestion des identités de l'infrastructure repose sur le système de gestion des utilisateurs et des permissions intégré à Proxmox. Cette solution native permet de définir des comptes utilisateurs, d'attribuer des rôles granulaires et d'appliquer des politiques d'accès adaptées aux différents profils (administrateur, opérateur, lecture seule), sans nécessiter de composant externe.
 
-\par OpenLDAP sera déployé dans un conteneur LXC dédié. L'intégration avec les services se fera via le protocole LDAP standard, supporté nativement par Proxmox, Grafana et GitLab. Un schéma d'annuaire adapté à l'infrastructure sera défini, avec des groupes distincts pour les rôles administrateur, opérateur et lecture seule.
+\par À titre de perspective, le déploiement d'un annuaire OpenLDAP pourrait être envisagé dans une phase ultérieure du projet afin de centraliser l'authentification sur l'ensemble des services de l'infrastructure, notamment Grafana, GitLab et Rundeck. Cette évolution permettrait d'unifier la gestion des accès depuis un point unique et d'assurer une cohérence des politiques de contrôle d'accès à l'échelle de la plateforme.
 
 % ============================================================
 \subsection{Gestion du Code Source et CI/CD : GitLab}
@@ -943,6 +921,6 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \section{Conclusion}
 % ============================================================
 
-\par Ce chapitre a présenté la conception complète de l'infrastructure Cloud privée hyperconvergée. La partie Calcul couvre les serveurs physiques (5 disques SAS par nœud), le cluster Proxmox avec Corosync et HA, le mécanisme CLBS, l'application Sona-Web, la stack de monitoring et l'automatisation via Ansible et PXE. La partie Stockage détaille le cluster Ceph avec ses douze OSDs, la capacité utilisable de 2,05 TB et la politique CRUSH. La partie Réseau expose l'architecture VxLAN gérée par Open vSwitch, le plan d'adressage complet, le routage centralisé via OPNsense et le plan de pare-feu à deux niveaux. Enfin, les services complémentaires (Alertmanager, Loki, NTP, OpenLDAP, GitLab, Rundeck) complètent l'infrastructure pour en assurer la supervision, la sécurité et la gestion unifiée.\\
+\par Ce chapitre a présenté la conception complète de l'infrastructure Cloud privée hyperconvergée. La partie Calcul couvre les serveurs physiques (5 disques SAS par nœud), le cluster Proxmox avec Corosync et HA, le mécanisme CLBS, l'application Sona-Web, la stack de monitoring et l'automatisation via Ansible et PXE. La partie Stockage détaille le cluster Ceph avec ses douze OSDs, la capacité utilisable de 2,05 TB et la politique CRUSH. La partie Réseau expose l'architecture VxLAN gérée par Open vSwitch, le plan d'adressage complet, le routage centralisé via OPNsense et le plan de pare-feu à deux niveaux. Enfin, les services complémentaires (Alertmanager, Loki, NTP, GitLab, Rundeck) complètent l'infrastructure pour en assurer la supervision, la sécurité et la gestion unifiée.\\
 
 \par L'ensemble de ces choix de conception constitue une base cohérente et documentée pour la phase d'implémentation présentée dans le chapitre suivant.\\
