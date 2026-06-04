@@ -3,11 +3,15 @@
 #
 # Usage:
 #   ansible-playbook playbooks/bootstrap.yml \
-#     -e "target_hosts=192.168.10.120" \
+#     -e "target=192.168.10.120" \
 #     -e "bootstrap_password=ROOT_PASS"
 #
-#   Works with raw IPs, inventory hostnames, or comma-separated lists —
-#   the host does NOT need to exist in inventory yet.
+#   ansible-playbook playbooks/bootstrap.yml \
+#     -e "target=all" \
+#     -e "bootstrap_password=ROOT_PASS"
+#
+#   target accepts raw IPs, inventory hostnames, comma-separated lists, or "all".
+#   Hosts do NOT need to exist in inventory when using raw IPs.
 #
 # After running, add the VM to managed_vms in inventory/hosts.yml.
 
@@ -19,10 +23,11 @@
       ansible.builtin.add_host:
         name: "{{ item }}"
         groups: bootstrap_target
-      loop: "{{ target_hosts.split(',') }}"
+      loop: "{{ target.split(',') }}"
+      when: target != 'all'
 
 - name: Bootstrap VM - prepare for Ansible management
-  hosts: bootstrap_target
+  hosts: "{{ 'all' if target == 'all' else 'bootstrap_target' }}"
   gather_facts: false
 
   vars:

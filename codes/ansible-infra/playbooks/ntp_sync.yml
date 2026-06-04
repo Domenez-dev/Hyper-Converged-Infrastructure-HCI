@@ -1,75 +1,63 @@
 ---
 # ntp_sync.yml
 #
-# Configures chrony on all cluster nodes. pve-01 acts as the internal NTP master
-# (serves time to the cluster); all other nodes sync from pve-01 with pool.ntp.org
-# as fallback.
+# Play 1 only verifies pve-01's chrony health — no config changes.
+# If chrony is stopped/disabled it attempts a restart; if that fails it logs
+# an error and ends the play gracefully so Play 2 still runs.
 #
 # Usage — full cluster:
 #   ansible-playbook playbooks/ntp_sync.yml
 #
-# Usage — specific VMs only (skips pve-01 master play automatically):
-#   ansible-playbook playbooks/ntp_sync.yml --limit "app-2,postgres"
+# Usage — specific nodes only:
+#   ansible-playbook playbooks/ntp_sync.yml -e "target=app-2,postgres"
 #
-# Usage — reconfigure pve-01 only:
+# Usage — single VM:
+#   ansible-playbook playbooks/ntp_sync.yml -e "target=192.168.10.19"
+#
+# Usage — pve-01 health check only:
 #   ansible-playbook playbooks/ntp_sync.yml --limit "pve-01"
 
-# ── Play 1: NTP master (pve-01) ──────────────────────────────────────────────
-- name: Configure chrony NTP master (pve-01)
+# ── Play 0: Register raw IPs in memory ───────────────────────────────────────
+- name: Register target(s) in memory
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Add each target to ntp_clients group
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: ntp_clients
+      loop: "{{ target.split(',') }}"
+      when:
+        - target is defined
+        - target != 'all'
+
+# ── Play 1: NTP master health check (pve-01) ─────────────────────────────────
+- name: Verify chrony NTP master health (pve-01)
   hosts: pve-01
   gather_facts: true
   become: true
 
-  handlers:
-    - name: Restart chrony
-      ansible.builtin.service:
-        name: chrony
-        state: restarted
-
   tasks:
-    - name: Install chrony
-      ansible.builtin.apt:
-        name: chrony
-        state: present
-        update_cache: true
-
-    - name: Deploy chrony config (master)
-      ansible.builtin.copy:
-        content: |
-          # NTP sources (internet)
-          pool pool.ntp.org iburst
-
-          # Serve time to all cluster subnets
-          allow 192.168.0.0/16
-          allow 172.16.0.0/12
-
-          # Track clients for chronyc clients output
-          clientloglimit 10000000
-
-          driftfile /var/lib/chrony/chrony.drift
-          logdir /var/log/chrony
-          log measurements statistics tracking clientlogs
-          maxupdateskew 100.0
-          rtcsync
-          makestep 1 3
-        dest: /etc/chrony/chrony.conf
-        owner: root
-        group: root
-        mode: "0644"
-      notify: Restart chrony
-
     - name: Gather service facts
       ansible.builtin.service_facts:
 
-    - name: Ensure chrony is enabled and running
-      ansible.builtin.service:
-        name: chrony
-        state: started
-        enabled: true
-      when: >
-        ansible_facts.services['chrony.service'] is not defined
-        or ansible_facts.services['chrony.service']['state'] != 'running'
-        or ansible_facts.services['chrony.service']['status'] != 'enabled'
+    - name: Ensure chrony is running on NTP master
+      block:
+        - name: Start and enable chrony if not healthy
+          ansible.builtin.service:
+            name: chrony
+            state: started
+            enabled: true
+          when: >
+            ansible_facts.services['chrony.service'] is not defined
+            or ansible_facts.services['chrony.service']['state'] != 'running'
+            or ansible_facts.services['chrony.service']['status'] != 'enabled'
+      rescue:
+        - name: Report chrony failure on NTP master
+          ansible.builtin.debug:
+            msg: "ERROR: chrony could not be started on pve-01 (NTP master) — fix manually before the next run. Proceeding to configure clients."
+        - name: End play for pve-01
+          ansible.builtin.meta: end_play
 
     - name: Verify NTP synchronisation
       ansible.builtin.command: chronyc tracking
@@ -80,9 +68,9 @@
       ansible.builtin.debug:
         msg: "{{ chrony_status.stdout_lines }}"
 
-# ── Play 2: NTP clients (all except pve-01) ───────────────────────────────────
+# ── Play 2: NTP clients ───────────────────────────────────────────────────────
 - name: Configure chrony on cluster nodes (sync from pve-01)
-  hosts: all:!pve-01
+  hosts: "{{ 'all:!pve-01' if (target | default('all')) == 'all' else 'ntp_clients' }}"
   gather_facts: true
   become: true
 

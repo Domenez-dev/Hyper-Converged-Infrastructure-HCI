@@ -6,8 +6,12 @@ stages:
 variables:
   ANSIBLE_FORCE_COLOR: "1"
   ANSIBLE_CONFIG: "$CI_PROJECT_DIR/ansible.cfg"
-  # Prevents ansible from trying real SSH during syntax checks
   ANSIBLE_HOST_KEY_CHECKING: "False"
+
+default:
+  image: python:3.12-slim
+  before_script:
+    - pip install --quiet --no-cache-dir yamllint ansible ansible-lint
 
 # ── Lint stage ──────────────────────────────────────────────────────────────
 
@@ -20,6 +24,8 @@ yaml-lint:
         - "**/*.yml"
         - "**/*.yaml"
         - ".yamllint.yml"
+      when: always
+    - when: never
 
 ansible-lint:
   stage: lint
@@ -31,6 +37,8 @@ ansible-lint:
         - "inventory/**"
         - "ansible.cfg"
         - ".ansible-lint"
+      when: always
+    - when: never
 
 # ── Syntax-check stage ──────────────────────────────────────────────────────
 
@@ -48,3 +56,5 @@ syntax-check:
         - "inventory/**"
         - "secrets.yml"
         - "ansible.cfg"
+      when: always
+    - when: never
