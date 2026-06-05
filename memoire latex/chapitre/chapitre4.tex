@@ -141,7 +141,7 @@ pvecm status
     \label{fig:cluster-three-nodes}
 \end{figure}
 
-\par La Figure~\ref{fig:cluster-three-nodes} affiche la vue d'ensemble du datacenter dans l'interface web Proxmox, où les trois nœuds PVE-01, PVE-02 et PVE-03 apparaissent simultanément en ligne. Le tableau de bord indique également l'état de santé du cluster Ceph et le nombre de VMs en cours d'exécution.\\
+\par La Figure~\ref{fig:cluster-three-nodes} affiche la vue d'ensemble du datacenter dans l'interface web Proxmox, où les trois nœuds PVE-01, PVE-02 et PVE-03 apparaissent simultanément en ligne. Le tableau de bord indique également l'état de santé du cluster Ceph et le nombre de VMs en cours d'exécution. L'avertissement affiché dans l'interface (\textit{``No valid subscription''}) est lié à la tentative d'accès au dépôt \texttt{pve-enterprise} de Proxmox, qui nécessite une licence commerciale. Dans le cadre de ce projet, la version communautaire est utilisée~; la configuration du fichier \texttt{/etc/apt/sources.list.d/} a été modifiée pour pointer vers le dépôt \texttt{pve-no-subscription} afin d'éliminer cet avertissement sans impacter le fonctionnement du cluster.\\
 
 \subsubsection{Configuration de la migration à chaud}
 
@@ -255,7 +255,7 @@ CLBS & Prometheus & Historique des migrations \\
     \label{fig:grafana-proxmox-dashboard}
 \end{figure}
 
-\par La Figure~\ref{fig:grafana-proxmox-dashboard} présente le dashboard Grafana dédié à l'infrastructure Proxmox. Il affiche en temps réel les métriques CPU, mémoire et charge des trois nœuds, ainsi qu'un récapitulatif des VMs en cours d'exécution et des ressources disponibles dans le cluster.\\
+\par La Figure~\ref{fig:grafana-proxmox-dashboard} présente le dashboard Grafana dédié à l'infrastructure Proxmox. Il affiche en temps réel les métriques CPU, mémoire et charge des trois nœuds, ainsi qu'un récapitulatif des VMs en cours d'exécution et des ressources disponibles dans le cluster. La vue complète du dashboard est disponible en Annexe~\ref{ann:grafana}.\\
 
 \begin{figure}[H]
     \centering
@@ -264,7 +264,7 @@ CLBS & Prometheus & Historique des migrations \\
     \label{fig:grafana-ceph-dashboard}
 \end{figure}
 
-\par La Figure~\ref{fig:grafana-ceph-dashboard} présente le dashboard Grafana dédié au cluster Ceph. On y retrouve l'état global de santé du cluster, les métriques I/O par pool, la latence des OSDs et le taux de réplication en temps réel, permettant de superviser en continu la couche stockage depuis la même interface unifiée.\\
+\par La Figure~\ref{fig:grafana-ceph-dashboard} présente le dashboard Grafana dédié au cluster Ceph. On y retrouve l'état global de santé du cluster, les métriques I/O par pool, la latence des OSDs et le taux de réplication en temps réel, permettant de superviser en continu la couche stockage depuis la même interface unifiée. La vue complète du dashboard est disponible en Annexe~\ref{ann:grafana}.\\
 
 \subsection{Implémentation du mécanisme CLBS}
 
@@ -331,18 +331,6 @@ stress-ng --cpu 8 --timeout 10m
 \par L'application Sona-Web a été déployée sous la forme de plusieurs VMs créées à partir d'un template Debian stocké dans le pool Ceph. Cette architecture comprend une VM HAProxy en frontal, deux VMs Flask pour la couche applicative, et une VM PostgreSQL pour la base de données.\\
 
 \par Les VMs ont été déployées sur les réseaux internes appropriés, avec attribution d'adresse IP par DHCP selon la zone de sécurité visée. Cette organisation permet de séparer la partie exposée, la partie applicative et la base de données.\\
-
-\subsubsection{Validation de l'application}
-
-\par La validation a porté sur le fonctionnement du load balancing ainsi que sur la disponibilité de l'application. Des requêtes répétées à travers HAProxy ont montré une alternance correcte entre les serveurs applicatifs Flask, confirmant le bon fonctionnement du mécanisme de répartition de charge.\\
-
-\begin{lstlisting}[style=sonacode,language=bash,caption={Test de répartition HAProxy},label={lst:haproxy-test}]
-for i in $(seq 1 10); do
-  curl -s http://172.16.80.x | grep "Server"
-done
-\end{lstlisting}
-
-\par Le script de la Figure~\ref{lst:haproxy-test} envoie dix requêtes HTTP successives à travers HAProxy et extrait le champ indiquant le serveur ayant traité chaque requête. Les réponses alternent entre \texttt{app-1} et \texttt{app-2}, confirmant le bon fonctionnement de l'algorithme round-robin.\\
 
 \subsubsection{Résultats de l'application Sona-Web}
 
@@ -718,20 +706,8 @@ iface nic3 inet manual
 
 \par Ces deux VxLAN transportent respectivement le trafic de heartbeat Corosync entre les nœuds du cluster, et le trafic de réplication interne Ceph entre les OSDs. Chaque tunnel est créé en mode point-à-point, avec une interface interne OVS associée pour l'adressage IP local.\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={VxLAN Corosync (clé 20) et Ceph interne (clé 30)},label={lst:pve01-vxlan-2030}]
+\begin{lstlisting}[style=sonacode,language={},caption={VxLAN Corosync (clé 20) et Ceph interne (clé 30) -- interfaces internes PVE-01},label={lst:pve01-vxlan-2030}]
 # ===== COROSYNC VXLAN (key=20) =====
-auto vxlan20-pve02
-iface vxlan20-pve02 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.213 options:key=20
-
-auto vxlan20-pve03
-iface vxlan20-pve03 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.84 options:key=20
-
 auto vxlan20-int
 iface vxlan20-int inet static
     address 10.10.20.1/24
@@ -739,18 +715,6 @@ iface vxlan20-int inet static
     ovs_bridge vmbr0
 
 # ===== CEPH INTERNE VXLAN (key=30) =====
-auto vxlan30-pve02
-iface vxlan30-pve02 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.213 options:key=30
-
-auto vxlan30-pve03
-iface vxlan30-pve03 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.84 options:key=30
-
 auto vxlan30-int
 iface vxlan30-int inet static
     address 10.10.30.1/24
@@ -758,26 +722,14 @@ iface vxlan30-int inet static
     ovs_bridge vmbr0
 \end{lstlisting}
 
-\par Dans la Figure~\ref{lst:pve01-vxlan-2030}, le VxLAN 20 isole le trafic Corosync du reste du réseau, garantissant que les heartbeats entre nœuds ne soient jamais perturbés par le trafic applicatif. Le VxLAN 30 isole quant à lui le trafic de réplication Ceph, dont la bande passante peut être importante lors de la resynchronisation d'un OSD.\\
+\par Dans la Figure~\ref{lst:pve01-vxlan-2030}, seules les interfaces internes (\texttt{OVSIntPort}) des VxLAN 20 et 30 sont représentées. Chaque interface interne porte l'adresse IP locale du nœud sur le réseau logique correspondant. Le VxLAN 20 isole le trafic Corosync du reste du réseau, garantissant que les heartbeats entre nœuds ne soient jamais perturbés par le trafic applicatif. Le VxLAN 30 isole quant à lui le trafic de réplication Ceph, dont la bande passante peut être importante lors de la resynchronisation d'un OSD. La configuration complète incluant les ports tunnels VxLAN vers PVE-02 et PVE-03, ainsi que les fichiers des deux autres nœuds, est disponible en Annexe~\ref{ann:vxlan}.\\
 
 \paragraph{Partie 3: Ceph public (clé 40), migration live (clé 50) et sauvegarde (clé 90)}
 
 \par Ces trois VxLAN couvrent respectivement le réseau public Ceph utilisé pour les accès RBD des VMs, le réseau dédié aux migrations live de VMs entre nœuds, et le réseau de sauvegarde. Leur séparation évite toute interférence entre ces flux lors des opérations intensives.\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Ceph public (clé 40), migration (clé 50) et sauvegarde (clé 90)},label={lst:pve01-vxlan-405090}]
+\begin{lstlisting}[style=sonacode,language={},caption={Ceph public (clé 40), migration (clé 50) et sauvegarde (clé 90) -- interfaces internes PVE-01},label={lst:pve01-vxlan-405090}]
 # ===== CEPH PUBLIC VXLAN (key=40) =====
-auto vxlan40-pve02
-iface vxlan40-pve02 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.213 options:key=40
-
-auto vxlan40-pve03
-iface vxlan40-pve03 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.84 options:key=40
-
 auto vxlan40-int
 iface vxlan40-int inet static
     address 10.10.40.1/24
@@ -785,18 +737,6 @@ iface vxlan40-int inet static
     ovs_bridge vmbr0
 
 # ===== MIGRATION LIVE VXLAN (key=50) =====
-auto vxlan50-pve02
-iface vxlan50-pve02 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.213 options:key=50
-
-auto vxlan50-pve03
-iface vxlan50-pve03 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.84 options:key=50
-
 auto vxlan50-int
 iface vxlan50-int inet static
     address 10.10.50.1/24
@@ -804,18 +744,6 @@ iface vxlan50-int inet static
     ovs_bridge vmbr0
 
 # ===== SAUVEGARDE VXLAN (key=90) =====
-auto vxlan90-pve02
-iface vxlan90-pve02 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.213 options:key=90
-
-auto vxlan90-pve03
-iface vxlan90-pve03 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.84 options:key=90
-
 auto vxlan90-int
 iface vxlan90-int inet static
     address 10.10.90.1/24
@@ -823,62 +751,26 @@ iface vxlan90-int inet static
     ovs_bridge vmbr0
 \end{lstlisting}
 
-\par La configuration de la Figure~\ref{lst:pve01-vxlan-405090} sépare le réseau public Ceph (VxLAN 40) du réseau de réplication interne (VxLAN 30), suivant les recommandations de Ceph pour les environnements de production : le trafic client et le trafic OSD-OSD n'entrent pas en contention. Le VxLAN 50, dédié aux migrations live, préserve la qualité de service lors des déplacements de VMs par le mécanisme CLBS.\\
+\par La Figure~\ref{lst:pve01-vxlan-405090} présente les interfaces internes des VxLAN 40, 50 et 90 sur PVE-01. La séparation du réseau public Ceph (VxLAN 40) du réseau de réplication interne (VxLAN 30) suit les recommandations de Ceph : le trafic client et le trafic OSD-OSD n'entrent pas en contention. Le VxLAN 50, dédié aux migrations live, préserve la qualité de service lors des déplacements de VMs par le mécanisme CLBS. La configuration complète des trois nœuds est disponible en Annexe~\ref{ann:vxlan}.\\
 
 \paragraph{Partie 4: Réseaux applicatifs (clés 60, 70, 80) et bridges Linux}
 
 \par Les trois derniers VxLAN portent le trafic des zones applicatives Dev (clé 60), Prod (clé 70) et DMZ (clé 80). Chacun dispose d'une interface interne OVS et d'un bridge Linux associé (\texttt{vmbr60}, \texttt{vmbr70}, \texttt{vmbr80}), qui constitue le point de connexion effectif pour les interfaces réseau des VMs applicatives.\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={VxLAN applicatifs (clés 60, 70, 80) et bridges Linux},label={lst:pve01-vxlan-vm-bridges}]
+\begin{lstlisting}[style=sonacode,language={},caption={VxLAN applicatifs (clés 60, 70, 80) et bridges Linux -- PVE-01},label={lst:pve01-vxlan-vm-bridges}]
 # ===== VXLAN 60 (Dev) =====
-auto vxlan60-pve02
-iface vxlan60-pve02 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.213 options:key=60
-
-auto vxlan60-pve03
-iface vxlan60-pve03 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.84 options:key=60
-
 auto vxlan60-int
 iface vxlan60-int inet static
     ovs_type OVSIntPort
     ovs_bridge vmbr0
 
 # ===== VXLAN 70 (Prod) =====
-auto vxlan70-pve02
-iface vxlan70-pve02 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.213 options:key=70
-
-auto vxlan70-pve03
-iface vxlan70-pve03 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.84 options:key=70
-
 auto vxlan70-int
 iface vxlan70-int inet static
     ovs_type OVSIntPort
     ovs_bridge vmbr0
 
 # ===== VXLAN 80 (DMZ) =====
-auto vxlan80-pve02
-iface vxlan80-pve02 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.213 options:key=80
-
-auto vxlan80-pve03
-iface vxlan80-pve03 inet manual
-    ovs_type OVSPort
-    ovs_bridge vmbr0
-    ovs_options type=vxlan options:remote_ip=192.168.10.84 options:key=80
-
 auto vxlan80-int
 iface vxlan80-int inet static
     ovs_type OVSIntPort
@@ -906,7 +798,7 @@ iface vmbr80 inet manual
 source /etc/network/interfaces.d/*
 \end{lstlisting}
 
-\par la Figure~\ref{lst:pve01-vxlan-vm-bridges} présente la configuration complète des réseaux applicatifs. Les bridges Linux \texttt{vmbr60}, \texttt{vmbr70} et \texttt{vmbr80} constituent la jonction entre le plan de données OVS et les interfaces réseau des VMs Proxmox. Chaque bridge est relié à l'interface interne OVS du VxLAN correspondant, formant ainsi un chemin de commutation continu depuis la VM applicative jusqu'à l'interface physique du nœud, à travers le tunnel VxLAN vers les autres nœuds du cluster. Cette architecture permet de transporter plusieurs réseaux logiques isolés sur le même réseau physique, sans dépendre d'un switch physique configuré en VLAN.\\
+\par La Figure~\ref{lst:pve01-vxlan-vm-bridges} présente les interfaces internes et les bridges Linux des réseaux applicatifs sur PVE-01. Les bridges \texttt{vmbr60}, \texttt{vmbr70} et \texttt{vmbr80} constituent la jonction entre le plan de données OVS et les interfaces réseau des VMs Proxmox. Chaque bridge est relié à l'interface interne OVS du VxLAN correspondant, formant un chemin de commutation continu depuis la VM applicative jusqu'à l'interface physique du nœud, à travers le tunnel VxLAN vers les autres nœuds du cluster. Cette architecture permet de transporter plusieurs réseaux logiques isolés sur le même réseau physique, sans dépendre d'un switch physique configuré en VLAN. La configuration complète des trois nœuds (avec les ports tunnels vers PVE-02 et PVE-03) est disponible en Annexe~\ref{ann:vxlan}.\\
 
 \subsection{Déploiement de la VM OPNsense}
 
@@ -983,27 +875,67 @@ tcpdump -i em1 port 67 or port 68
 
 \par Cette vérification a montré le cycle normal des échanges DHCP, depuis le ``Discover'' jusqu'au ``Offer'', puis l'attribution effective de l'adresse IP à la machine virtuelle.\\
 
-\subsection{Configuration du pare-feu Proxmox}
+\subsection{Configuration du Pare-feu}
 
-\par En complément du filtrage assuré par OPNsense au niveau applicatif, le pare-feu natif Proxmox a été configuré au niveau de l'hyperviseur pour protéger les réseaux d'infrastructure et restreindre les accès à la plateforme de gestion.
+\par La sécurité réseau de l'infrastructure repose sur deux niveaux de filtrage complémentaires et indépendants : le pare-feu OPNsense pour le contrôle des flux entre les zones applicatives, et le pare-feu natif Proxmox au niveau de l'hyperviseur pour protéger les réseaux d'infrastructure.
 
-\subsubsection{Architecture à trois niveaux}
+\subsubsection{Pare-feu OPNsense : Filtrage Inter-réseaux}
 
-\par Le pare-feu Proxmox s'organise en trois niveaux hiérarchiques : le niveau datacenter pour les règles globales communes à toute la plateforme, le niveau nœud pour les règles propres à chaque serveur physique, et le niveau VM pour les règles spécifiques à chaque machine virtuelle. Cette architecture permet d'appliquer le principe du moindre privilège à chaque couche de l'infrastructure.\\
+\par OPNsense centralise le routage et applique les politiques de filtrage entre les réseaux applicatifs Dev (\texttt{172.16.60.0/24}), Prod (\texttt{172.16.70.0/24}) et DMZ (\texttt{172.16.80.0/24}). Les règles ont été configurées sous \texttt{Firewall -> Rules} de l'interface OPNsense selon le principe du moindre privilège : tout flux non explicitement autorisé est bloqué par défaut.\\
 
-%**************************
-\subsubsection{Configuration au niveau datacenter}
+\par Le tableau~\ref{tab:fw-opnsense-rules} récapitule les règles de filtrage appliquées entre les zones et vers l'interface WAN.\\
 
-\par Au niveau datacenter, des alias symboliques ont été définis pour simplifier l'écriture des règles. La Figure~\ref{fig:fw-datacenter-aliases} illustre les alias créés, parmi lesquels \texttt{haproxy}, \texttt{sona-web1}, \texttt{sona-web2} et \texttt{postgres}, chacun associé à l'adresse IP de l'instance correspondante.\\
+\begin{table}[H]
+\centering
+\caption{Règles de filtrage inter-réseaux configurées sur OPNsense.}
+\label{tab:fw-opnsense-rules}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Source} & \textbf{Destination} & \textbf{Action} & \textbf{Justification} \\
+\hline
+Dev (172.16.60.0/24) & WAN & ALLOW & Mises à jour et dépôts de paquets \\
+\hline
+DMZ (172.16.80.0/24) & WAN & ALLOW & Services exposés nécessitant un accès sortant \\
+\hline
+Prod (172.16.70.0/24) & DMZ & ALLOW & Communication production vers services exposés \\
+\hline
+Dev (172.16.60.0/24) & Prod & BLOCK & Isolation développement / production \\
+\hline
+Dev (172.16.60.0/24) & DMZ & BLOCK & Empêcher l'accès aux services exposés depuis Dev \\
+\hline
+Prod (172.16.70.0/24) & WAN & BLOCK & Le trafic Prod passe obligatoirement par la DMZ \\
+\hline
+\end{tabular}
+\end{table}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{image/ch4/fw_datacenter_aliases.png}
-    \caption{Aliases définis au niveau datacenter dans le pare-feu Proxmox.}
-    \label{fig:fw-datacenter-aliases}
-\end{figure}
+\par Ces règles assurent une isolation stricte entre les trois zones tout en autorisant les flux légitimes vers Internet. La politique de sortie directe de Prod vers WAN est bloquée afin de forcer le passage par la DMZ, seule zone autorisée à exposer des services.\\
 
-\par La Figure~\ref{fig:fw-datacenter-aliases} présente la liste des alias configurés dans l'interface Proxmox sous ``Datacenter -> Firewall -> Aliases''. Chaque alias associe un nom symbolique à une adresse IP, simplifiant la lecture et la maintenance des règles de filtrage sans nécessiter de modifier chaque règle individuellement en cas de changement d'adresse.\\
+\subsubsection{Pare-feu Proxmox : Filtrage au Niveau Hyperviseur}
+
+\par En complément du filtrage OPNsense, le pare-feu natif Proxmox a été configuré au niveau de l'hyperviseur pour protéger les réseaux d'infrastructure et restreindre les accès à la plateforme de gestion. Ce pare-feu s'organise en trois niveaux hiérarchiques : le niveau datacenter pour les règles globales communes, le niveau nœud pour les règles propres à chaque serveur physique, et le niveau VM pour les règles spécifiques à chaque machine virtuelle.\\
+
+\paratitle{Configuration au niveau datacenter}
+
+\par Des alias symboliques ont été définis pour simplifier l'écriture des règles. Le tableau~\ref{tab:fw-datacenter-aliases} liste les alias créés, chacun associant un nom symbolique à l'adresse IP de l'instance correspondante.\\
+
+\begin{table}[H]
+\centering
+\caption{Alias définis au niveau datacenter dans le pare-feu Proxmox.}
+\label{tab:fw-datacenter-aliases}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Alias} & \textbf{Adresse IP} & \textbf{Instance} \\
+\hline
+\texttt{haproxy} & 172.16.80.10 & VM HAProxy (frontal DMZ) \\
+\hline
+\texttt{sona-web1} & 172.16.70.10 & VM Flask app-1 (Prod) \\
+\hline
+\texttt{sona-web2} & 172.16.70.11 & VM Flask app-2 (Prod) \\
+\hline
+\texttt{postgres} & 172.16.70.20 & VM PostgreSQL (Prod) \\
+\hline
+\end{tabular}
+\end{table}
 
 \par Des IPSets ont également été créés pour regrouper les adresses appartenant à un même domaine de sécurité. Ces groupes centralisent les plages d'adresses des réseaux logiques et permettent d'appliquer une règle à un ensemble de machines sans dupliquer les adresses dans chaque règle individuelle. Le tableau~\ref{tab:fw-datacenter-ipsets} récapitule les IPSets configurés.\\
 
@@ -1030,33 +962,44 @@ tcpdump -i em1 port 67 or port 68
 \end{tabular}
 \end{table}
 
-\par Cinq groupes de sécurité ont ensuite été créés pour encapsuler les règles de ports associées à chaque service d'infrastructure. La Figure~\ref{fig:fw-security-groups} illustre ces groupes et leurs règles respectives.\\
+\par Cinq groupes de sécurité ont ensuite été créés pour encapsuler les règles de ports associées à chaque service d'infrastructure. Le tableau~\ref{tab:fw-security-groups} décrit ces groupes, leurs règles de ports et les sources autorisées.\\
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{image/ch4/fw_security_groups.png}
-    \caption{Groupes de sécurité Proxmox avec leurs règles de ports par service.}
-    \label{fig:fw-security-groups}
-\end{figure}
-
-\par La Figure~\ref{fig:fw-security-groups} présente les cinq groupes de sécurité configurés sous ``Datacenter -> Firewall -> Security Groups''. Le groupe \texttt{proxmox-management} regroupe les ports SSH (22), Web UI (8006) et ICMP depuis le réseau de management, ainsi que le port 9283 TCP permettant à Prometheus de collecter les métriques du module MGR Ceph. Le groupe \texttt{corosync-cluster} couvre les ports UDP 5404--5405 du heartbeat, limités au réseau \texttt{10.10.20.0/24}. Le groupe \texttt{vxlan-overlay} ouvre le port UDP 4789 indispensable aux tunnels VxLAN. Le groupe \texttt{ceph-storage} autorise les communications OSD (TCP 6800--7300) et les moniteurs (TCP 3300, 6789) depuis les réseaux Ceph dédiés. Enfin, le groupe \texttt{migration-live} autorise tout trafic TCP en provenance du réseau de migration \texttt{10.10.50.0/24}, car Proxmox utilise des ports dynamiques lors du transfert de l'état mémoire des VMs.\\
+\begin{table}[H]
+\centering
+\caption{Groupes de sécurité Proxmox et leurs règles de ports par service.}
+\label{tab:fw-security-groups}
+\begin{tabular}{|p{3.8cm}|p{2.5cm}|p{3cm}|p{4cm}|}
+\hline
+\textbf{Groupe} & \textbf{Protocole / Port} & \textbf{Source} & \textbf{Rôle} \\
+\hline
+\texttt{proxmox-management} & TCP 22 & 192.168.10.0/24 & Accès SSH \\
+\hline
+\texttt{proxmox-management} & TCP 8006 & 192.168.10.0/24 & Interface web Proxmox \\
+\hline
+\texttt{proxmox-management} & ICMP & 192.168.10.0/24 & Diagnostics réseau \\
+\hline
+\texttt{proxmox-management} & TCP 9283 & 192.168.10.0/24 & Métriques Ceph MGR (Prometheus) \\
+\hline
+\texttt{corosync-cluster} & UDP 5404--5405 & 10.10.20.0/24 & Heartbeat Corosync \\
+\hline
+\texttt{vxlan-overlay} & UDP 4789 & 192.168.10.0/24 & Tunnels VxLAN \\
+\hline
+\texttt{ceph-storage} & TCP 6800--7300 & 10.10.30.0/24 & Communications OSD--OSD \\
+\hline
+\texttt{ceph-storage} & TCP 3300, 6789 & 10.10.30.0/24 & Monitors Ceph \\
+\hline
+\texttt{ceph-storage} & TCP 6800--7300 & 10.10.40.0/24 & Accès RBD public \\
+\hline
+\texttt{migration-live} & TCP any & 10.10.50.0/24 & Migrations live (ports dynamiques) \\
+\hline
+\end{tabular}
+\end{table}
 
 \par Cette approche par groupes de sécurité et IPSets garantit une politique de sécurité cohérente sur l'ensemble du cluster sans dupliquer les règles : toute modification d'un groupe se propage automatiquement sur les trois nœuds physiques.\\
 
-\subsubsection{Configuration au niveau nœud}
+\paratitle{Configuration au niveau nœud}
 
-\par Le deuxième niveau du pare-feu Proxmox s'applique directement à chaque nœud physique du cluster. Les règles définies à ce niveau protègent l'hyperviseur lui-même, indépendamment des VMs qu'il héberge. La politique par défaut adoptée est \texttt{DROP} en entrée et \texttt{ACCEPT} en sortie.\\
-
-\par Sur chacun des trois nœuds PVE-01, PVE-02 et PVE-03, le pare-feu est activé et les cinq groupes de sécurité définis au niveau datacenter sont appliqués. Cette application hérite automatiquement de toutes les règles et IPSets définis centralement, sans qu'il soit nécessaire de les redéfinir nœud par nœud. La Figure~\ref{fig:fw-node-rules-web} illustre la vue pare-feu du nœud PVE-01 dans l'interface web Proxmox.\\
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{image/ch4/fw_node_rules_web.png}
-    \caption{Groupes de sécurité appliqués au niveau nœud PVE-01 dans l'interface web Proxmox.}
-    \label{fig:fw-node-rules-web}
-\end{figure}
-
-\par La Figure~\ref{fig:fw-node-rules-web} présente la vue ``Firewall'' du nœud PVE-01 dans l'interface Proxmox. On y observe les cinq groupes de sécurité référencés, dont l'application conduit à autoriser uniquement les flux d'infrastructure légitimes tout en bloquant par défaut tout autre trafic en entrée.\\
+\par Le deuxième niveau du pare-feu Proxmox s'applique directement à chaque nœud physique du cluster. La politique par défaut adoptée est \texttt{DROP} en entrée et \texttt{ACCEPT} en sortie. Sur chacun des trois nœuds PVE-01, PVE-02 et PVE-03, le pare-feu est activé et les cinq groupes de sécurité définis au niveau datacenter sont référencés. Cette approche hérite automatiquement de toutes les règles et IPSets définis centralement, sans nécessiter de redéfinition nœud par nœud.\\
 
 \par Le tableau~\ref{tab:fw-node-rules} résume les flux effectivement autorisés en entrée sur chaque nœud une fois les groupes de sécurité appliqués.\\
 
@@ -1095,7 +1038,7 @@ tcpdump -i em1 port 67 or port 68
 
 \par Ces règles au niveau nœud constituent un premier rempart de défense en profondeur, garantissant que même en cas de compromission d'une VM applicative, l'hyperviseur reste inaccessible depuis les réseaux internes.\\
 
-\subsubsection{Règles au niveau des VMs}
+\paratitle{Règles au niveau des VMs}
 
 \par Chaque VM dispose de règles de pare-feu adaptées à son rôle. Le principe appliqué est celui du moindre privilège : seuls les ports strictement nécessaires sont ouverts en entrée, et les flux sortants sont autorisés uniquement vers les destinations légitimes. Le tableau~\ref{tab:fw-vm-rules} détaille ces règles pour chaque VM applicative.\\
 
@@ -1242,6 +1185,8 @@ loki.write "default" {
   \label{fig:loki-grafana-explore}
 \end{figure}
 
+\par La Figure~\ref{fig:loki-grafana-explore} présente la vue ``Explore'' de Grafana avec Loki comme source de données. Les journaux sont filtrables par hôte et par fichier source via LogQL. La vue complète du dashboard de centralisation des journaux est disponible en Annexe~\ref{ann:grafana}.\\
+
 \subsection{Synchronisation Temporelle : NTP/Chrony}
 
 \par La cohérence temporelle est une exigence fondamentale dans un cluster distribué. Une dérive de quelques secondes entre les nœuds peut perturber le quorum Corosync, fausser les journaux de corrélation et provoquer des incohérences dans les métriques Prometheus. Le serveur Chrony est hébergé directement sur \textbf{PVE-01} (\texttt{192.168.10.100}), qui fait référence pour l'ensemble des nœuds Proxmox et des VMs de l'infrastructure.
@@ -1293,11 +1238,14 @@ driftfile /var/lib/chrony/drift
 \begin{figure}[H]
   \centering
   \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Clients NTP synchronisés sur le serveur Chrony interne (PVE-01).}
+  \caption{Sortie de \texttt{chronyc -n clients} sur PVE-01 : clients NTP actifs et nombre de requêtes reçues.}
+  [CAPTURE : sur PVE-01, exécuter \texttt{chronyc -n clients} et capturer
+  la sortie montrant PVE-02 (192.168.10.213), PVE-03 (192.168.10.84)
+  et l'adresse 192.168.10.65 (OPNsense) représentant les VMs via NAT]
   \label{fig:chrony-clients}
 \end{figure}
 
-\par La Figure~\ref{fig:chrony-clients} illustre la sortie de la commande \texttt{chronyc -n clients} exécutée sur PVE-01. Les nœuds Proxmox (\texttt{192.168.10.213}, \texttt{192.168.10.84}) et les VMs du réseau de management apparaissent individuellement. Les VMs hébergées sur les VLANs distants (\texttt{172.16.60/70/80.0/24}) sont regroupées sous l'adresse \texttt{192.168.10.65} en raison du NAT effectué par le routeur inter-VLAN, ce qui est un comportement attendu et non une anomalie.\\
+\par La Figure~\ref{fig:chrony-clients} illustre la sortie de la commande \texttt{chronyc -n clients} exécutée sur PVE-01. Les nœuds Proxmox PVE-02 (\texttt{192.168.10.213}) et PVE-03 (\texttt{192.168.10.84}) apparaissent individuellement avec leur compteur de requêtes NTP. Les VMs hébergées sur les réseaux distants (\texttt{172.16.60/70/80.0/24}) n'apparaissent pas directement : leurs requêtes NTP arrivent sur PVE-01 avec l'adresse source \texttt{192.168.10.65} (interface WAN d'OPNsense), car le routeur effectue une translation d'adresses (NAT) entre les VLANs internes et le réseau de management. Ce comportement est attendu et confirme que les VMs bénéficient bien de la synchronisation NTP via OPNsense.\\
 
 \subsection{Gestion du Code Source et CI/CD : GitLab}
 
@@ -1370,27 +1318,16 @@ systemctl start rundeckd
 
 \subsubsection{Validation}
 
-\par La validation de Rundeck porte sur la définition des jobs et sur leur exécution. La Figure~\ref{fig:rundeck-jobs} présente la liste des jobs de provisionnement Ansible configurés, et la Figure~\ref{fig:rundeck-execution} montre le résultat d'exécution d'un job avec son journal Ansible.\\
+\par La validation de Rundeck porte sur la définition des jobs et sur leur exécution. La Figure~\ref{fig:rundeck-jobs} présente la liste des jobs de provisionnement Ansible configurés dans l'interface web. Le résultat complet d'une exécution, incluant le journal Ansible avec l'état de chaque tâche, est présenté en Annexe~\ref{ann:rundeck}.\\
 
 \begin{figure}[H]
   \centering
   \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Interface Rundeck affichant les jobs de provisionnement Ansibl.}
+  \caption{Interface Rundeck affichant les jobs de provisionnement Ansible.}
   [CAPTURE : ouvrir l'interface web Rundeck (port 4440),
   aller dans Jobs, capturer la liste des jobs configurés
   (provisionnement VM, intégration nœud, etc.) avec leurs noms visibles]
   \label{fig:rundeck-jobs}
-\end{figure}
-% CAPTURE : a demain
-
-\begin{figure}[H]
-  \centering
-  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Résultat d'exécution d'un job Rundeck avec le log Ansibl.}
-  [CAPTURE : dans Rundeck -> Activity, ouvrir le détail d'une exécution
-  récente, capturer la page affichant le statut \texttt{Succeeded} et les
-  tâches Ansible déroulées avec leurs états (ok, changed, skipped)]
-  \label{fig:rundeck-execution}
 \end{figure}
 
 % ============================================================
