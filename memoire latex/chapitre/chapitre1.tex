@@ -4,7 +4,7 @@
 
 \section{Introduction}
 
-\par Ce chapitre vise à présenter le contexte général dans lequel s'inscrit notre projet de fin d'études. Nous y aborderons les fondements de l'hyper convergence (HCI), les enjeux liés à la virtualisation et à la gestion unifiée des ressources informatiques, ainsi que les besoins spécifiques de l'entreprise Sonatrach. Ce cadre introductif nous permettra de mieux comprendre les choix technologiques effectués et les objectifs fixés pour le déploiement d'une infrastructure Cloud privée hyperconvergée basée sur des solutions open source.\\
+\par Ce chapitre présente le contexte dans lequel s'inscrit notre projet de fin d'études. Nous y aborderons les fondements de l'hyper convergence (HCI), les enjeux liés à la virtualisation et à la gestion unifiée des ressources informatiques, ainsi que les besoins spécifiques de l'entreprise Sonatrach. Ce contexte permettra de mieux saisir les choix technologiques et les objectifs fixés pour le déploiement d'une infrastructure Cloud privée hyperconvergée basée sur des solutions open source.\\
 
 \section{Présentation de Sonatrach}
 
@@ -16,9 +16,9 @@
 
 \par Sonatrach entretient de nombreuses collaborations internationales avec des compagnies pétrolières et gazières étrangères. Elle est impliquée dans de grands projets de partenariat à travers des joint-ventures et accords technologiques, notamment avec des entreprises européennes, américaines, asiatiques et africaines. Ces coopérations ont permis un transfert de savoir-faire et de technologie vers l’Algérie. \\
 
-\par Sonatrach joue également un rôle clé dans la stratégie énergétique de l’Algérie en matière de sécurité énergétique, de transition vers une économie plus durable, et de développement de nouveaux secteurs tels que le gaz naturel liquéfié (GNL), le gaz de schiste et les énergies renouvelables. \\
+\par Sonatrach est également engagée dans la stratégie énergétique nationale, notamment dans la sécurité d’approvisionnement, la réduction progressive des émissions carbonées et le développement de nouveaux secteurs tels que le gaz naturel liquéfié (GNL), le gaz de schiste et les énergies renouvelables. \\
 
-\par Aujourd’hui, Sonatrach est un acteur majeur sur la scène énergétique mondiale, avec une présence dans plusieurs pays et une forte contribution aux exportations algériennes. Elle continue d’innover et de s’adapter aux enjeux géopolitiques et environnementaux afin de maintenir sa place dans un marché énergétique en constante évolution~\cite{ref1}.\\
+\par Aujourd’hui, Sonatrach opère dans plusieurs pays et représente l’un des principaux postes des exportations algériennes~\cite{ref1}.\\
 
 % Image à ajouter plus tard
 % \begin{figure}[h]
@@ -29,7 +29,7 @@
 %%    \end{center}
 % \end{figure}
 
-\par Le projet est réalisé au sein du Data Center de la Direction Centrale Recherche et Développement (DC R&D) de Sonatrach. Cette direction joue un rôle stratégique dans l’innovation technologique et l’optimisation des processus liés à l’exploration et la production. Elle dispose d’infrastructures informatiques avancées, notamment des clusters de calcul et des solutions de stockage haute capacité, destinées à soutenir les travaux de simulation et de traitement sismique. C’est dans ce cadre que s’inscrit notre projet, avec pour objectif de renforcer les capacités de calcul et d’améliorer l’efficacité du traitement sismique grâce à une architecture HPC performante.\\
+\par Le projet est réalisé au sein du Data Center de la Direction Centrale Recherche et Développement (DC R&D) de Sonatrach. Cette direction coordonne les travaux de recherche appliquée en exploration et production et supervise l’optimisation des processus associés. Elle dispose de clusters de calcul et de solutions de stockage haute capacité dédiés à la simulation et au traitement sismique. C’est dans ce cadre que s’inscrit notre projet, avec pour objectif de renforcer les capacités de calcul et d’améliorer l’efficacité du traitement sismique grâce à une architecture HPC performante.\\
 
 \section{Infrastructure Existante et Contexte Technologique}
 
@@ -37,7 +37,7 @@
 
 \subsection{Infrastructure actuelle de Sonatrach}
 
-\par Sonatrach dispose actuellement d'une infrastructure hyperconvergée reposant sur deux solutions propriétaires complémentaires : Nutanix et VMware vSAN. Nutanix, déployé à l'échelle nationale sur plusieurs wilayas, équipe les infrastructures de grande envergure et les environnements de production critiques, tandis que VMware vSAN est privilégié pour les déploiements de plus petite taille. Ces deux solutions sont reconnues pour leur stabilité, leurs performances et la richesse de leurs fonctionnalités, notamment en matière de gestion centralisée, de haute disponibilité et de scalabilité.\\
+\par Sonatrach dispose actuellement d'une infrastructure hyperconvergée reposant sur deux solutions propriétaires complémentaires : Nutanix et VMware vSAN. Nutanix, déployé à l'échelle nationale sur plusieurs wilayas, équipe les infrastructures de grande envergure et les environnements de production critiques, tandis que VMware vSAN est privilégié pour les déploiements de plus petite taille. Ces deux solutions sont bien établies dans le domaine, avec une gestion centralisée, une haute disponibilité et une scalabilité éprouvées.\\
 
 \par Cependant, ces solutions propriétaires présentent des contraintes structurelles communes qui deviennent de plus en plus préoccupantes dans une perspective d'évolution à long terme :\\
 
@@ -53,11 +53,11 @@
 
 \end{itemize}
 
-\par Ces constats positionnent ce projet non pas comme un simple exercice académique, mais comme une réponse concrète à une problématique stratégique réelle : explorer et valider la viabilité d'une infrastructure hyperconvergée open source capable de répondre aux exigences de Sonatrach, aujourd'hui en environnement de test et demain potentiellement en production.\\
+\par Ce projet répond donc à un besoin concret de Sonatrach : explorer et valider la viabilité d'une infrastructure hyperconvergée open source, d'abord en environnement de test, et potentiellement en production à terme.\\
 
 \subsection{Les besoins en infrastructure légère pour les zones de test}
 
-\par Au-delà des besoins immédiats en environnements de test et de pré-production, Sonatrach a besoin d'une infrastructure qui réponde à des exigences de niveau entreprise, tout en s'affranchissant des contraintes des solutions propriétaires. Ces besoins couvrent plusieurs dimensions :\\
+\par Au-delà des besoins immédiats en environnements de test et de pré-production, Sonatrach a besoin d'une infrastructure qui réponde à des exigences opérationnelles précises, tout en s'affranchissant des contraintes des solutions propriétaires. Ces besoins couvrent plusieurs dimensions :\\
 
 \begin{itemize}
 
