@@ -1,0 +1,24 @@
+\chapter*{Conclusion générale}
+\addcontentsline{toc}{chapter}{Conclusion générale}
+
+\par Ce projet a abordé la problématique du coût et de la dépendance technologique liés aux solutions d'hyperconvergence propriétaires dans les grandes entreprises industrielles. Sonatrach, dont l'infrastructure de production repose sur Nutanix et VMware vSAN, se trouvait face à un besoin non couvert : disposer d'une infrastructure hyperconvergée viable pour ses environnements de test et de développement, sans recourir aux mêmes solutions dont le coût de licence et la rigidité sont disproportionnés pour des clusters de petite taille. La question centrale était de savoir si des technologies open source pouvaient offrir une alternative crédible, souveraine et techniquement solide, sur du matériel existant.\\
+
+\par Pour répondre à cette problématique, une infrastructure Cloud privée hyperconvergée entièrement open source a été déployée sur trois serveurs Dell PowerEdge R720. Un cluster Proxmox VE à trois n\oe{}uds a été mis en place avec haute disponibilité gérée par Corosync, un stockage distribué Ceph avec réplication à trois copies, et une segmentation réseau en neuf segments logiques VXLAN gérés par Open vSwitch. Une VM OPNsense assure le routage centralisé et le filtrage entre les zones applicatives. Un service d'équilibrage dynamique de charge, le CLBS, a été développé en Go et déployé pour pallier l'absence d'un mécanisme équivalent au DRS de VMware dans Proxmox. La haute disponibilité a été validée par une simulation de panne : à l'extinction d'un n\oe{}ud, le cluster a détecté la défaillance via Corosync, redémarré automatiquement les machines virtuelles protégées sur les n\oe{}uds survivants, et resynchronisé le stockage après le retour du serveur. Le mécanisme CLBS a été validé sous charge artificielle, déclenchant des migrations à chaud conformément à sa logique de décision. La plateforme est complétée par une stack de supervision (InfluxDB, Prometheus, Grafana, Loki), une synchronisation temporelle Chrony, des pipelines CI/CD GitLab et une automatisation opérationnelle via Ansible et Rundeck.\\
+
+\par Par rapport aux solutions existantes, cette infrastructure apporte plusieurs avantages concrets. Face à Nutanix et VMware vSAN, elle supprime entièrement les coûts de licence et donne un accès total au code, ce qui permet d'adapter la solution aux besoins spécifiques de l'entreprise. Face à OpenStack, elle est nettement plus légère et opérationnelle en quelques heures sur un cluster de trois n\oe{}uds, sans orchestration complexe de services interdépendants. Face à Harvester, elle offre une meilleure gestion des machines virtuelles classiques Linux et Windows avec une empreinte mémoire sur l'hôte inférieure à 1 Go à vide. Le développement du CLBS comble un manque réel de Proxmox VE en matière d'équilibrage proactif, en apportant une adaptation de l'algorithme CSLB étendue à la RAM, avec des protections contre les oscillations absentes des implémentations de référence. L'ensemble montre qu'une pile open source bien assemblée peut couvrir les mêmes fonctions qu'une solution propriétaire intégrée, à un coût d'acquisition nul.\\
+
+\par Cette réalisation présente toutefois des limites. Le pipeline PXE/TFTP, conçu pour l'installation automatique des n\oe{}uds physiques, n'a pas pu être testé faute de matériel dédié disponible ; sa logique est documentée mais non vérifiée en conditions réelles. La segmentation réseau par VXLAN résulte d'une contrainte imposée par l'inaccessibilité du switch physique Sonatrach, et impose une configuration manuelle des fichiers d'interfaces sur chaque n\oe{}ud, ce qui devient fastidieux à l'échelle. La gestion des identités repose sur le système natif de Proxmox sans annuaire centralisé, créant une fragmentation des droits entre Grafana, GitLab et Rundeck. Plusieurs perspectives d'évolution peuvent être envisagées pour lever ces limites et étendre les capacités de la plateforme :\\
+
+\begin{itemize}
+
+    \item Migrer les tunnels VxLAN OVS vers des VLANs OVS natifs via le module SDN de Proxmox, sous réserve d'accès aux commutateurs Sonatrach.
+
+    \item Valider un pipeline PXE/Ansible permettant d'intégrer un nouveau n\oe{}ud, de la mise sous tension à son admission dans le cluster, en moins de 25 minutes sans intervention manuelle.
+
+    \item Centraliser l'authentification sur Proxmox, Grafana, GitLab et Rundeck via un annuaire OpenLDAP en remplacement des comptes locaux fragmentés.
+
+    \item Remplacer la stack Grafana/Loki/Alloy/Alertmanager par Wazuh, une plateforme SIEM couvrant la détection d'intrusion, l'intégrité des fichiers et la corrélation d'événements.
+
+    \item Déployer Apprise pour acheminer les alertes Grafana vers plusieurs canaux (WhatsApp, SMS, SMTP) sans dépendre du serveur Gmail externe.
+
+\end{itemize}

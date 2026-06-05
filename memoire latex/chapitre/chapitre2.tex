@@ -212,7 +212,7 @@ Coût de licence & Gratuit & Gratuit & Gratuit (Enterprise payant) \\
 
 \begin{itemize}
 
-    \item Il \textbf{émule les périphériques} de la VM : carte réseau virtuelle (VirtIO, e1000, RTL8139), contrôleur de disque (VirtIO SCSI, IDE, SATA), carte graphique, USB, BIOS ou UEFI (via OVMF). Chaque VM en cours d'exécution correspond à un processus \texttt{qemu-system-x86\_64} sur l'hôte.
+    \item Il \textbf{émule les périphériques} de la VM : carte réseau virtuelle (VirtIO, e1000, RTL8139), contrôleur de disque (VirtIO SCSI, IDE, SATA), carte graphique, USB (``Universal Serial Bus''), BIOS (``Basic Input/Output System'') ou UEFI (``Unified Extensible Firmware Interface'') (via OVMF (``Open Virtual Machine Firmware'')). Chaque VM en cours d'exécution correspond à un processus \texttt{qemu-system-x86\_64} sur l'hôte.
 
     \item Il gère le \textbf{CPU virtuel (vCPU)} : le nombre de c\oe{}urs, le modèle de CPU exposé à la VM (host-passthrough, kvm64, Haswell, Broadwell, etc.), et les flags CPU visibles par le système invité.
 
@@ -228,7 +228,7 @@ Coût de licence & Gratuit & Gratuit & Gratuit (Enterprise payant) \\
 
 \par libvirt est une bibliothèque open source et une API unifiée de gestion de la virtualisation sous Linux~\cite{refLibvirt}. Elle offre une interface commune au-dessus de plusieurs hyperviseurs (KVM, QEMU, LXC, Xen) et est utilisée par de nombreux outils de la communauté : \texttt{virt-manager}, OpenStack Nova, ou encore oVirt. libvirt simplifie la création, la gestion du cycle de vie et la supervision des VMs en s'affranchissant des spécificités de chaque hyperviseur.\\
 
-\par Proxmox VE fait un choix architectural différent : il n'utilise pas libvirt mais sa propre couche de gestion écrite en Perl (\texttt{PVE::QemuServer}), qui pilote QEMU directement. Cela lui confère un contrôle plus fin sur les paramètres QEMU et une intégration plus étroite avec l'API REST et les mécanismes de cluster (Corosync, HA, Ceph).\\
+\par Proxmox VE fait un choix architectural différent : il n'utilise pas libvirt mais sa propre couche de gestion écrite en Perl (\texttt{PVE::QemuServer}), qui pilote QEMU directement. Cela lui confère un contrôle plus fin sur les paramètres QEMU et une intégration plus étroite avec l'API REST (``Representational State Transfer'') et les mécanismes de cluster (Corosync, HA, Ceph).\\
 
 \begin{figure}[H]
 \centering
@@ -439,7 +439,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
     \item \textbf{Auto-réparation} : En cas de panne d'un disque ou d'un n\oe{}ud, le cluster détecte l'incident et commence immédiatement à recréer les répliques manquantes sur les autres n\oe{}uds, assurant ainsi la pérennité des données sans intervention manuelle.
 
-    \item \textbf{Coût maîtrisé} : Ceph est open source et fonctionne sur du matériel standard (x86), ce qui le rend bien moins coûteux que les solutions propriétaires comme les SAN ou les appliances HCI propriétaires.
+    \item \textbf{Coût maîtrisé} : Ceph est open source et fonctionne sur du matériel standard (x86), ce qui le rend bien moins coûteux que les solutions propriétaires comme les SAN (``Storage Area Network'') ou les appliances HCI propriétaires.
 
     \item \textbf{Simplicité de gestion} : L'unification du stockage via Proxmox et les outils modernes comme \texttt{cephadm} (permettant un déploiement conteneurisé et simplifié) réduisent considérablement la complexité administrative.
 
@@ -449,7 +449,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \paratitle{Présentation générale}
 
-\par Open vSwitch (OVS) est un commutateur logiciel multicouche open source, distribué sous licence Apache 2.0, conçu pour fournir une plateforme de commutation de qualité production dans les environnements de virtualisation~\cite{ref8}. Il fonctionne selon deux composants principaux : \texttt{ovs-vswitchd}, le démon qui implémente le switch avec son module noyau Linux pour un transfert haute performance, et \texttt{ovsdb-server}, une base de données légère de configuration persistante. Parmi ses fonctionnalités natives figurent le modèle VLAN 802.1Q, le bonding avec ou sans LACP, la supervision via NetFlow et sFlow, la configuration QoS, ainsi que le support natif des protocoles de tunneling GRE, VXLAN et Geneve~\cite{ref9}.\\
+\par Open vSwitch (OVS) est un commutateur logiciel multicouche open source, distribué sous licence Apache 2.0, conçu pour fournir une plateforme de commutation de qualité production dans les environnements de virtualisation~\cite{ref8}. Il fonctionne selon deux composants principaux : \texttt{ovs-vswitchd}, le démon qui implémente le switch avec son module noyau Linux pour un transfert haute performance, et \texttt{ovsdb-server}, une base de données légère de configuration persistante. Parmi ses fonctionnalités natives figurent le modèle VLAN 802.1Q, le bonding avec ou sans LACP (``Link Aggregation Control Protocol''), la supervision via NetFlow et sFlow, la configuration QoS, ainsi que le support natif des protocoles de tunneling GRE (``Generic Routing Encapsulation''), VXLAN et Geneve~\cite{ref9}.\\
 
 \par Dans un cluster HCI, OVS joue le rôle de commutateur central de chaque n\oe{}ud, assurant la segmentation de tout le trafic en flux distincts et isolés depuis un bridge virtuel unique par serveur.\\
 
@@ -541,7 +541,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \subsection{L'Algorithme CSLB : Base Théorique du CLBS}
 
-\par Le CLBS est fondé sur l'algorithme CSLB (``Central Scheduler Load Balancing'') proposé par Wilcox pour les environnements de virtualisation distribués~\cite{ref38}. L'algorithme repose sur un scheduler centralisé qui opère en cinq phases successives~\cite{ref17} :\\
+\par Le CLBS est fondé sur l'algorithme CSLB proposé par Wilcox pour les environnements de virtualisation distribués~\cite{ref38}. L'algorithme repose sur un scheduler centralisé qui opère en cinq phases successives~\cite{ref17} :\\
 
 \begin{enumerate}
     \item \textbf{Évaluation de la charge :} lecture des métriques CPU et RAM de chaque nœud sur une fenêtre temporelle glissante, pour s'affranchir des pics instantanés.
@@ -595,7 +595,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \subsection{OPNsense : Pare-feu et Sécurité Périmétrique}
 
-\par OPNsense~\cite{refOPNsense} est une distribution de pare-feu et de routeur open source basée sur FreeBSD. Il assure le filtrage stateful des flux réseau, la gestion des règles de pare-feu par interface et par VLAN, ainsi que des fonctionnalités avancées telles que la détection d'intrusion (Suricata), le VPN et le portail captif. Dans une infrastructure hyperconvergée, OPNsense constitue le point de contrôle périmétrique entre les segments réseau internes et l'extérieur, protégeant notamment la zone exposée (DMZ).
+\par OPNsense~\cite{refOPNsense} est une distribution de pare-feu et de routeur open source basée sur FreeBSD. Il assure le filtrage stateful des flux réseau, la gestion des règles de pare-feu par interface et par VLAN, ainsi que des fonctionnalités avancées telles que la détection d'intrusion (Suricata), le VPN (``Virtual Private Network'') et le portail captif. Dans une infrastructure hyperconvergée, OPNsense constitue le point de contrôle périmétrique entre les segments réseau internes et l'extérieur, protégeant notamment la zone exposée (DMZ).
 
 \subsection{NTP : Synchronisation Temporelle}
 

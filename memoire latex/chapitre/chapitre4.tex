@@ -190,6 +190,14 @@ pvecm status
 
 \par Prometheus a été installé dans le même conteneur afin de collecter les métriques exposées par Ceph et par le service applicatif CLBS. La configuration du fichier \texttt{prometheus.yml} contient deux jobs principaux : un job pour les métriques Ceph via le module MGR Prometheus, et un job pour l'application CLBS développée en Go.\\
 
+\par Avant de configurer Prometheus, le module MGR Prometheus de Ceph a été activé sur les nœuds PVE-02 et PVE-03 via la commande suivante, exécutée une seule fois sur le cluster :
+
+\begin{lstlisting}[style=sonacode,language=bash,caption={Activation du module Prometheus sur les nœuds Ceph},label={lst:ceph-prometheus-mon}]
+ceph mgr module enable prometheus
+\end{lstlisting}
+
+\par Cette commande expose les métriques du cluster Ceph sur le port 9283 de chaque nœud hébergeant un MGR actif, permettant à Prometheus de les récupérer sans configuration supplémentaire côté Ceph.\\
+
 \begin{lstlisting}[style=sonacode,language=yaml,caption={Extrait du fichier prometheus.yml},label={lst:prometheus-yml}]
 global:
   scrape_interval: 30s
@@ -572,21 +580,31 @@ ceph mgr module enable prometheus
 
 \subsubsection{Déploiement des OSDs}
 
-\par Chaque nœud a reçu un disque dédié transformé en OSD afin de participer au stockage distribué. Le déploiement a été réalisé sur \texttt{/dev/sdb} pour chacun des trois serveurs.\\
+\par Sur chaque nœud, les quatre disques restants ont été intégrés comme OSDs Ceph. Le disque \texttt{/dev/sdb} (300~Go SAS) et les trois disques \texttt{/dev/sdc}, \texttt{/dev/sdd} et \texttt{/dev/sde} (600~Go SAS chacun) ont été provisionnés successivement via la commande suivante, exécutée pour chacun d'eux.\\
 
-\begin{lstlisting}[style=sonacode,language=bash,caption={Création d'un OSD Ceph},label={lst:ceph-osd-create}]
+\begin{lstlisting}[style=sonacode,language=bash,caption={Création des OSDs Ceph sur chaque nœud},label={lst:ceph-osd-create}]
 pveceph osd create /dev/sdb
+pveceph osd create /dev/sdc
+pveceph osd create /dev/sdd
+pveceph osd create /dev/sde
 \end{lstlisting}
 
-\par La commande de la Figure~\ref{lst:ceph-osd-create} formate le disque avec le système BlueStore de Ceph et l'intègre comme OSD dans le cluster. Le disque devient disponible pour la réplication des données selon la politique CRUSH configurée.\\
+\par Chaque appel à la Figure~\ref{lst:ceph-osd-create} formate le disque avec le système BlueStore et l'intègre comme OSD dans le cluster. La même séquence a été exécutée sur PVE-01, PVE-02 et PVE-03, portant le total à \textbf{douze OSDs} répartis équitablement sur les trois n\oe{}uds physiques.\\
 
-\par Au total, le cluster dispose de trois OSDs, distribués sur les trois nœuds physiques. La hiérarchie CRUSH a ensuite été vérifiée pour confirmer la bonne prise en compte de tous les nœuds de stockage.\\
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{image/ch4/ceph osd.png}
+    \caption{État du cluster Ceph montrant les douze OSDs actifs sur les trois nœuds.}
+    \label{fig:ceph-osd-health}
+\end{figure}
+
+\par La Figure~\ref{fig:ceph-osd-health} affiche la vue OSD de l'interface Proxmox. Les douze OSDs apparaissent avec le statut \texttt{up/in}, leur type de stockage BlueStore et leur poids dans la hiérarchie CRUSH, confirmant que l'ensemble des disques est actif et correctement intégré au cluster.\\
 
 \begin{lstlisting}[style=sonacode,language=bash,caption={Affichage de l'arbre CRUSH},label={lst:ceph-osd-tree}]
 ceph osd tree
 \end{lstlisting}
 
-\par La commande de la Figure~\ref{lst:ceph-osd-tree} affiche la hiérarchie CRUSH avec les trois nœuds physiques et leurs OSDs. Cette structure garantit que les trois répliques d'un même bloc seront toujours placées sur des serveurs physiques distincts, conformément à la politique de domaines de défaillance.\\
+\par La commande de la Figure~\ref{lst:ceph-osd-tree} affiche la hiérarchie CRUSH avec les trois n\oe{}uds physiques et leurs quatre OSDs respectifs. Cette structure garantit que les trois répliques d'un même bloc seront toujours placées sur des serveurs physiques distincts, conformément à la politique de domaines de défaillance.\\
 
 \subsubsection{Création du pool de stockage}
 
@@ -605,16 +623,7 @@ ceph -s
 ceph df
 \end{lstlisting}
 
-\par Les commandes de la Figure~\ref{lst:ceph-status} permettent de vérifier l'état du cluster : \texttt{ceph -s} affiche un résumé de l'état de santé, tandis que \texttt{ceph df} donne la capacité totale, utilisée et disponible par pool. Ces deux commandes constituent la vérification de base après chaque modification de la configuration Ceph. Les figures~\ref{fig:ceph-osd-health} et~\ref{fig:ceph-pool-health} illustrent l'état obtenu après ce déploiement.\\
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{image/ch4/ceph osd.png}
-    \caption{État du cluster Ceph montrant les MON et OSD.}
-    \label{fig:ceph-osd-health}
-\end{figure}
-
-\par La Figure~\ref{fig:ceph-osd-health} affiche la vue OSD de l'interface Proxmox, listant les trois OSDs avec leur statut \texttt{up/in}, leur type de stockage BlueStore et leur poids dans la hiérarchie CRUSH. Tous les OSDs apparaissent actifs et correctement intégrés au cluster.\\
+\par Les commandes de la Figure~\ref{lst:ceph-status} permettent de vérifier l'état du cluster : \texttt{ceph -s} affiche un résumé de l'état de santé, tandis que \texttt{ceph df} donne la capacité totale, utilisée et disponible par pool. Ces deux commandes constituent la vérification de base après chaque modification de la configuration Ceph. La Figure~\ref{fig:ceph-pool-health} illustre l'état du pool obtenu après ce déploiement.\\
 
 \begin{figure}[H]
     \centering
@@ -1237,11 +1246,8 @@ driftfile /var/lib/chrony/drift
 
 \begin{figure}[H]
   \centering
-  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Sortie de \texttt{chronyc -n clients} sur PVE-01 : clients NTP actifs et nombre de requêtes reçues.}
-  [CAPTURE : sur PVE-01, exécuter \texttt{chronyc -n clients} et capturer
-  la sortie montrant PVE-02 (192.168.10.213), PVE-03 (192.168.10.84)
-  et l'adresse 192.168.10.65 (OPNsense) représentant les VMs via NAT]
+  \includegraphics[width=1\textwidth]{image/ch4/ntp clients.png}
+  \caption{Sortie de \texttt{chronyc -n clients} sur PVE-01.}
   \label{fig:chrony-clients}
 \end{figure}
 

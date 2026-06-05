@@ -4,7 +4,7 @@
 
 \section{Introduction}
 
-\par Ce chapitre présente le contexte dans lequel s'inscrit notre projet de fin d'études. Nous y aborderons les fondements de l'hyper convergence (HCI), les enjeux liés à la virtualisation et à la gestion unifiée des ressources informatiques, ainsi que les besoins spécifiques de l'entreprise Sonatrach. Ce contexte permettra de mieux saisir les choix technologiques et les objectifs fixés pour le déploiement d'une infrastructure Cloud privée hyperconvergée basée sur des solutions open source.\\
+\par Ce chapitre présente le contexte dans lequel s'inscrit notre projet de fin d'études. Nous y aborderons les fondements de l'hyperconvergence, les enjeux liés à la virtualisation et à la gestion unifiée des ressources informatiques, ainsi que les besoins spécifiques de l'entreprise Sonatrach. Ce contexte permettra de mieux saisir les choix technologiques et les objectifs fixés pour le déploiement d'une infrastructure Cloud privée hyperconvergée basée sur des solutions open source.\\
 
 \section{Présentation de Sonatrach}
 
@@ -29,7 +29,7 @@
 %%    \end{center}
 % \end{figure}
 
-\par Le projet est réalisé au sein du Data Center de la Direction Centrale Recherche et Développement (DC R&D) de Sonatrach. Cette direction coordonne les travaux de recherche appliquée en exploration et production et supervise l’optimisation des processus associés. Elle dispose de clusters de calcul et de solutions de stockage haute capacité dédiés à la simulation et au traitement sismique. C’est dans ce cadre que s’inscrit notre projet, avec pour objectif de renforcer les capacités de calcul et d’améliorer l’efficacité du traitement sismique grâce à une architecture HPC performante.\\
+\par Le projet est réalisé au sein du Data Center de la Direction Centrale Recherche et Développement (DC R&D) de Sonatrach. Cette direction coordonne les travaux de recherche appliquée en exploration et production et supervise l’optimisation des processus associés. Elle dispose de clusters de calcul et de solutions de stockage haute capacité dédiés à la simulation et au traitement sismique. C’est dans ce cadre que s’inscrit notre projet, avec pour objectif de renforcer les capacités de calcul et d’améliorer l’efficacité du traitement sismique grâce à une architecture HPC (``High Performance Computing'') performante.\\
 
 \section{Infrastructure Existante et Contexte Technologique}
 
@@ -109,7 +109,7 @@
 
     \item \textbf{Déployer un cluster de trois n\oe{}uds physiques à haute disponibilité} sur les serveurs Dell PowerEdge R720 fournis par Sonatrach, avec gestion centralisée, administration simplifiée et support de la migration à chaud.
 
-    \item \textbf{Configurer Proxmox VE sur chaque serveur physique} en exploitant pleinement les ressources matérielles disponibles (256 Go de RAM, 5 disques SAS par n\oe{}ud).
+    \item \textbf{Configurer Proxmox VE sur chaque serveur physique} en exploitant pleinement les ressources matérielles disponibles (256 Go de RAM, 5 disques SAS (``Serial Attached SCSI'') par n\oe{}ud).
 
     \item \textbf{Concevoir et mettre en place un système de stockage distribué Ceph} en s'appuyant sur les disques SAS 600 Go de chaque n\oe{}ud pour le stockage distribué, et les disques 300 Go pour le système d'exploitation.
 

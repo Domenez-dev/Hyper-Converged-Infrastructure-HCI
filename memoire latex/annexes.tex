@@ -15,8 +15,6 @@
 \chapter{Dashboards Grafana de Supervision}
 \label{ann:grafana}
 % ============================================================
-\thispagestyle{empty}
-\newpage
 
 \par Cette annexe présente les captures complètes des tableaux de bord Grafana déployés pour superviser l'ensemble de l'infrastructure hyperconvergée. Ces dashboards sont accessibles depuis l'interface Grafana sur le conteneur LXC \texttt{monitoring} (\texttt{192.168.10.99}).\\
 
@@ -57,8 +55,6 @@
 \chapter{Configuration Complète des Interfaces Réseau}
 \label{ann:vxlan}
 % ============================================================
-\thispagestyle{empty}
-\newpage
 
 \par Cette annexe présente le fichier \texttt{/etc/network/interfaces} complet de chacun des trois nœuds Proxmox. Ces fichiers définissent l'ensemble des tunnels VxLAN point-à-point en maillage complet ainsi que les bridges OVS associés. Seule l'adresse IP du bridge de management et les adresses des interfaces internes diffèrent d'un nœud à l'autre.\\
 
@@ -651,8 +647,6 @@ source /etc/network/interfaces.d/*
 \chapter{Résultat d'Exécution Rundeck}
 \label{ann:rundeck}
 % ============================================================
-\thispagestyle{empty}
-\newpage
 
 \par Cette annexe présente le résultat d'une exécution complète d'un job Rundeck déclenché depuis l'interface web. Le job exécuté est \textbf{Provision VM}, qui invoque le playbook Ansible \texttt{provision\_vm.yml} pour créer une machine virtuelle à partir du template Debian stocké dans le pool Ceph.\\
 

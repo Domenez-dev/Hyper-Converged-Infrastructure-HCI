@@ -160,7 +160,7 @@ Panne CLBS & VM CLBS & Aucun impact applicatif. Le service redémarre automatiqu
 
 \subsubsection{Base Algorithmique : CSLB}
 
-\par Notre mécanisme, nommé \textbf{CLBS (Central Load Balancing Scheduler)}, est une adaptation du CSLB (Central Scheduler Load Balancing)~\cite{ref38}. L'algorithme original repose sur cinq phases : évaluation de charge, détermination de rentabilité, calcul du vecteur de transfert, sélection de VM, et exécution de la migration~\cite{ref17}. La charge CPU de chaque nœud est évaluée par rapport à un seuil dynamique (moyenne des charges de tous les nœuds) :
+\par Notre mécanisme, nommé \textbf{CLBS}, est une adaptation du CSLB~\cite{ref38}. L'algorithme original repose sur cinq phases : évaluation de charge, détermination de rentabilité, calcul du vecteur de transfert, sélection de VM, et exécution de la migration~\cite{ref17}. La charge CPU de chaque nœud est évaluée par rapport à un seuil dynamique (moyenne des charges de tous les nœuds) :
 
 \[
 \text{seuil} = \frac{\sum_{i=1}^{n} \alpha_i}{n}, \quad \text{diff} = \left|\text{seuil} - \frac{\alpha_{min} + \alpha_{max}}{2}\right|
@@ -308,7 +308,7 @@ toutes les 60 secondes :
 
 \par Dans une optique de scalabilité, l'intégration de tout nouveau serveur physique a été conçue autour d'un pipeline de provisionnement entièrement automatique, structuré en deux phases : une installation système initiale en environnement ``pre-OS'' via PXE/TFTP, puis une intégration logique au cluster pilotée par Ansible. L'objectif est d'enregistrer un serveur Dell PowerEdge R720 vierge dans l'infrastructure sans aucune intervention manuelle, en s'appuyant uniquement sur le démarrage réseau.\\
 
-\par \textbf{Pourquoi PXE et TFTP ?} Le démarrage réseau PXE (``Preboot eXecution Environment'') repose sur une contrainte fondamentale : au moment du boot, la machine ne dispose d'aucun système d'exploitation, d'aucune pile TCP complète, ni d'aucune bibliothèque logicielle. Le client PXE, intégré directement dans le firmware de la carte réseau, ne dispose que de quelques dizaines de kilo-octets de mémoire et d'une pile réseau UDP minimale. Cette contrainte exclut l'usage de protocoles comme FTP, SSH ou HTTP avec TLS, qui nécessitent tous un OS opérationnel. TFTP (``Trivial File Transfer Protocol''), défini par la RFC~1350 et opérant sur le port UDP/69, est le seul protocole compatible avec cet environnement ``pre-OS'' : son implémentation ne dépasse pas quelques kilo-octets et il ne requiert ni authentification ni connexion TCP.\\
+\par \textbf{Pourquoi PXE et TFTP ?} Le démarrage réseau PXE (``Preboot eXecution Environment'') repose sur une contrainte fondamentale : au moment du boot, la machine ne dispose d'aucun système d'exploitation, d'aucune pile TCP complète, ni d'aucune bibliothèque logicielle. Le client PXE, intégré directement dans le firmware de la carte réseau, ne dispose que de quelques dizaines de kilo-octets de mémoire et d'une pile réseau UDP minimale. Cette contrainte exclut l'usage de protocoles comme FTP (``File Transfer Protocol''), SSH ou HTTP avec TLS (``Transport Layer Security''), qui nécessitent tous un OS opérationnel. TFTP (``Trivial File Transfer Protocol''), défini par la RFC~1350 et opérant sur le port UDP/69, est le seul protocole compatible avec cet environnement ``pre-OS'' : son implémentation ne dépasse pas quelques kilo-octets et il ne requiert ni authentification ni connexion TCP.\\
 
 \par En revanche, la limitation inhérente à TFTP (un mécanisme de transfert ``stop-and-wait'' d'un bloc de 512 octets à la fois) le rend inadapté au transfert de fichiers volumineux. Dans la conception retenue, TFTP est donc strictement réservé aux fichiers de démarrage (bootloader et kernel), dont la taille totale n'excède généralement pas 40~Mo. Les fichiers volumineux, comme l'image d'installation ISO (environ 800~Mo) ou le fichier de réponses automatiques (``preseed''), sont ensuite téléchargés via HTTP dès que le kernel Linux est en mémoire et dispose d'une pile TCP complète. Le tableau~\ref{tab:pxe-protocols} compare les protocoles envisagés aux différentes étapes du pipeline de démarrage réseau.
 
@@ -458,7 +458,7 @@ Facteur de réplication (\texttt{size}) & 3 (une réplique par nœud physique) \
 
 \par Le réseau Sonatrach met à disposition un sous-réseau \texttt{192.168.10.0/24} utilisé pour l'accès SSH et l'interface web Proxmox. La connectivité Internet des nœuds est assurée par un poste jouant le rôle de routeur externe à l'adresse \texttt{192.168.10.36}, qui réalise du NAT et du forwarding IP.\\
 
-\par Le switch Sonatrach n'autorise que le VLAN 10 natif et ne permet pas la configuration de VLANs supplémentaires. Pour créer les réseaux logiques nécessaires à l'infrastructure, \textbf{VxLAN (Virtual Extensible LAN)} a été retenu comme technologie d'encapsulation. VxLAN permet de créer des réseaux logiques de niveau 2 tunnelisés au-dessus du réseau IP existant, sans modifier la configuration du switch. Open vSwitch gérera la création et la terminaison de ces tunnels sur chaque nœud Proxmox.\\
+\par Le switch Sonatrach n'autorise que le VLAN 10 natif et ne permet pas la configuration de VLANs supplémentaires. Pour créer les réseaux logiques nécessaires à l'infrastructure, VxLAN a été retenu comme technologie d'encapsulation. VxLAN permet de créer des réseaux logiques de niveau 2 tunnelisés au-dessus du réseau IP existant, sans modifier la configuration du switch. Open vSwitch gérera la création et la terminaison de ces tunnels sur chaque nœud Proxmox.\\
 
 \subsection{Topologie Réseau}
 
@@ -470,7 +470,7 @@ Facteur de réplication (\texttt{size}) & 3 (une réplique par nœud physique) \
 
 \par \textbf{Niveau 1 : Réseaux d'infrastructure (VxLAN inter-nœuds).} Pour les réseaux de contrôle (Corosync, Ceph Cluster, Ceph Public, Live Migration), des tunnels VxLAN point-à-point en maillage complet sont établis entre les trois nœuds. Chaque nœud crée deux ports VxLAN vers chacun des deux autres, garantissant une connectivité directe sans point de transit central.\\
 
-\par \textbf{Niveau 2 : Réseaux applicatifs (OPNsense).} Pour les réseaux Dev, Prod et DMZ, une architecture centralisée autour d'une VM OPNsense est utilisée. Trois bridges OVS internes sont configurés sur chaque nœud. OPNsense dispose de quatre interfaces virtuelles : WAN connectée au réseau de management (\texttt{192.168.10.65}, gateway \texttt{192.168.10.36}), et trois interfaces LAN connectées aux bridges Dev, Prod et DMZ.\\
+\par \textbf{Niveau 2 : Réseaux applicatifs (OPNsense).} Pour les réseaux Dev, Prod et DMZ, une architecture centralisée autour d'une VM OPNsense est utilisée. Trois bridges OVS internes sont configurés sur chaque nœud. OPNsense dispose de quatre interfaces virtuelles : WAN (``Wide Area Network'') connectée au réseau de management (\texttt{192.168.10.65}, gateway \texttt{192.168.10.36}), et trois interfaces LAN (``Local Area Network'') connectées aux bridges Dev, Prod et DMZ.\\
 
 \begin{figure}[H]
     \begin{center}
