@@ -4,15 +4,15 @@
 
 \section{Introduction}
 
-\par Dans un contexte de transformation numérique accélérée, les organisations scientifiques et industrielles cherchent des solutions d'infrastructure à la fois performantes, flexibles et économiques. Ce chapitre présente les concepts théoriques fondamentaux sur lesquels repose notre projet : l'hyperconvergence, la virtualisation, le stockage distribué et la virtualisation du réseau. Il dresse également un état de l'art comparatif des solutions disponibles, afin de justifier les choix technologiques retenus.\\
+\par Ce chapitre présente les bases théoriques de notre projet. On commence par définir l'hyperconvergence et comparer les solutions disponibles pour justifier nos choix technologiques. Ensuite, on présente en détail les trois technologies retenues : Proxmox VE, Ceph et Open vSwitch. On termine par les outils complémentaires et les fondements de l'équilibrage de charge.\\
 
 \section{L'Hyperconvergence (HCI)}
 
-\par Cette section définit le concept d'hyperconvergence, en présente les composantes fondamentales et les principaux avantages, puis le confronte à l'architecture traditionnelle à trois niveaux.\\
+\par Cette section définit le concept d'hyperconvergence, présente ses composantes et ses avantages, puis le compare à l'architecture traditionnelle.\\
 
 \subsection{Définition}
 
-\par L'hyperconvergence (HCI, Hyper-Converged Infrastructure) est une architecture informatique qui regroupe, dans un même système, les ressources de calcul, de stockage et de réseau. Ces ressources sont pilotées par une couche logicielle centralisée, supprimant ainsi la nécessité de gérer des équipements spécialisés distincts pour chaque fonction~\cite{ref2}.\\
+\par L'hyperconvergence (HCI, ``Hyper-Converged Infrastructure'') est une architecture qui regroupe dans un même système le calcul, le stockage et le réseau, pilotés par une couche logicielle centralisée. On n'a plus besoin de gérer des équipements distincts pour chaque fonction~\cite{ref2}.\\
 
 \par L'infrastructure hyperconvergée repose sur trois composantes fondamentales :\\
 
@@ -28,7 +28,7 @@
 
 \subsection{Avantages de l'hyperconvergence}
 
-\par L'approche HCI présente plusieurs avantages par rapport aux architectures traditionnelles à trois niveaux (compute, storage, network séparés) :\\
+\par Par rapport aux architectures traditionnelles où le calcul, le stockage et le réseau sont gérés séparément, l'HCI offre plusieurs avantages :\\
 
 \begin{itemize}
 
@@ -44,7 +44,7 @@
 
 \subsection{HCI face à l'Infrastructure Traditionnelle}
 
-\par Le tableau~\ref{tab:hci-vs-traditionnel} compare l'architecture hyperconvergée à l'architecture traditionnelle à trois niveaux, selon cinq critères : le mode de gestion, le coût initial, l'évolutivité, la complexité et la haute disponibilité.\\
+\par Le tableau~\ref{tab:hci-vs-traditionnel} compare l'architecture hyperconvergée à l'architecture traditionnelle selon cinq critères.\\
 
 \begin{table}[H]
 \centering
@@ -69,55 +69,55 @@ Haute disponibilité & Optionnelle et complexe & Native \\
 
 \section{Comparaison : Solutions Propriétaires et Open Source}
 
-\par Cette section met en regard les solutions propriétaires et les solutions open source, en soulignant les avantages et les limites de chacune dans le contexte du projet.\\
+\par Cette section met en regard les solutions propriétaires et les solutions open source dans le contexte du projet.\\
 
 \subsection{Solutions propriétaires}
 
-\par Les solutions propriétaires telles que \textbf{VMware vSAN} ou \textbf{Nutanix} offrent un support professionnel, des fonctionnalités avancées et une interface utilisateur soignée. Cependant, elles présentent plusieurs limites importantes dans notre contexte :\\
+\par Les solutions propriétaires comme VMware vSAN ou Nutanix offrent un bon support et des fonctionnalités avancées, mais elles posent plusieurs problèmes dans notre contexte :\\
 
 \begin{itemize}
 
-    \item \textbf{Coûts élevés} : les licences et la maintenance annuelle représentent un investissement significatif, difficilement justifiable pour des environnements de test.
+    \item \textbf{Coûts élevés} : les licences et la maintenance annuelle représentent un investissement important, difficilement justifiable pour des environnements de test.
 
-    \item \textbf{Dépendance fournisseur (Vendor Lock-in)} : la migration vers une autre solution est souvent complexe et coûteuse.
+    \item \textbf{Dépendance fournisseur (``Vendor Lock-in'')} : la migration vers une autre solution est souvent complexe et coûteuse.
 
-    \item \textbf{Faible flexibilité} : les environnements propriétaires offrent peu de liberté pour personnaliser ou adapter l'infrastructure.
+    \item \textbf{Faible flexibilité} : les environnements propriétaires offrent peu de liberté pour personnaliser l'infrastructure.
 
 \end{itemize}
 
 \subsection{Solutions open source}
 
-\par Les solutions open source présentent plusieurs avantages stratégiques :\\
+\par Les solutions open source présentent plusieurs avantages dans notre contexte :\\
 
 \begin{itemize}
 
     \item \textbf{Indépendance technologique} : aucune dépendance vis-à-vis d'un éditeur.
 
-    \item \textbf{Absence de coûts de licence} : seuls les coûts d'infrastructure matérielle et de main-d'\oe{}uvre sont à prévoir.
+    \item \textbf{Absence de coûts de licence} : seuls les coûts matériels et de main-d'\oe{}uvre sont à prévoir.
 
-    \item \textbf{Transparence et auditabilité} : le code source est accessible et auditable.
+    \item \textbf{Transparence et auditabilité} : le code source est accessible et modifiable.
 
     \item \textbf{Communauté active} : documentation abondante et mises à jour régulières.
 
 \end{itemize}
 
-\par Dans un contexte de zones de test et de petits déploiements, l'approche open source est clairement la plus adaptée.\\
+\par Pour des environnements de test et de petits déploiements, l'approche open source est clairement la plus adaptée.\\
 
 \section{Analyse des Solutions Open Source HCI}
 
-\par Le critère principal de sélection est la légèreté et la capacité à fonctionner de manière stable sur un cluster de 3 n\oe{}uds.\\
+\par Le critère principal de sélection est la légèreté et la capacité à fonctionner de façon stable sur un cluster de 3 n\oe{}uds.\\
 
 \subsection{OpenStack}
 
-\par OpenStack est une plateforme cloud open source très complète et standardisée, utilisée par de nombreuses grandes entreprises et fournisseurs cloud. Elle propose une large gamme de services : calcul (Nova), stockage objet (Swift), stockage en bloc (Cinder), réseau (Neutron), identité (Keystone), etc.\\
+\par OpenStack est une plateforme cloud open source complète, utilisée par de nombreuses grandes entreprises. Elle propose des services de calcul (Nova), stockage objet (Swift), stockage en bloc (Cinder), réseau (Neutron), identité (Keystone), etc.\\
 
 \par Cependant, OpenStack présente des inconvénients majeurs pour notre cas d'usage :\\
 
 \begin{itemize}
 
-    \item \textbf{Complexité de déploiement} : l'installation et la configuration d'OpenStack impliquent l'orchestration de nombreux services interdépendants (Nova, Neutron, Cinder, Keystone, etc.), ce qui rend le déploiement particulièrement long et difficile à maintenir.
+    \item \textbf{Complexité de déploiement} : l'installation implique l'orchestration de nombreux services interdépendants, ce qui rend le déploiement long et difficile à maintenir.
 
-    \item \textbf{Consommation de ressources élevée} : les services de base d'OpenStack consomment à eux seuls plusieurs Go de RAM, avant même de démarrer des VMs de production.
+    \item \textbf{Consommation de ressources élevée} : les services de base consomment plusieurs Go de RAM avant même de démarrer des VMs.
 
     \item \textbf{Inadapté aux petits clusters} : OpenStack est conçu pour des déploiements de grande envergure. Sur 3 n\oe{}uds, ses performances et sa stabilité sont compromises.
 
@@ -125,33 +125,33 @@ Haute disponibilité & Optionnelle et complexe & Native \\
 
 \subsection{Harvester HCI}
 
-\par Harvester est une solution HCI open source développée par SUSE, basée sur Kubernetes et KubeVirt. Elle propose une interface moderne et une intégration native avec Rancher pour la gestion de clusters Kubernetes~\cite{ref5}.\\
+\par Harvester est une solution HCI open source développée par SUSE, basée sur Kubernetes et KubeVirt. Elle propose une interface moderne et une intégration native avec Rancher~\cite{ref5}.\\
 
 \par Ses limites dans notre contexte :\\
 
 \begin{itemize}
 
-    \item \textbf{Consommation en RAM et CPU élevée} : Harvester nécessite des ressources importantes pour faire fonctionner la couche Kubernetes sous-jacente, avant même d'allouer des ressources aux VMs.
+    \item \textbf{Consommation en RAM et CPU élevée} : la couche Kubernetes sous-jacente consomme beaucoup de ressources avant même d'allouer quoi que ce soit aux VMs.
 
-    \item \textbf{Maturité relative pour les VMs classiques} : Harvester est davantage orienté vers les charges de travail conteneurisées. La gestion de VMs Linux/Windows classiques est moins optimisée que sur une solution dédiée~\cite{ref4}.
+    \item \textbf{Maturité relative pour les VMs classiques} : Harvester est davantage orienté vers les conteneurs. La gestion de VMs Linux/Windows classiques y est moins optimisée~\cite{ref4}.
 
 \end{itemize}
 
 \subsection{Proxmox VE}
 
-\par Proxmox Virtual Environment (VE) est une plateforme de virtualisation open source basée sur KVM (pour les VMs) et LXC (pour les conteneurs). Elle propose une interface web centralisée, un support natif de Ceph pour le stockage distribué, et une gestion intégrée du clustering et de la haute disponibilité~\cite{ref6}.\\
+\par Proxmox Virtual Environment (VE) est une plateforme de virtualisation open source basée sur KVM et LXC. Elle propose une interface web centralisée, un support natif de Ceph et une gestion intégrée du clustering et de la haute disponibilité~\cite{ref6}.\\
 
-\par Ses atouts pour notre cas d'usage sont nombreux :\\
+\par Ses atouts pour notre cas d'usage :\\
 
 \begin{itemize}
 
-    \item \textbf{Légèreté} : moins de 1 Go de RAM consommé à vide sur le n\oe{}ud, laissant l'essentiel des ressources aux VMs.
+    \item \textbf{Légèreté} : moins de 1 Go de RAM consommé à vide, laissant l'essentiel des ressources aux VMs.
 
     \item \textbf{Déploiement rapide} : un cluster de 3 n\oe{}uds est opérationnel en quelques heures.
 
-    \item \textbf{Interface web intuitive} : la console Proxmox (accessible sur le port 8006) centralise la gestion des VMs, conteneurs, stockage, réseau et haute disponibilité.
+    \item \textbf{Interface web intuitive} : la console (accessible sur le port 8006) centralise la gestion des VMs, conteneurs, stockage, réseau et haute disponibilité.
 
-    \item \textbf{Intégration native de Ceph} : Proxmox intègre nativement les outils de gestion Ceph, simplifiant considérablement le déploiement du stockage distribué.
+    \item \textbf{Intégration native de Ceph} : les outils Ceph sont intégrés directement dans Proxmox, ce qui simplifie beaucoup le déploiement.
 
     \item \textbf{Communauté active} : documentation officielle complète et forums très actifs.
 
@@ -159,7 +159,7 @@ Haute disponibilité & Optionnelle et complexe & Native \\
 
 \subsection{Tableau comparatif}
 
-\par Le tableau~\ref{tab:comparatif-hci} synthétise la comparaison des trois solutions open source étudiées (OpenStack, Harvester et Proxmox VE) au regard des critères déterminants pour le contexte du projet : légèreté, facilité de déploiement, adaptation à un cluster de trois nœuds, intégration du stockage distribué, gestion des machines virtuelles classiques, maturité et coût de licence.\\
+\par Le tableau~\ref{tab:comparatif-hci} compare les trois solutions selon les critères les plus importants pour notre contexte.\\
 
 \begin{table}[H]
 \centering
@@ -186,49 +186,49 @@ Coût de licence & Gratuit & Gratuit & Gratuit (Enterprise payant) \\
 \end{tabular}
 \end{table}
 
-\par Proxmox VE est la solution la mieux adaptée au contexte de ce projet : légère, rapide à déployer sur un cluster de 3 n\oe{}uds, et capable de s'étendre à de plus grands clusters sans changement d'architecture. Elle sera retenue comme hyperviseur principal. Le choix de la solution de stockage distribué et de la couche réseau est abordé dans les sections suivantes.\\
+\par Proxmox VE est la solution la mieux adaptée à ce projet : légère, rapide à déployer sur 3 n\oe{}uds, et extensible sans changement d'architecture. Elle sera retenue comme hyperviseur principal.\\
 
 \section{Présentation des Technologies Retenues}
 
-\par Cette section présente en détail les trois technologies open source retenues pour l'infrastructure : l'hyperviseur Proxmox VE, le système de stockage distribué Ceph et le commutateur logiciel Open vSwitch.\\
+\par Cette section présente en détail les trois technologies open source retenues : Proxmox VE, Ceph et Open vSwitch.\\
 
 \subsection{Proxmox VE : L'hyperviseur}
 
 \paratitle{Présentation générale}
 
-\par Proxmox Virtual Environment (VE) est une plateforme de virtualisation open source basée sur un noyau Linux Debian modifié. Elle supporte deux types de virtualisation : \textbf{KVM} (``Kernel-based Virtual Machine'') pour les machines virtuelles complètes, compatibles avec tout système d'exploitation (Linux, Windows, BSD), et \textbf{LXC} (``Linux Containers'') pour les conteneurs légers partageant le noyau de l'hôte. L'ensemble est administré via une interface web centralisée accessible sur le port 8006, qui unifie la gestion des VMs, conteneurs, stockage, réseau et haute disponibilité depuis un point d'entrée unique.\\
+\par Proxmox Virtual Environment (VE) est une plateforme de virtualisation open source basée sur un noyau Linux Debian modifié. Elle supporte deux types de virtualisation : \textbf{KVM} (``Kernel-based Virtual Machine'') pour les machines virtuelles complètes compatibles avec Linux, Windows et BSD, et \textbf{LXC} (``Linux Containers'') pour les conteneurs légers. L'ensemble est administré via une interface web sur le port 8006.\\
 
 \paratitle{La pile de virtualisation : KVM, QEMU et libvirt}
 
-\par La virtualisation des machines dans Proxmox repose sur une pile logicielle à trois niveaux qui collaborent étroitement.\\
+\par La virtualisation dans Proxmox repose sur une pile logicielle à trois niveaux qui collaborent ensemble.\\
 
 \paratitle{KVM: Kernel-based Virtual Machine}
 
-\par KVM est un module du noyau Linux (chargé via \texttt{kvm.ko} et \texttt{kvm\_intel.ko} ou \texttt{kvm\_amd.ko} selon le processeur) qui transforme le noyau Linux lui-même en hyperviseur de type 1~\cite{refKVM}.\\KVM expose au système des périphériques virtuels (\texttt{/dev/kvm}) et exploite les extensions matérielles de virtualisation du processeur \textbf{Intel VT-x} ou \textbf{AMD-V} pour exécuter le code des VMs directement sur le CPU physique sans émulation. Cela signifie que les instructions non privilégiées de la VM s'exécutent à la vitesse native du processeur, tandis que les instructions privilégiées (accès mémoire, I/O) sont interceptées et gérées par le noyau hôte. Le résultat est une performance CPU très proche du bare metal, typiquement entre 95\% et 99\% des performances natives mesurées en benchmarks.\\
+\par KVM est un module du noyau Linux (chargé via \texttt{kvm.ko} et \texttt{kvm\_intel.ko} ou \texttt{kvm\_amd.ko} selon le processeur) qui transforme Linux en hyperviseur de type 1~\cite{refKVM}. KVM exploite les extensions matérielles \textbf{Intel VT-x} ou \textbf{AMD-V} pour exécuter le code des VMs directement sur le CPU physique sans émulation. Les instructions non privilégiées s'exécutent à vitesse native, tandis que les instructions privilégiées (accès mémoire, I/O) sont interceptées par le noyau hôte. Le résultat est une performance CPU très proche du bare metal, entre 95\% et 99\% des performances natives.\\
 
 \paratitle{QEMU: Quick EMUlator}
 
-\par QEMU est l'émulateur de machine qui accompagne KVM~\cite{refQEMU}. Il opère en espace utilisateur et assure plusieurs fonctions essentielles :\\
+\par QEMU est l'émulateur de machine qui accompagne KVM~\cite{refQEMU}. Il opère en espace utilisateur et assure plusieurs fonctions :\\
 
 \begin{itemize}
 
-    \item Il \textbf{émule les périphériques} de la VM : carte réseau virtuelle (VirtIO, e1000, RTL8139), contrôleur de disque (VirtIO SCSI, IDE, SATA), carte graphique, USB (``Universal Serial Bus''), BIOS (``Basic Input/Output System'') ou UEFI (``Unified Extensible Firmware Interface'') (via OVMF (``Open Virtual Machine Firmware'')). Chaque VM en cours d'exécution correspond à un processus \texttt{qemu-system-x86\_64} sur l'hôte.
+    \item Il \textbf{émule les périphériques} de la VM : carte réseau virtuelle (VirtIO, e1000, RTL8139), contrôleur de disque (VirtIO SCSI, IDE, SATA), carte graphique, USB (``Universal Serial Bus''), BIOS (``Basic Input/Output System'') ou UEFI (``Unified Extensible Firmware Interface'') via OVMF (``Open Virtual Machine Firmware''). Chaque VM correspond à un processus \texttt{qemu-system-x86\_64} sur l'hôte.
 
-    \item Il gère le \textbf{CPU virtuel (vCPU)} : le nombre de c\oe{}urs, le modèle de CPU exposé à la VM (host-passthrough, kvm64, Haswell, Broadwell, etc.), et les flags CPU visibles par le système invité.
+    \item Il gère le \textbf{CPU virtuel (vCPU)} : le nombre de c\oe{}urs, le modèle de CPU exposé à la VM (host-passthrough, kvm64, Haswell, Broadwell, etc.) et les flags CPU visibles par le système invité.
 
-    \item Il assure la \textbf{gestion mémoire} : allocation de RAM, support du ``Memory Ballooning'' (ajustement dynamique de la RAM d'une VM en cours d'exécution), et des ``Huge Pages'' pour réduire la pression sur le TLB.
+    \item Il assure la \textbf{gestion mémoire} : allocation de RAM, support du ``Memory Ballooning'' et des ``Huge Pages'' pour réduire la pression sur le TLB.
 
-    \item Il fournit les \textbf{interfaces de migration} utilisées pour la live migration : QEMU implémente le protocole de transfert de l'état complet d'une VM (mémoire, état CPU, état des périphériques) vers un autre hôte sans interruption de service.
+    \item Il fournit les \textbf{interfaces de migration} pour la live migration : QEMU transfère l'état complet d'une VM (mémoire, état CPU, état des périphériques) vers un autre hôte sans interruption de service.
 
 \end{itemize}
 
-\par Lorsque KVM est disponible, QEMU délègue l'exécution du code de la VM à KVM et n'émule que les périphériques. C'est cette combinaison KVM+QEMU qui constitue l'hyperviseur réel.\\
+\par Quand KVM est disponible, QEMU lui délègue l'exécution du code de la VM et ne s'occupe que des périphériques. C'est cette combinaison KVM+QEMU qui constitue l'hyperviseur réel.\\
 
 \paratitle{libvirt : couche d'abstraction de la virtualisation Linux}
 
-\par libvirt est une bibliothèque open source et une API unifiée de gestion de la virtualisation sous Linux~\cite{refLibvirt}. Elle offre une interface commune au-dessus de plusieurs hyperviseurs (KVM, QEMU, LXC, Xen) et est utilisée par de nombreux outils de la communauté : \texttt{virt-manager}, OpenStack Nova, ou encore oVirt. libvirt simplifie la création, la gestion du cycle de vie et la supervision des VMs en s'affranchissant des spécificités de chaque hyperviseur.\\
+\par libvirt est une bibliothèque open source qui offre une API unifiée pour gérer plusieurs hyperviseurs (KVM, QEMU, LXC, Xen)~\cite{refLibvirt}. Elle est utilisée par des outils comme \texttt{virt-manager}, OpenStack Nova ou oVirt.\\
 
-\par Proxmox VE fait un choix architectural différent : il n'utilise pas libvirt mais sa propre couche de gestion écrite en Perl (\texttt{PVE::QemuServer}), qui pilote QEMU directement. Cela lui confère un contrôle plus fin sur les paramètres QEMU et une intégration plus étroite avec l'API REST (``Representational State Transfer'') et les mécanismes de cluster (Corosync, HA, Ceph).\\
+\par Proxmox ne l'utilise pas : il a sa propre couche de gestion en Perl (\texttt{PVE::QemuServer}) qui pilote QEMU directement. Ça lui donne un contrôle plus précis sur les paramètres QEMU et une meilleure intégration avec l'API REST (``Representational State Transfer'') et les mécanismes de cluster.\\
 
 \begin{figure}[H]
 \centering
@@ -273,17 +273,17 @@ Coût de licence & Gratuit & Gratuit & Gratuit (Enterprise payant) \\
 \label{fig:kvm-qemu-stack}
 \end{figure}
 
-\par La figure~\ref{fig:kvm-qemu-stack} illustre les cinq niveaux de la pile de virtualisation Proxmox. KVM, intégré au noyau Linux, exploite les extensions matérielles VT-x et AMD-V pour exécuter le code des VMs directement sur le CPU physique. QEMU opère en espace utilisateur et émule les périphériques. Proxmox VE orchestre l'ensemble via son API REST et unifie la gestion du cluster, du stockage Ceph et du réseau Open vSwitch.\\
+\par La figure~\ref{fig:kvm-qemu-stack} illustre les cinq niveaux de la pile de virtualisation Proxmox. KVM exploite les extensions VT-x et AMD-V pour exécuter le code des VMs directement sur le CPU. QEMU émule les périphériques en espace utilisateur. Proxmox orchestre l'ensemble via son API REST.\\
 
 \paratitle{Les conteneurs Linux : LXC}
 
-\par LXC (``Linux Containers'') est une technologie de virtualisation légère reposant sur deux mécanismes natifs du noyau Linux : les \textbf{namespaces} et les \textbf{cgroups}. Contrairement aux machines virtuelles KVM qui émulent un matériel complet avec un noyau invité indépendant, les conteneurs LXC partagent le noyau de l'hôte. Cette approche réduit significativement la consommation de ressources : un conteneur démarre en quelques secondes et son surcoût en mémoire est de l'ordre de quelques dizaines de mégaoctets.\\
+\par LXC (``Linux Containers'') est une virtualisation légère basée sur deux mécanismes du noyau Linux : les \textbf{namespaces} et les \textbf{cgroups}. Contrairement aux VMs KVM qui ont un noyau dédié, les conteneurs LXC partagent le noyau de l'hôte, ce qui réduit beaucoup la consommation de ressources : un conteneur démarre en quelques secondes avec un surcoût mémoire de quelques dizaines de mégaoctets.\\
 
-\par Les \textbf{namespaces} assurent l'isolation de chaque conteneur en lui attribuant des espaces de noms séparés pour les processus (PID), les interfaces réseau, les points de montage et les utilisateurs. Les \textbf{cgroups} (``control groups'') permettent de limiter et de comptabiliser la consommation de ressources (CPU, mémoire, I/O disque) de chaque conteneur, garantissant qu'aucun conteneur ne peut monopoliser les ressources de l'hôte.\\
+\par Les \textbf{namespaces} isolent chaque conteneur (processus, réseau, points de montage, utilisateurs). Les \textbf{cgroups} (``control groups'') limitent et comptabilisent la consommation de ressources (CPU, mémoire, I/O) par conteneur.\\
 
-\par Proxmox VE intègre LXC nativement et propose des modèles de distributions populaires (Debian, Ubuntu, Alpine). LXC est particulièrement adapté pour les services qui ne nécessitent pas de noyau spécifique : agents de supervision, serveurs NTP, services PXE, systèmes d'intégration continue et autres services Linux standards. Cette approche minimise la consommation de ressources par rapport à des machines virtuelles complètes pour ces cas d'usage~\cite{ref39}.\\
+\par Proxmox intègre LXC nativement avec des modèles pour Debian, Ubuntu et Alpine. LXC est adapté pour les services qui ne nécessitent pas de noyau spécifique : agents de supervision, serveurs NTP, services PXE, intégration continue~\cite{ref39}.\\
 
-\par Le tableau~\ref{tab:vm-vs-lxc} récapitule les principales différences entre une machine virtuelle KVM et un conteneur LXC, en termes d'isolation, de temps de démarrage, de surcoût mémoire, de systèmes supportés et de cas d'usage~\cite{ref39}.\\
+\par Le tableau~\ref{tab:vm-vs-lxc} récapitule les principales différences entre une VM KVM et un conteneur LXC~\cite{ref39}.\\
 
 \begin{table}[H]
 \centering
@@ -308,47 +308,47 @@ Cas d'usage & Applications nécessitant un noyau spécifique & Services Linux st
 
 \paratitle{Gestion du cluster : Corosync et le quorum}
 
-\par La gestion du cluster Proxmox repose sur \textbf{Corosync}, un framework de communication de cluster qui assure le consensus entre les n\oe{}uds via un mécanisme de quorum~\cite{ref20}. Corosync envoie des messages ``heartbeat'' à intervalles réguliers entre les n\oe{}uds, sur un réseau dédié, pour détecter les défaillances. Un cluster Proxmox nécessite un minimum de \textbf{3 n\oe{}uds} pour garantir un quorum stable.\\
+\par La gestion du cluster Proxmox repose sur \textbf{Corosync}, un framework de communication qui assure le consensus entre les n\oe{}uds via un mécanisme de quorum~\cite{ref20}. Corosync envoie des messages ``heartbeat'' réguliers sur un réseau dédié pour détecter les défaillances. Un cluster Proxmox nécessite au minimum \textbf{3 n\oe{}uds} pour garantir un quorum stable.\\
 
-\par Le quorum définit le nombre minimum de n\oe{}uds qui doivent être en accord pour que le cluster soit considéré comme opérationnel. Avec 3 n\oe{}uds, la majorité est de 2 : si un n\oe{}ud tombe, les 2 restants ont toujours quorum et le cluster continue de fonctionner. Si 2 n\oe{}uds tombent simultanément, le n\oe{}ud isolé n'a plus quorum et se met en retrait pour éviter le ``split-brain'', une situation où deux parties du cluster croient chacune être la seule à fonctionner et modifient les données de manière concurrente.\\
+\par Avec 3 n\oe{}uds, la majorité est de 2 : si un n\oe{}ud tombe, les 2 restants gardent le quorum et le cluster continue. Si 2 n\oe{}uds tombent en même temps, le n\oe{}ud restant se met en retrait pour éviter le ``split-brain'', une situation où deux parties du cluster modifient les données en même temps sans le savoir.\\
 
 \paratitle{Haute disponibilité (HA Manager)}
 
-\par Proxmox intègre un gestionnaire de haute disponibilité natif composé de deux services~\cite{refHA} :\\
+\par Proxmox intègre un gestionnaire de haute disponibilité composé de deux services~\cite{refHA} :\\
 
 \begin{itemize}
 
-    \item \textbf{pve-ha-crm} (``Cluster Resource Manager'') : le cerveau centralisé du HA. Il surveille l'état de toutes les ressources protégées (VMs, conteneurs) à l'échelle du cluster et prend les décisions de basculement.
+    \item \textbf{pve-ha-crm} (``Cluster Resource Manager'') : le cerveau centralisé du HA. Il surveille toutes les ressources protégées (VMs, conteneurs) et prend les décisions de basculement.
 
-    \item \textbf{pve-ha-lrm} (``Local Resource Manager'') : l'agent local sur chaque n\oe{}ud. Il exécute les ordres du CRM (démarrer, arrêter, migrer une VM) et remonte l'état des ressources locales.
+    \item \textbf{pve-ha-lrm} (``Local Resource Manager'') : l'agent local sur chaque n\oe{}ud. Il exécute les ordres du CRM et remonte l'état des ressources locales.
 
 \end{itemize}
 
-\par Lorsqu'un n\oe{}ud devient inaccessible (perte de heartbeat Corosync), le CRM déclenche le \textbf{fencing} (isolation forcée du n\oe{}ud défaillant via le watchdog matériel ou logiciel), puis ordonne le redémarrage des VMs protégées sur les n\oe{}uds survivants. Le délai typique de basculement est de 60 à 120 secondes. Les VMs enregistrées dans le HA Manager avec leurs disques sur un stockage partagé (Ceph RBD) peuvent être redémarrées sur n'importe quel n\oe{}ud du cluster sans déplacement de données.\\
+\par Quand un n\oe{}ud devient inaccessible, le CRM déclenche le \textbf{fencing} (isolation forcée via le watchdog), puis redémarre les VMs protégées sur les n\oe{}uds survivants. Le délai typique est de 60 à 120 secondes. Les VMs avec leurs disques sur Ceph RBD peuvent redémarrer sur n'importe quel n\oe{}ud sans déplacer de données.\\
 
 \paratitle{Live Migration}
 
-\par La migration à chaud (``live migration'') permet de déplacer une VM en cours d'exécution d'un n\oe{}ud physique vers un autre sans interruption de service perceptible par l'utilisateur. Proxmox implémente ce mécanisme via QEMU en trois phases :\\
+\par La migration à chaud (``live migration'') déplace une VM en cours d'exécution d'un n\oe{}ud vers un autre sans interruption perceptible. Proxmox l'implémente via QEMU en trois phases :\\
 
 \begin{enumerate}
 
-    \item \textbf{Pré-copie mémoire} : QEMU copie itérativement les pages mémoire de la VM vers le n\oe{}ud cible pendant que la VM continue de fonctionner. Les pages modifiées pendant la copie (``dirty pages'') sont recopiées lors de passes successives.
+    \item \textbf{Pré-copie mémoire} : QEMU copie les pages mémoire de la VM vers le n\oe{}ud cible pendant que la VM tourne. Les pages modifiées (``dirty pages'') sont recopiées lors de passes successives.
 
-    \item \textbf{Basculement} : lorsque le volume de dirty pages devient suffisamment faible (quelques dizaines de millisecondes de transfert), la VM est brièvement suspendue, les dernières pages sont transférées, et la VM reprend sur le n\oe{}ud cible.
+    \item \textbf{Basculement} : quand le volume de dirty pages devient assez faible, la VM est brièvement suspendue, les dernières pages sont transférées, puis la VM reprend sur le n\oe{}ud cible.
 
     \item \textbf{Nettoyage} : les ressources de la VM sont libérées sur le n\oe{}ud source.
 
 \end{enumerate}
 
-\par Cette fonctionnalité est le mécanisme central d'un service d'équilibrage dynamique de charge, qui déclenche automatiquement des migrations à chaud pour redistribuer la charge CPU entre les n\oe{}uds. Le trafic de migration doit transiter sur un segment réseau dédié, isolé des autres flux pour garantir la bande passante nécessaire sans impacter les charges de travail de production.\\
+\par C'est ce mécanisme que le service CLBS utilise pour redistribuer la charge entre les n\oe{}uds. Le trafic de migration doit transiter sur un réseau dédié pour ne pas impacter les autres flux.\\
 
 \paratitle{Interface de gestion et API REST}
 
-\par Proxmox expose une \textbf{API REST complète} sur le port 8006 (HTTPS), utilisée aussi bien par l'interface web que par des outils externes. Chaque opération réalisable depuis l'interface graphique est accessible via l'API : création de VMs, gestion du stockage, déclenchement de migrations, consultation des métriques en temps réel. Cette API permet notamment d'interroger l'état des n\oe{}uds, de lister les VMs en cours d'exécution, et de déclencher des migrations programmatiquement via des appels HTTP authentifiés par ticket de session.\\
+\par Proxmox expose une \textbf{API REST complète} sur le port 8006 (HTTPS), utilisée aussi bien par l'interface web que par des outils externes. Toutes les opérations disponibles graphiquement le sont aussi via l'API : création de VMs, gestion du stockage, déclenchement de migrations, consultation des métriques. Les appels sont authentifiés par ticket de session.\\
 
 \paratitle{Récapitulatif de la pile technique Proxmox}
 
-\par Le tableau~\ref{tab:pile-proxmox} récapitule les principaux composants de la pile technique Proxmox VE présentés ci-dessus, en rappelant le rôle de chacun au sein de l'infrastructure.\\
+\par Le tableau~\ref{tab:pile-proxmox} récapitule les principaux composants de la pile Proxmox VE et leur rôle.\\
 
 \begin{table}[H]
 \centering
@@ -375,73 +375,63 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \subsection{Ceph : Le stockage distribué}
 
-\par Ceph est une solution libre de stockage distribuée (Software-Defined Storage) qui s'impose aujourd'hui comme une référence dans le domaine des infrastructures open source~\cite{ref27}. Conçu pour répondre aux besoins de fiabilité, d'extensibilité et de performance, Ceph constitue le choix idéal pour assurer la couche de stockage d'une infrastructure hyperconvergée telle que celle que nous proposons. Sa capacité à fonctionner sur du matériel standard (serveurs x86) et son architecture auto-réparatrice en font un composant central de notre projet.\\
+\par Ceph est une solution de stockage distribué open source (``Software-Defined Storage'') qui fonctionne sur du matériel standard (serveurs x86) et qui se répare automatiquement en cas de panne~\cite{ref27}. C'est le choix retenu pour la couche de stockage de notre infrastructure.\\
 
 \paratitle{Architecture de Ceph}
 
-\par L'architecture de Ceph repose sur un composant fondamental appelé RADOS (Reliable Autonomic Distributed Object Store). RADOS constitue le c\oe{}ur du système, chargé de la gestion, de la réplication et de la répartition des données sur l'ensemble du cluster. Autour de ce c\oe{}ur gravitent plusieurs types de démons qui interagissent pour former un cluster cohérent et performant :\\
+\par Ceph repose sur un composant central appelé RADOS (``Reliable Autonomic Distributed Object Store''), qui gère la réplication et la répartition des données sur le cluster. Autour de RADOS, plusieurs types de démons travaillent ensemble :\\
 
 \begin{itemize}
 
-    \item \textbf{Ceph Monitor (MON) :} Les Moniteurs sont les arbitres d'état du cluster. Ils maintiennent une carte maîtresse (``cluster map'') décrivant la topologie complète du cluster et assurent le consensus entre les n\oe{}uds via un mécanisme de quorum. En cas de désaccord, la majorité des Monitors décide de l'état authoritative du cluster, évitant ainsi les situations de ``split-brain''.
+    \item \textbf{Ceph Monitor (MON) :} Les Moniteurs maintiennent une carte du cluster (``cluster map'') et assurent le consensus entre les n\oe{}uds via un quorum. C'est eux qui décident de l'état du cluster en cas de désaccord.
 
-    \item \textbf{Ceph Manager (MGR) :} Le Manager agit comme un chef d'orchestre. Il collecte toutes les métriques et informations d'état du cluster en temps réel (utilisation du stockage, performances, statistiques). Il expose ces données via une interface web de monitoring et les met à disposition des systèmes de gestion externes, facilitant ainsi l'administration et la supervision.
+    \item \textbf{Ceph Manager (MGR) :} Le Manager collecte les métriques du cluster en temps réel (utilisation, performances) et les expose via une interface web et des APIs externes.
 
-    \item \textbf{Ceph OSD (Object Storage Daemon) :} L'OSD est le démon qui gère les périphériques de stockage physiques ou logiques (disques, partitions, volumes logiques). Chaque OSD est responsable de la lecture et de l'écriture des données sur son disque. Les OSDs communiquent entre eux pour assurer la réplication, le rééquilibrage et la réparation des données en cas de panne. Dans une architecture hyperconvergée, les OSDs résident sur les mêmes n\oe{}uds que l'hyperviseur (Proxmox), chaque n\oe{}ud contribuant ainsi au stockage global.
+    \item \textbf{Ceph OSD (Object Storage Daemon) :} L'OSD gère un disque physique et s'occupe de la lecture, de l'écriture, de la réplication et du rééquilibrage des données. Dans notre architecture hyperconvergée, chaque n\oe{}ud héberge des OSDs en plus de l'hyperviseur.
 
-    \item \textbf{Ceph Metadata Server (MDS) :} Ce démon est spécifique au système de fichiers distribué CephFS. Il gère les métadonnées des fichiers (noms, permissions, arborescences). Pour un usage principalement en mode bloc (disques de machines virtuelles), ce composant n'est pas requis.
+    \item \textbf{Ceph Metadata Server (MDS) :} Ce démon est spécifique au système de fichiers CephFS. Pour un usage en mode bloc (disques de VMs), il n'est pas nécessaire.
 
 \end{itemize}
 
 \paratitle{La gestion intelligente des données : CRUSH et Placement Groups}
 
-\par L'intelligence de Ceph réside dans sa manière unique de gérer l'emplacement des données. Contrairement aux systèmes de stockage traditionnels qui utilisent une table de correspondance centralisée, Ceph utilise un algorithme appelé CRUSH (Controlled Replication Under Scalable Hashing)~\cite{ref28}. Cet algorithme permet à un client de calculer mathématiquement l'emplacement exact d'un objet (ou de sa réplique) en se basant sur la carte CRUSH, sans avoir à interroger un serveur central. Cette approche élimine un point de défaillance unique et améliore considérablement la scalabilité.\\
+\par Ceph utilise un algorithme appelé CRUSH (``Controlled Replication Under Scalable Hashing'')~\cite{ref28} pour déterminer où stocker chaque objet. Contrairement aux systèmes classiques, un client peut calculer directement l'emplacement d'un objet sans interroger un serveur central, ce qui évite un point de défaillance unique.\\
 
-\par La carte CRUSH est une structure hiérarchique qui définit l'organisation physique du cluster. L'administrateur peut y définir des "domaines de défaillance" (n\oe{}uds, racks, salles, data centers). Ceph utilise ensuite ces informations pour placer les répliques des données sur des n\oe{}uds distincts, garantissant ainsi que la perte d'un équipement n'entraîne pas de perte de données.\\
+\par La carte CRUSH définit l'organisation physique du cluster avec des ``domaines de défaillance'' (n\oe{}uds, racks, salles). Ceph place les répliques sur des n\oe{}uds distincts pour qu'une panne matérielle n'entraîne pas de perte de données.\\
 
-\par Pour optimiser la gestion des milliers d'objets, Ceph les regroupe dans des unités logiques appelées Placement Groups (PGs). Les PGs constituent une abstraction intermédiaire entre l'objet et l'OSD, permettant un équilibrage efficace des données et une meilleure performance du cluster.\\
+\par Pour gérer les milliers d'objets efficacement, Ceph les regroupe en unités logiques appelées Placement Groups (PGs), une couche intermédiaire entre les objets et les OSDs qui améliore l'équilibrage des données dans le cluster.\\
 
 \paratitle{Les modes de protection des données}
 
-\par Pour assurer la fiabilité et la disponibilité des données, Ceph propose deux mécanismes principaux, adaptés à différents besoins :\\
+\par Ceph propose deux mécanismes pour protéger les données :\\
 
 \begin{itemize}
 
-    \item \textbf{Réplication :} C'est le mode le plus simple et le plus performant. Chaque objet est dupliqué en N copies (généralement 3) et chaque copie est placée sur des OSDs différents, dans des domaines de défaillance distincts. En cas de panne d'un OSD ou d'un n\oe{}ud, les données restent disponibles sur les autres répliques. Ce mode offre une reconstruction rapide et est idéal pour les charges de travail exigeant de hautes performances en écriture, comme les disques de machines virtuelles. Dans le cadre d'un cluster à 3 n\oe{}uds, une réplication de facteur 3 garantit une haute disponibilité en cas de panne d'un nœud.
+    \item \textbf{Réplication :} Chaque objet est dupliqué en N copies (généralement 3), chacune sur un OSD différent. En cas de panne, les données restent disponibles sur les autres répliques. C'est le mode utilisé dans ce projet : avec 3 n\oe{}uds et un facteur de réplication 3, le cluster tolère la perte d'un n\oe{}ud complet.
 
-    \item \textbf{Erasure Coding (Codage d'effacement) :} Ce mode est plus efficace en termes d'espace de stockage. Les données sont découpées en K fragments de données, puis encodées avec M fragments de parité, pour un total de K+M fragments répartis sur différents OSDs. Ce mode permet de tolérer la perte de M fragments tout en reconstruisant les données initiales. Il est souvent utilisé pour les données froides ou l'archivage, car il nécessite moins d'espace que la réplication (ex: 1,5x l'espace brut contre 3x pour la réplication), mais il est plus coûteux en calcul lors des opérations de reconstruction.
+    \item \textbf{Erasure Coding (Codage d'effacement) :} Les données sont découpées en K fragments de données et M fragments de parité (K+M au total), répartis sur différents OSDs. On peut tolérer la perte de M fragments. Ce mode est plus économe en espace (1,5× contre 3× pour la réplication) mais plus coûteux en calcul lors de la reconstruction. Il est surtout utilisé pour les données froides ou l'archivage.
 
 \end{itemize}
 
 \paratitle{Intégration de Ceph dans une architecture hyperconvergée}
 
-\par L'intégration de Ceph avec Proxmox VE, l'hyperviseur retenu, est native et profondément intégrée. Proxmox offre une interface unifiée qui permet de créer et de gérer un cluster Ceph directement depuis son interface web, simplifiant considérablement les opérations de déploiement et de maintenance.\\
+\par L'intégration entre Ceph et Proxmox VE est native : on peut créer et gérer un cluster Ceph directement depuis l'interface web de Proxmox.\\
 
-\par Dans une architecture hyperconvergée, chaque n\oe{}ud joue un double rôle :\\
+\par Dans notre architecture, chaque n\oe{}ud joue deux rôles en même temps : il exécute des VMs via KVM et contribue au stockage distribué via ses disques Ceph. Les volumes des VMs sont fournis via Ceph RBD (``RADOS Block Device''), distribués et répliqués sur tout le cluster.\\
 
-\begin{itemize}
-
-    \item \textbf{Rôle de calcul :} Il exécute les machines virtuelles via KVM.
-
-    \item \textbf{Rôle de stockage :} Il contribue au stockage global via ses disques alloués au pool Ceph.
-
-\end{itemize}
-
-\par Cette convergence des rôles est l'essence même de l'hyperconvergence. Les volumes de stockage des VMs sont fournis via Ceph RBD (RADOS Block Device), qui expose des périphériques de stockage en bloc sur le réseau. Ces volumes sont distribués et répliqués sur l'ensemble du cluster, assurant ainsi la persistance des données même en cas de panne d'un n\oe{}ud.\\
-
-\par Les avantages apportés par Ceph dans ce type d'infrastructure sont multiples :\\
+\par Les avantages de Ceph dans ce contexte sont :\\
 
 \begin{enumerate}
 
-    \item \textbf{Évolutivité horizontale} : L'ajout d'un nouveau n\oe{}ud apporte simultanément de la puissance de calcul et de la capacité de stockage. Ceph rééquilibre automatiquement les données, permettant une croissance linéaire et sans interruption.
+    \item \textbf{Évolutivité horizontale} : l'ajout d'un n\oe{}ud apporte du calcul et du stockage en même temps, avec rééquilibrage automatique des données.
 
-    \item \textbf{Haute disponibilité} : L'absence de point de défaillance unique (SPOF) et la réplication des données sur plusieurs n\oe{}uds garantissent que le système de stockage reste opérationnel même en cas de panne d'un ou plusieurs serveurs.
+    \item \textbf{Haute disponibilité} : pas de point de défaillance unique, les données restent accessibles même si un serveur tombe.
 
-    \item \textbf{Auto-réparation} : En cas de panne d'un disque ou d'un n\oe{}ud, le cluster détecte l'incident et commence immédiatement à recréer les répliques manquantes sur les autres n\oe{}uds, assurant ainsi la pérennité des données sans intervention manuelle.
+    \item \textbf{Auto-réparation} : en cas de panne d'un disque ou d'un n\oe{}ud, le cluster recrée automatiquement les répliques manquantes sur les autres n\oe{}uds.
 
-    \item \textbf{Coût maîtrisé} : Ceph est open source et fonctionne sur du matériel standard (x86), ce qui le rend bien moins coûteux que les solutions propriétaires comme les SAN (``Storage Area Network'') ou les appliances HCI propriétaires.
+    \item \textbf{Coût maîtrisé} : Ceph est gratuit et fonctionne sur du matériel standard, bien moins coûteux que des SAN (``Storage Area Network'') ou des appliances propriétaires.
 
-    \item \textbf{Simplicité de gestion} : L'unification du stockage via Proxmox et les outils modernes comme \texttt{cephadm} (permettant un déploiement conteneurisé et simplifié) réduisent considérablement la complexité administrative.
+    \item \textbf{Gestion simplifiée} : l'outil \texttt{cephadm} permet un déploiement conteneurisé, et l'intégration avec Proxmox réduit la complexité administrative.
 
 \end{enumerate}
 
@@ -449,162 +439,160 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \paratitle{Présentation générale}
 
-\par Open vSwitch (OVS) est un commutateur logiciel multicouche open source, distribué sous licence Apache 2.0, conçu pour fournir une plateforme de commutation de qualité production dans les environnements de virtualisation~\cite{ref8}. Il fonctionne selon deux composants principaux : \texttt{ovs-vswitchd}, le démon qui implémente le switch avec son module noyau Linux pour un transfert haute performance, et \texttt{ovsdb-server}, une base de données légère de configuration persistante. Parmi ses fonctionnalités natives figurent le modèle VLAN 802.1Q, le bonding avec ou sans LACP (``Link Aggregation Control Protocol''), la supervision via NetFlow et sFlow, la configuration QoS, ainsi que le support natif des protocoles de tunneling GRE (``Generic Routing Encapsulation''), VXLAN et Geneve~\cite{ref9}.\\
+\par Open vSwitch (OVS) est un commutateur logiciel open source distribué sous licence Apache 2.0, conçu pour les environnements de virtualisation~\cite{ref8}. Il repose sur deux composants : \texttt{ovs-vswitchd}, le démon qui implémente le switch avec son module noyau, et \texttt{ovsdb-server}, une base de données de configuration persistante. Il supporte nativement les VLANs 802.1Q, le bonding LACP (``Link Aggregation Control Protocol''), NetFlow, sFlow, QoS, et les tunnels GRE (``Generic Routing Encapsulation''), VXLAN et Geneve~\cite{ref9}.\\
 
-\par Dans un cluster HCI, OVS joue le rôle de commutateur central de chaque n\oe{}ud, assurant la segmentation de tout le trafic en flux distincts et isolés depuis un bridge virtuel unique par serveur.\\
+\par Dans notre cluster HCI, OVS joue le rôle de commutateur central sur chaque n\oe{}ud et gère la segmentation de tout le trafic depuis un bridge virtuel unique.\\
 
 \paratitle{Pourquoi segmenter le réseau dans un cluster HCI ?}
 
-\par La nécessité d'une segmentation réseau stricte découle de la coexistence, sur la même infrastructure physique, de trafics aux profils radicalement différents et incompatibles :\\
+\par Dans un cluster HCI, plusieurs types de trafic cohabitent sur la même infrastructure physique avec des profils très différents :\\
 
 \begin{itemize}
 
-    \item La \textbf{réplication Ceph} génère un trafic continu à très haute bande passante entre les disques de stockage distribués, pouvant saturer un réseau partagé.
+    \item La \textbf{réplication Ceph} génère un trafic continu à très haute bande passante qui peut saturer un réseau partagé.
 
-    \item Les \textbf{heartbeats Corosync} sont extrêmement sensibles à la latence : tout délai ou perte de paquet peut déclencher un basculement non souhaité du cluster.
+    \item Les \textbf{heartbeats Corosync} sont très sensibles à la latence : un délai peut déclencher un basculement non voulu du cluster.
 
-    \item Les \textbf{migrations à chaud} (live migration) produisent des pics de transfert ponctuels mais intenses, correspondant au déplacement complet de la mémoire vive d'une VM entre deux n\oe{}uds.
+    \item Les \textbf{migrations à chaud} produisent des pics de transfert intenses lors du déplacement de la mémoire d'une VM entre deux n\oe{}uds.
 
-    \item Les \textbf{charges de travail applicatives} génèrent un trafic variable et imprévisible, qui ne doit pas interférer avec les flux d'infrastructure.
+    \item Les \textbf{charges de travail applicatives} génèrent un trafic imprévisible qui ne doit pas interférer avec les flux d'infrastructure.
 
 \end{itemize}
 
-\par Sans isolation stricte, ces flux en compétition se dégradent mutuellement et menacent la stabilité globale du cluster. Cette problématique est identique à celle que résout Nutanix avec la séparation entre le trafic du contrôleur interne et le trafic des VMs utilisateur. Cette logique se traduit en segments réseau dédiés gérés par OVS.\\
+\par Sans isolation, ces flux se dégradent mutuellement. C'est le même problème que Nutanix résout avec la séparation entre le trafic du contrôleur interne et celui des VMs. La solution est d'affecter à chaque type de trafic un segment réseau dédié géré par OVS.\\
 
-\par Les recommandations officielles de la documentation Proxmox et les guides Ceph préconisent explicitement la séparation du réseau interne Ceph (réplication entre nœuds de stockage) du réseau public Ceph (accès des VMs au stockage), ainsi que l'isolation du trafic de synchronisation du cluster sur une interface dédiée.\\
+\par La documentation Proxmox et les guides Ceph recommandent explicitement de séparer le réseau de réplication interne Ceph, le réseau d'accès des VMs au stockage et le réseau de synchronisation du cluster.\\
 
 \paratitle{Les neuf types de trafic à isoler}
 
-\par Ces contraintes conduisent à identifier neuf types de trafic aux profils distincts, chacun justifiant un segment réseau dédié. Le plan d'adressage précis et l'attribution des identifiants de tunnels sont définis dans le chapitre suivant ; ce qui importe ici est la nature du besoin qui motive chaque isolation :\\
+\par On identifie neuf types de trafic aux profils distincts, chacun justifiant un segment dédié. Le plan d'adressage exact est défini dans le chapitre suivant ; ici on explique juste pourquoi chaque isolation est nécessaire :\\
 
 \begin{itemize}
 
-    \item \textbf{Administration et gestion :} flux d'accès à la plateforme de virtualisation (interface web, SSH, API). Volume faible mais disponibilité permanente requise. Ce segment doit être strictement isolé des réseaux applicatifs pour prévenir tout accès non autorisé à la console d'administration depuis une VM compromise.
+    \item \textbf{Administration et gestion :} accès à l'interface web, SSH, API. Volume faible mais disponibilité permanente requise. Ce segment doit être isolé des réseaux applicatifs pour empêcher tout accès non autorisé depuis une VM compromise.
 
-    \item \textbf{Synchronisation du cluster :} heartbeats et mécanismes de consensus entre les nœuds. Ce trafic est extrêmement sensible à la latence et aux pertes de paquets : tout délai supérieur aux seuils Corosync peut déclencher un basculement non souhaité et déstabiliser l'ensemble du cluster.
+    \item \textbf{Synchronisation du cluster :} heartbeats et consensus Corosync. Très sensible à la latence : tout délai peut déclencher un basculement non souhaité.
 
-    \item \textbf{Réplication interne du stockage distribué :} communications directes entre les processus de stockage pour la réplication, le rééquilibrage et la reconstruction des données après panne. Ce flux est continu et à très haute bande passante ; le mélanger avec d'autres trafics dégrade directement les performances de stockage et risque de provoquer des délais de réplication.
+    \item \textbf{Réplication interne du stockage distribué :} communications entre OSDs pour la réplication et la reconstruction des données. Flux continu à haute bande passante, ne doit pas être mélangé avec d'autres trafics.
 
-    \item \textbf{Accès des machines virtuelles au stockage :} flux entre les VMs et le pool de stockage distribué (montage des volumes en mode bloc). Séparé du réseau de réplication interne pour éviter que les opérations de rééquilibrage ou de resynchronisation ne pénalisent les performances applicatives des VMs en production.
+    \item \textbf{Accès des machines virtuelles au stockage :} flux entre les VMs et le pool Ceph. Séparé du réseau de réplication interne pour que les opérations de rééquilibrage ne pénalisent pas les VMs.
 
-    \item \textbf{Migrations à chaud :} transferts de l'état mémoire complet d'une VM entre deux nœuds physiques. Ces flux sont ponctuels mais intenses, pouvant temporairement saturer la bande passante disponible ; leur isolation garantit que les migrations n'impactent ni le trafic applicatif ni la réplication du stockage.
+    \item \textbf{Migrations à chaud :} transferts de mémoire entre n\oe{}uds lors des migrations. Flux ponctuel mais intense, isolé pour ne pas saturer les autres réseaux.
 
-    \item \textbf{Machines virtuelles de production :} trafic applicatif des services exposés aux utilisateurs finaux. Ce segment est le seul accessible depuis les points d'entrée contrôlés (répartiteur de charge) et doit être isolé des environnements de développement.
+    \item \textbf{Machines virtuelles de production :} trafic applicatif exposé aux utilisateurs. Accessible uniquement via le répartiteur de charge, isolé des environnements de développement.
 
-    \item \textbf{Machines virtuelles de test et de développement :} trafic des environnements de développement et de validation. Strictement isolé de la production pour éviter toute interférence entre les charges de travail de test et les services en production.
+    \item \textbf{Machines virtuelles de test et de développement :} isolé de la production pour éviter toute interférence.
 
-    \item \textbf{Zone exposée :} services destinés à être accessibles depuis l'extérieur du cluster. Cette zone est protégée par le pare-feu périmétrique et accessible uniquement via le répartiteur de charge comme point d'entrée unique et contrôlé.
+    \item \textbf{Zone exposée :} services accessibles depuis l'extérieur, protégés par le pare-feu et le répartiteur de charge.
 
-    \item \textbf{Sauvegarde :} transferts de sauvegarde et d'instantanés de l'infrastructure. Ces opérations peuvent générer un trafic soutenu et doivent rester hors bande par rapport aux réseaux applicatifs afin de ne pas dégrader les performances en production.
+    \item \textbf{Sauvegarde :} transferts de sauvegardes et d'instantanés. Flux soutenu, maintenu hors bande pour ne pas dégrader les performances en production.
 
 \end{itemize}
 
 \paratitle{Contrainte d'infrastructure rencontrée et adaptation : adoption de VXLAN}
 
-\par L'architecture initiale reposait sur une segmentation par \textbf{VLANs 802.1Q}, nécessitant que le switch physique soit configuré en mode ``trunk'' pour propager les tags VLAN entre les trois n\oe{}uds. Cette approche est standard et parfaitement supportée par OVS.\\
+\par L'architecture initiale prévoyait une segmentation par \textbf{VLANs 802.1Q}, ce qui nécessite que le switch physique soit configuré en mode ``trunk''. Cette approche est standard et supportée par OVS.\\
 
-\par Cependant, le déploiement sur l'infrastructure de Sonatrach a révélé une contrainte opérationnelle déterminante : les trois serveurs Dell R720 sont connectés à un switch administré dont la configuration est gérée exclusivement par l'équipe réseau de l'entreprise. Ce switch dispose déjà de VLANs définis (VLAN 10 pour le management, VLAN 20 pour un autre usage interne), et l'équipe projet ne dispose d'aucun droit d'administration pour modifier sa configuration, créer de nouveaux VLANs, ou reconfigurer les ports en mode trunk. Les serveurs sont simplement connectés en mode access sur le VLAN de gestion.\\
+\par Cependant, sur l'infrastructure de Sonatrach, les trois serveurs Dell R720 sont connectés à un switch administré par l'équipe réseau de l'entreprise. Ce switch a déjà des VLANs définis (VLAN 10 pour le management, VLAN 20 pour un usage interne), et l'équipe projet n'a aucun droit d'administration dessus. Les serveurs sont connectés en mode access sur le VLAN de gestion uniquement.\\
 
-\par Face à cette contrainte, l'approche retenue est le remplacement des VLANs 802.1Q par des tunnels \textbf{VXLAN} (``Virtual eXtensible LAN'', RFC 7348)~\cite{refVXLAN}.\\
+\par Face à cette contrainte, on a remplacé les VLANs 802.1Q par des tunnels \textbf{VXLAN} (``Virtual eXtensible LAN'', RFC 7348)~\cite{refVXLAN}.\\
 
 \paratitle{VXLAN : principe de fonctionnement}
 
-\par VXLAN est un protocole d'encapsulation réseau qui encapsule des trames Ethernet de niveau 2 dans des paquets UDP/IP de niveau 4, permettant de créer des réseaux virtuels superposés (``overlay networks'') par-dessus un réseau physique existant, sans nécessiter aucune modification de ce dernier.\\
+\par VXLAN encapsule des trames Ethernet (niveau 2) dans des paquets UDP/IP (niveau 4), créant des réseaux virtuels superposés (``overlay networks'') sur un réseau physique existant sans le modifier.\\
 
-\par Le principe est le suivant : lorsqu'une VM sur le n\oe{}ud A souhaite communiquer avec une VM sur le n\oe{}ud B à travers un réseau logique donné, OVS encapsule la trame Ethernet originale dans un paquet UDP à destination de l'adresse IP physique du n\oe{}ud B. Ce paquet transite sur le réseau physique sous-jacent comme un paquet IP ordinaire. À la réception, OVS sur le n\oe{}ud B désencapsule le paquet et restitue la trame originale à la VM de destination. Le switch physique ne voit que du trafic UDP ordinaire et n'a aucune connaissance des réseaux virtuels qui transitent au-dessus de lui.\\
+\par Quand une VM sur le n\oe{}ud A veut communiquer avec une VM sur le n\oe{}ud B, OVS encapsule la trame dans un paquet UDP vers l'IP de B. Le switch physique voit juste du trafic UDP ordinaire. À la réception, OVS sur B désencapsule le paquet et restitue la trame à la VM destination.\\
 
-\par Chaque réseau logique est identifié par un \textbf{VNI} (``VXLAN Network Identifier''), un entier sur 24 bits, l'équivalent fonctionnel du tag VLAN. Chacun de ces neuf types de trafic se traduit en un tunnel VXLAN distinct, identifié par un VNI unique, créé et géré nativement par OVS sur chacun des nœuds. L'attribution précise des VNIs et des plages d'adressage est détaillée dans le chapitre suivant.\\
+\par Chaque réseau logique est identifié par un \textbf{VNI} (``VXLAN Network Identifier''), un entier sur 24 bits, l'équivalent fonctionnel d'un tag VLAN. Chacun des neuf types de trafic correspond à un tunnel VXLAN avec son propre VNI. L'attribution précise des VNIs est détaillée dans le chapitre suivant.\\
 
 \paratitle{Impact sur l'architecture et bilan}
 
-\par L'adoption de VXLAN ne remet pas en cause l'architecture réseau à neuf segments définie initialement. Les neuf segments logiques (management, Corosync, Ceph interne, Ceph public, migration à chaud, VMs de production, test/dev, DMZ, backup) sont intégralement conservés, chacun matérialisé par un identifiant VNI dédié au lieu d'un tag VLAN. OVS assure la création, la gestion et l'isolation de ces tunnels de manière transparente, sans aucune intervention sur l'infrastructure réseau physique de l'entreprise.\\
+\par Le passage à VXLAN ne change pas l'architecture à neuf segments. Les neuf segments (management, Corosync, Ceph interne, Ceph public, migration, VMs prod, test/dev, DMZ, backup) sont conservés, chacun avec un VNI dédié à la place d'un tag VLAN. OVS gère tout ça de façon transparente, sans toucher au réseau physique de Sonatrach.\\
 
-\par Cette approche constitue en réalité une évolution positive sur plusieurs points. Premièrement, elle renforce l'indépendance de l'infrastructure HCI vis-à-vis du réseau physique sous-jacent : le cluster peut fonctionner sur n'importe quel réseau IP sans prérequis de configuration. Deuxièmement, VXLAN est le protocole d'isolation réseau standard des infrastructures cloud modernes (AWS, Azure, GCP utilisent tous des superpositions de type VXLAN ou similaire)~\cite{refVXLAN}, ce qui renforce la représentativité technologique du projet. Troisièmement, la capacité de 16 millions d'identifiants VNI, contre 4 094 VLANs 802.1Q, offre une scalabilité largement suffisante pour toute extension future du cluster.\\
+\par Cette approche apporte même quelques avantages : le cluster est indépendant du réseau physique sous-jacent et peut fonctionner sur n'importe quel réseau IP. VXLAN est d'ailleurs le protocole standard des grandes infrastructures cloud (AWS, Azure, GCP)~\cite{refVXLAN}, ce qui renforce la crédibilité technologique du projet. Et avec 16 millions de VNIs possibles contre 4 094 VLANs 802.1Q, la scalabilité future est largement couverte.\\
 
-\par La seule contrainte introduite est un surcoût d'encapsulation de 50 octets par paquet UDP, négligeable au regard des débits disponibles sur des liaisons Gigabit ou 10 Gigabit Ethernet. Les performances de réplication Ceph, des migrations à chaud et des heartbeats Corosync ne sont pas affectées de manière mesurable par cette encapsulation supplémentaire.\\
+\par Le seul inconvénient est un surcoût d'encapsulation de 50 octets par paquet UDP, mais c'est négligeable sur des liaisons Gigabit ou 10 Gigabit Ethernet.\\
 
 \section{L'Équilibrage Dynamique de Charge dans les Clusters Virtualisés}
 
-\par Cette section expose la problématique du déséquilibre de charge dans un cluster de virtualisation, passe en revue les mécanismes d'équilibrage proposés par les plateformes existantes, puis présente l'algorithme CSLB sur lequel s'appuie le mécanisme CLBS développé dans ce projet.\\
+\par Cette section expose la problématique du déséquilibre de charge, passe en revue les mécanismes existants, puis présente l'algorithme CSLB sur lequel s'appuie le CLBS développé dans ce projet.\\
 
 \subsection{Problématique du Déséquilibre de Charge}
 
-\par Dans un cluster de virtualisation, les VMs sont placées sur les nœuds physiques lors de leur création. Sans mécanisme d'équilibrage actif, ce placement reste statique pendant toute la durée de vie des VMs. Au fil du temps, les charges de travail évoluent et la charge se répartit inégalement : certains nœuds peuvent être saturés à plus de 90\,\% de CPU tandis que d'autres restent utilisés à moins de 20\,\%. Ce déséquilibre dégrade les performances des VMs sur les nœuds chargés et gaspille les ressources disponibles sur les nœuds sous-chargés.
+\par Dans un cluster de virtualisation, les VMs sont placées sur des n\oe{}uds lors de leur création et y restent sans mécanisme actif de redistribution. Avec le temps, la charge se répartit inégalement : certains n\oe{}uds peuvent être saturés à plus de 90\,\% de CPU tandis que d'autres restent à moins de 20\,\%. Ça dégrade les performances des VMs sur les n\oe{}uds chargés et gaspille les ressources des n\oe{}uds sous-chargés.
 
 \subsection{Mécanismes d'Équilibrage dans les Plateformes Existantes}
 
-\par VMware vSphere propose le \textbf{DRS} (``Distributed Resource Scheduler'')~\cite{ref18}, mécanisme d'équilibrage automatique qui analyse en continu les métriques de charge de chaque hôte et déclenche des migrations à chaud (vMotion) pour redistribuer les VMs. Le DRS calcule un score de déséquilibre pour le cluster et ne déclenche une migration que si le gain attendu dépasse un seuil configurable, afin d'éviter des migrations inutiles dans un cluster globalement sous-chargé.
+\par VMware vSphere propose le \textbf{DRS} (``Distributed Resource Scheduler'')~\cite{ref18}, qui analyse en continu les métriques de charge et déclenche des migrations à chaud (vMotion) pour redistribuer les VMs. Le DRS ne migre que si le gain attendu dépasse un seuil configurable, pour éviter des déplacements inutiles.
 
-\par D'autres plateformes proposent des mécanismes comparables. \textbf{Microsoft SCVMM} (``System Center Virtual Machine Manager'') intègre la ``Dynamic Optimization''~\cite{refSCVMM}, qui rééquilibre les VMs Hyper-V selon des intervalles configurables en minimisant les migrations inutiles. \textbf{oVirt} (plateforme open source de Red Hat) dispose d'un planificateur de cluster (``cluster scheduler'') qui évalue la charge des hôtes et déclenche des migrations via libvirt~\cite{refOvirt}. \textbf{OpenStack Nova} implémente enfin un planificateur distribué capable de placer et de migrer les VMs selon des filtres et des pondérations paramétrables~\cite{refNova}.
+\par D'autres plateformes proposent des mécanismes similaires : \textbf{Microsoft SCVMM} avec la ``Dynamic Optimization''~\cite{refSCVMM} pour Hyper-V, \textbf{oVirt} avec son planificateur de cluster via libvirt~\cite{refOvirt}, et \textbf{OpenStack Nova} avec son planificateur distribué par filtres et pondérations~\cite{refNova}.
 
-\par Proxmox VE ne dispose pas d'un tel mécanisme natif. Ce projet développe un service équivalent, nommé CLBS, s'appuyant sur l'API REST Proxmox et le stockage partagé Ceph.
+\par Proxmox VE n'a pas de tel mécanisme natif. Ce projet développe un service équivalent, nommé CLBS, s'appuyant sur l'API REST Proxmox et le stockage partagé Ceph.
 
 \subsection{L'Algorithme CSLB : Base Théorique du CLBS}
 
-\par Le CLBS est fondé sur l'algorithme CSLB proposé par Wilcox pour les environnements de virtualisation distribués~\cite{ref38}. L'algorithme repose sur un scheduler centralisé qui opère en cinq phases successives~\cite{ref17} :\\
+\par Le CLBS est fondé sur l'algorithme CSLB de Wilcox pour les environnements de virtualisation distribués~\cite{ref38}. L'algorithme repose sur un scheduler centralisé qui opère en cinq phases~\cite{ref17} :\\
 
 \begin{enumerate}
-    \item \textbf{Évaluation de la charge :} lecture des métriques CPU et RAM de chaque nœud sur une fenêtre temporelle glissante, pour s'affranchir des pics instantanés.
-    \item \textbf{Détermination de rentabilité :} calcul d'une bande modérée autour de la moyenne des charges du cluster. Les nœuds hors de cette bande sont candidats à une action d'équilibrage.
-    \item \textbf{Calcul du vecteur de transfert :} détermination de la quantité de ressources à migrer pour ramener le nœud surchargé dans la bande modérée.
-    \item \textbf{Sélection de la VM :} choix de la VM dont la charge correspond le mieux au vecteur de transfert calculé.
-    \item \textbf{Exécution de la migration :} déclenchement d'une live migration vers le nœud destination présentant la charge la plus faible.
+    \item \textbf{Évaluation de la charge :} lecture des métriques CPU et RAM de chaque n\oe{}ud sur une fenêtre temporelle glissante, pour s'affranchir des pics instantanés.
+    \item \textbf{Détermination de rentabilité :} calcul d'une bande modérée autour de la moyenne du cluster. Les n\oe{}uds hors de cette bande sont candidats à une action.
+    \item \textbf{Calcul du vecteur de transfert :} quantité de ressources à migrer pour ramener le n\oe{}ud surchargé dans la bande.
+    \item \textbf{Sélection de la VM :} la VM dont la charge correspond le mieux au vecteur de transfert.
+    \item \textbf{Exécution de la migration :} live migration vers le n\oe{}ud avec la charge la plus faible.
 \end{enumerate}
 
-\par La migration à chaud est le mécanisme d'exécution de toute décision d'équilibrage. Elle n'est applicable que si le stockage est partagé entre tous les nœuds (comme Ceph RBD), condition qui rend le disque de la VM accessible depuis le nœud de destination sans déplacement préalable des données~\cite{ref14}.
+\par La live migration n'est possible que si le stockage est partagé entre tous les n\oe{}uds. Avec Ceph RBD, le disque d'une VM est accessible depuis n'importe quel n\oe{}ud sans déplacer de données~\cite{ref14}.
 
 % ============================================================
 \section{Outils Complémentaires d'Infrastructure}
 % ============================================================
 
-\par Au-delà des trois technologies centrales que sont Proxmox VE, Ceph et Open vSwitch, l'infrastructure s'appuie sur un ensemble d'outils complémentaires. Cette section présente la répartition de charge applicative, la supervision, l'automatisation, le provisionnement réseau, le pare-feu périmétrique, la synchronisation temporelle et l'intégration continue.\\
+\par En plus des trois technologies principales (Proxmox VE, Ceph, Open vSwitch), l'infrastructure utilise plusieurs outils complémentaires : répartition de charge applicative, supervision, automatisation, provisionnement réseau, pare-feu, synchronisation temporelle et intégration continue.\\
 
 \subsection{HAProxy : Équilibrage de Charge Applicatif}
 
-\par HAProxy (``High Availability Proxy'') est un proxy TCP/HTTP open source conçu pour la haute disponibilité et l'équilibrage de charge applicatif~\cite{ref26}. Il agit comme point d'entrée unique pour un ensemble de serveurs applicatifs, distribue les requêtes selon différents algorithmes (round-robin, moins de connexions, hachage par IP source) et surveille la disponibilité des backends via des contrôles de santé périodiques. En cas d'indisponibilité d'un backend, HAProxy redirige automatiquement le trafic vers les instances opérationnelles sans interruption pour l'utilisateur.
+\par HAProxy (``High Availability Proxy'') est un proxy TCP/HTTP open source pour la haute disponibilité et l'équilibrage de charge~\cite{ref26}. Il agit comme point d'entrée unique pour un ensemble de serveurs, distribue les requêtes selon différents algorithmes (round-robin, moins de connexions, hachage par IP source) et vérifie la disponibilité des backends via des contrôles de santé. Si un backend tombe, HAProxy redirige automatiquement le trafic sans interruption pour l'utilisateur.
 
 \subsection{Stack de Supervision : InfluxDB, Prometheus et Grafana}
 
-\par La supervision d'une infrastructure hyperconvergée nécessite des outils capables de collecter, stocker et visualiser des métriques en temps réel sur l'ensemble des composants. L'objectif est de couvrir quatre dimensions clés : l'état de santé et la charge de chaque nœud du cluster, les journaux système et événements d'infrastructure, l'historique des migrations à chaud et leur impact sur la répartition de charge, et l'état du pool de stockage distribué (utilisation, latence, état de santé des disques).
+\par Pour superviser l'infrastructure, on a besoin d'outils qui collectent, stockent et visualisent les métriques en temps réel : charge des n\oe{}uds, état du stockage, historique des migrations et alertes. Trois outils complémentaires forment cette stack.\\
 
-\par Trois outils complémentaires constituent la pile de supervision d'une telle infrastructure.\\
+\par \textbf{InfluxDB}~\cite{ref24} est une base de données orientée séries temporelles (``time series database''), optimisée pour les données horodatées à haute fréquence. Elle reçoit les métriques Proxmox (CPU, RAM, réseau, stockage) via le mécanisme natif ``Metric Server'' sans agent supplémentaire. Ces données sont utilisées par Grafana pour la visualisation et par le CLBS pour ses décisions de migration.\\
 
-\par \textbf{InfluxDB}~\cite{ref24} est une base de données orientée séries temporelles (``time series database''), optimisée pour le stockage de données horodatées à haute fréquence d'écriture. Elle reçoit les métriques de l'hyperviseur (CPU, RAM, réseau, stockage des nœuds et des VMs) via le mécanisme natif ``Metric Server'', sans agent supplémentaire. Cet historique est utilisé à la fois pour la visualisation et pour alimenter les décisions de migration du service d'équilibrage.\\
+\par \textbf{Prometheus}~\cite{refPrometheus} collecte les métriques par interrogation HTTP selon un modèle de données par étiquettes. Il surveille le cluster Ceph via son point d'accès natif et les métriques du service CLBS.\\
 
-\par \textbf{Prometheus}~\cite{refPrometheus} est un système de collecte de métriques par interrogation HTTP, organisé autour d'un modèle de données par étiquettes. Il collecte les métriques détaillées du cluster de stockage distribué via le point d'accès exposé par son gestionnaire, ainsi que les métriques applicatives du service d'équilibrage.\\
-
-\par \textbf{Grafana}~\cite{ref25} est un outil de visualisation connecté aux deux sources de données précédentes. Il permet de construire des tableaux de bord unifiés couvrant l'état des nœuds, l'état du stockage distribué et l'activité du service d'équilibrage, et d'y associer des règles d'alerte.\\
+\par \textbf{Grafana}~\cite{ref25} est l'outil de visualisation connecté aux deux sources précédentes. Il affiche des tableaux de bord unifiés sur l'état des n\oe{}uds, du stockage et du CLBS, avec des règles d'alerte configurables.\\
 
 \subsection{Ansible : Automatisation d'Infrastructure}
 
-\par Ansible~\cite{refAnsible} est un outil d'automatisation d'infrastructure (``Infrastructure as Code'') qui exécute des playbooks YAML via SSH, sans agent logiciel sur les machines cibles. Un playbook décrit l'état cible d'une machine (paquets installés, services configurés, fichiers déployés) et Ansible l'applique de manière \textbf{idempotente} : si la configuration est déjà conforme à l'état cible, aucune action n'est effectuée.
+\par Ansible~\cite{refAnsible} est un outil d'automatisation (``Infrastructure as Code'') qui exécute des playbooks YAML via SSH, sans agent sur les machines cibles. Un playbook décrit l'état cible d'une machine et Ansible l'applique de façon \textbf{idempotente} : si c'est déjà configuré, rien ne se passe.
 
-\par Chaque playbook est organisé en tâches séquentielles exécutées sur un inventaire de machines défini en YAML. La connexion SSH et les privilèges d'administration (\texttt{sudo}) sont les seuls prérequis sur les machines cibles. Ansible automatise typiquement l'intégration de nouveaux nœuds physiques dans le cluster, le provisionnement de machines virtuelles et de conteneurs, et la promotion d'environnements de développement vers la production.
+\par Les playbooks sont organisés en tâches séquentielles sur un inventaire YAML. Les seuls prérequis sont SSH et les droits \texttt{sudo}. On l'utilise pour intégrer de nouveaux n\oe{}uds au cluster, provisionner des VMs et des conteneurs, et promouvoir des environnements de développement vers la production.
 
 \subsection{PXE et TFTP : Provisionnement Réseau}
 
-\par PXE (``Preboot eXecution Environment'') est un mécanisme permettant à un serveur de démarrer depuis le réseau sans support de démarrage local. Il repose sur la coopération de trois protocoles :\\
+\par PXE (``Preboot eXecution Environment'') permet à un serveur de démarrer depuis le réseau sans support local. Il repose sur trois protocoles :\\
 
 \begin{itemize}
-    \item \textbf{DHCP :} attribution d'une adresse IP temporaire au serveur et indication de l'adresse du serveur de boot (options DHCP 66 et 67).
-    \item \textbf{TFTP} (``Trivial File Transfer Protocol'', UDP/69) : téléchargement du bootloader et du noyau d'amorçage. TFTP est retenu pour cette phase initiale car c'est le seul protocole utilisable dans un firmware pre-OS.
-    \item \textbf{HTTP :} téléchargement de l'image d'installation (plusieurs centaines de Mo). TFTP est inadapté aux fichiers volumineux en raison de l'absence de mécanisme de contrôle de flux.
+    \item \textbf{DHCP :} attribution d'une adresse IP temporaire et indication du serveur de boot (options DHCP 66 et 67).
+    \item \textbf{TFTP} (``Trivial File Transfer Protocol'', UDP/69) : téléchargement du bootloader. C'est le seul protocole utilisable dans un firmware pre-OS.
+    \item \textbf{HTTP :} téléchargement de l'image d'installation (plusieurs centaines de Mo). TFTP ne convient pas aux gros fichiers car il n'a pas de contrôle de flux.
 \end{itemize}
 
-\par Ce mécanisme est intégré au pipeline d'automatisation pour l'installation initiale de l'hyperviseur sur les serveurs physiques, sans aucune intervention manuelle sur les serveurs.
+\par Ce mécanisme a été utilisé pour l'installation automatique de Proxmox VE sur les serveurs physiques.
 
 \subsection{OPNsense : Pare-feu et Sécurité Périmétrique}
 
-\par OPNsense~\cite{refOPNsense} est une distribution de pare-feu et de routeur open source basée sur FreeBSD. Il assure le filtrage stateful des flux réseau, la gestion des règles de pare-feu par interface et par VLAN, ainsi que des fonctionnalités avancées telles que la détection d'intrusion (Suricata), le VPN (``Virtual Private Network'') et le portail captif. Dans une infrastructure hyperconvergée, OPNsense constitue le point de contrôle périmétrique entre les segments réseau internes et l'extérieur, protégeant notamment la zone exposée (DMZ).
+\par OPNsense~\cite{refOPNsense} est une distribution de pare-feu open source basée sur FreeBSD. Il assure le filtrage stateful des flux, la gestion des règles par interface et par VLAN, et des fonctionnalités avancées comme la détection d'intrusion (Suricata), le VPN (``Virtual Private Network'') et le portail captif. Dans notre infrastructure, OPNsense est le point de contrôle entre les segments internes et l'extérieur, notamment pour protéger la zone exposée (DMZ).
 
 \subsection{NTP : Synchronisation Temporelle}
 
-\par La synchronisation temporelle est un prérequis critique pour les systèmes distribués. Dans un cluster, une dérive d'horloge entre les nœuds peut provoquer des incohérences dans les journaux d'événements, perturber les mécanismes de consensus (Corosync, Ceph) et invalider les timestamps des métriques de supervision. Le protocole NTP (``Network Time Protocol'')~\cite{refNTP} permet à chaque nœud de synchroniser son horloge avec un serveur de référence. Un serveur NTP interne au cluster garantit que tous les composants (hyperviseur, stockage distribué, service d'équilibrage, outils de supervision) partagent une base de temps cohérente.
+\par La synchronisation temporelle est critique dans un système distribué. Une dérive d'horloge entre les n\oe{}uds peut créer des incohérences dans les journaux, perturber Corosync et Ceph, et fausser les métriques de supervision. Le protocole NTP (``Network Time Protocol'')~\cite{refNTP} synchronise l'horloge de chaque n\oe{}ud sur un serveur de référence. Un serveur NTP interne au cluster garantit une base de temps commune pour tous les composants.
 
 \subsection{GitLab CE : Intégration et Déploiement Continus}
 
-\par GitLab CE (``Community Edition'')~\cite{ref40} est une plateforme DevOps open source intégrant un gestionnaire de dépôts Git, un système d'intégration continue (CI) et de déploiement continu (CD). Les pipelines CI/CD de GitLab permettent d'automatiser les tests, la construction et le déploiement des applications à chaque modification du code source. Dans le contexte d'une infrastructure hyperconvergée, GitLab est utilisé pour versionner les configurations d'infrastructure (playbooks Ansible, fichiers de configuration), déclencher les déploiements automatisés et maintenir une traçabilité complète des modifications apportées à l'environnement.
+\par GitLab CE (``Community Edition'')~\cite{ref40} est une plateforme DevOps open source avec un gestionnaire Git, un système CI/CD (``Continuous Integration / Continuous Deployment'') et des pipelines d'automatisation. Dans notre contexte, GitLab versionne les configurations d'infrastructure (playbooks Ansible, fichiers de configuration), déclenche les déploiements automatisés et maintient une traçabilité complète des modifications.
 
 \section{Conclusion}
 
-\par Ce chapitre a posé les bases théoriques du projet. Le concept d'hyperconvergence a été défini et les principales solutions open source ont été comparées, aboutissant au choix de Proxmox VE comme hyperviseur, Ceph comme système de stockage distribué, et Open vSwitch comme commutateur logiciel. La pile de virtualisation (hyperviseur noyau, émulateur de machine, bibliothèque de gestion) a été décrite en détail, ainsi que les mécanismes de clustering, de haute disponibilité et de migration à chaud. La virtualisation réseau par tunnels superposés a été présentée comme réponse aux contraintes d'un réseau physique non administrable. Les fondements théoriques de l'équilibrage dynamique de charge ont été établis, en référence aux mécanismes existants dans d'autres plateformes. Enfin, les outils complémentaires d'infrastructure (répartition de charge applicative, supervision, automatisation, provisionnement réseau, pare-feu, synchronisation temporelle, intégration continue) et la justification du passage à un déploiement physique distribué ont été présentés. Le chapitre suivant présente la conception détaillée de l'architecture proposée.\\
+\par Ce chapitre a posé les bases théoriques du projet. On a défini l'hyperconvergence, comparé les solutions open source et justifié le choix de Proxmox VE, Ceph et Open vSwitch. On a présenté la pile de virtualisation, les mécanismes de clustering, de haute disponibilité et de migration à chaud, ainsi que la segmentation réseau par VXLAN comme réponse à la contrainte du switch Sonatrach. Les fondements de l'algorithme CLBS ont été établis, et les outils complémentaires ont été présentés. Le chapitre suivant détaille la conception de l'architecture proposée.\\
