@@ -886,82 +886,19 @@ tcpdump -i em1 port 67 or port 68
 
 \subsection{Configuration du Pare-feu}
 
-\par La sécurité réseau de l'infrastructure repose sur deux niveaux de filtrage complémentaires et indépendants : le pare-feu OPNsense pour le contrôle des flux entre les zones applicatives, et le pare-feu natif Proxmox au niveau de l'hyperviseur pour protéger les réseaux d'infrastructure. Une révision des règles configurées a mis en évidence plusieurs anomalies : un doublon dans les IPSets Proxmox, une règle OPNsense manquante critique pour le flux DMZ vers Prod, et des ports monitors Ceph incomplets sur le réseau public. Ces corrections sont intégrées dans les tableaux qui suivent.
+\par La sécurité réseau de l'infrastructure repose sur deux niveaux de filtrage complémentaires et indépendants : le pare-feu OPNsense pour le contrôle des flux entre les zones applicatives, et le pare-feu natif Proxmox au niveau de l'hyperviseur pour protéger les réseaux d'infrastructure.
 
-\subsubsection{Architecture de Filtrage et Flux de Trafic}
+\subsubsection{Pare-feu OPNsense : Filtrage Inter-réseaux}
 
-\par Avant de détailler les règles, il est nécessaire de préciser la logique de filtrage adoptée. Le trafic entrant transite d'abord par le laptop, qui joue uniquement le rôle de passerelle NAT vers Internet. Ce niveau n'applique aucun filtrage applicatif : toute connexion est transmise telle quelle vers OPNsense, seul point de contrôle réel pour les flux inter-zones.
+\par OPNsense centralise le routage et applique les politiques de filtrage entre les réseaux applicatifs Dev (\texttt{172.16.60.0/24}), Prod (\texttt{172.16.70.0/24}) et DMZ (\texttt{172.16.80.0/24}). Les règles ont été configurées sous \texttt{Firewall -> Rules} de l'interface OPNsense selon le principe du moindre privilège : tout flux non explicitement autorisé est bloqué par défaut.\\
 
-\par OPNsense reçoit le trafic sur son interface WAN (\texttt{192.168.10.65}) et applique ses règles de filtrage avant de le router vers la zone applicative appropriée. Le pare-feu Proxmox opère à un niveau orthogonal : il protège les nœuds hyperviseurs et les réseaux d'infrastructure (Corosync, Ceph, migrations live), indépendamment du trafic applicatif géré par OPNsense. Le tableau~\ref{tab:fw-flux-architecture} synthétise cette répartition des responsabilités.
-
-\begin{table}[H]
-\centering
-\caption{Répartition du filtrage entre le laptop, OPNsense et le pare-feu Proxmox.}
-\label{tab:fw-flux-architecture}
-\begin{tabular}{|p{3.5cm}|p{3cm}|p{2cm}|p{4cm}|}
-\hline
-\textbf{Flux} & \textbf{Niveau de contrôle} & \textbf{Action} & \textbf{Remarque} \\
-\hline
-Internet vers OPNsense WAN & Laptop (NAT uniquement) & Transmet & Aucun filtrage avant OPNsense \\
-\hline
-WAN vers zones applicatives & OPNsense & BLOCK par défaut & Seuls les flux déclarés sont autorisés \\
-\hline
-Entre zones (Dev, Prod, DMZ) & OPNsense & voir Tableau~\ref{tab:fw-opnsense-rules} & Politique moindre privilège \\
-\hline
-Management vers hyperviseurs & Proxmox Firewall & ACCEPT & Via groupes de sécurité \\
-\hline
-Réseaux applicatifs vers hyperviseurs & Proxmox Firewall & BLOCK & Protection de la plateforme \\
-\hline
-\end{tabular}
-\end{table}
-
-\subsubsection{Analyse des Règles : Anomalies Identifiées et Corrections Apportées}
-
-\par L'audit des règles initiales a mis en évidence trois catégories de problèmes : un doublon dans les définitions IPSets, une règle OPNsense manquante pour le flux applicatif principal, et des ports monitors Ceph absents sur le réseau public. Le tableau~\ref{tab:fw-regles-supprimees} liste les éléments supprimés et le tableau~\ref{tab:fw-regles-ajoutees} détaille les règles ajoutées en remplacement ou en complément. Pour voir les détails des captures d'écran des configurations avant et après correction, veuillez consulter les annexes.
+\par Le tableau~\ref{tab:fw-opnsense-rules} récapitule les règles de filtrage appliquées entre les zones et vers l'interface WAN.\\
 
 \begin{table}[H]
 \centering
-\caption{Règles et définitions supprimées lors de la révision.}
-\label{tab:fw-regles-supprimees}
-\begin{tabular}{|p{3cm}|p{4.5cm}|p{5cm}|}
-\hline
-\textbf{Élément supprimé} & \textbf{Valeur} & \textbf{Justification} \\
-\hline
-IPSet \texttt{vxlan-phys-net} & 192.168.10.0/24 & Doublon exact de \texttt{management-net}~; conserver deux IPSets identiques est une source d'incohérence lors des mises à jour. La règle \texttt{vxlan-overlay} utilise désormais \texttt{management-net} directement \\
-\hline
-OPNsense : Prod $\rightarrow$ DMZ ALLOW & 172.16.70.0/24 $\rightarrow$ 172.16.80.0/24 & Direction incorrecte : c'est HAProxy (DMZ) qui initie les connexions vers Flask (Prod), non l'inverse. Le trafic retour est géré automatiquement par l'inspection avec état d'OPNsense (\texttt{ESTABLISHED}/\texttt{RELATED}) \\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{table}[H]
-\centering
-\caption{Règles ajoutées lors de la révision.}
-\label{tab:fw-regles-ajoutees}
-\begin{tabular}{|p{3.2cm}|p{4cm}|p{5.3cm}|}
-\hline
-\textbf{Élément ajouté} & \textbf{Valeur} & \textbf{Justification} \\
-\hline
-OPNsense : DMZ $\rightarrow$ Prod TCP 8000 & 172.16.80.0/24 $\rightarrow$ 172.16.70.0/24 port 8000 & Flux manquant critique : HAProxy (DMZ) doit atteindre les backends Flask (Prod) sur le port 8000 pour transmettre les requêtes \\
-\hline
-Groupe \texttt{ceph-storage} : TCP 3300, 6789 depuis \texttt{ceph-public-net} & 10.10.40.0/24 $\rightarrow$ TCP 3300, 6789 & Les clients RBD s'authentifient auprès des monitors Ceph via le réseau public (VxLAN 40). L'absence de ces entrées bloquait les accès disque des VMs \\
-\hline
-Règles ICMP pour Flask app-1/2 & \texttt{management-net} $\rightarrow$ ICMP & Cohérence avec les autres VMs : indispensable pour les diagnostics de connectivité depuis le réseau d'administration \\
-\hline
-Règles ICMP pour PostgreSQL & \texttt{management-net} $\rightarrow$ ICMP & Idem : diagnostics réseau nécessaires pour la supervision et le dépannage \\
-\hline
-\end{tabular}
-\end{table}
-
-\subsubsection{Pare-feu OPNsense : Filtrage Inter-zones}
-
-\par OPNsense centralise le routage et applique les politiques de filtrage entre les réseaux applicatifs Dev (\texttt{172.16.60.0/24}), Prod (\texttt{172.16.70.0/24}) et DMZ (\texttt{172.16.80.0/24}). Les règles ont été configurées sous \texttt{Firewall -> Rules} selon le principe du moindre privilège : tout flux non explicitement autorisé est bloqué par défaut. Le tableau~\ref{tab:fw-opnsense-rules} présente les règles en vigueur après correction. Pour voir les détails des captures d'écran de cette configuration, veuillez consulter les annexes.
-
-\begin{table}[H]
-\centering
-\caption{Règles de filtrage inter-zones configurées sur OPNsense (après révision).}
+\caption{Règles de filtrage inter-réseaux configurées sur OPNsense.}
 \label{tab:fw-opnsense-rules}
-\begin{tabular}{|p{3.6cm}|p{3.6cm}|p{1.5cm}|p{4cm}|}
+\begin{tabular}{|l|l|l|l|}
 \hline
 \textbf{Source} & \textbf{Destination} & \textbf{Action} & \textbf{Justification} \\
 \hline
@@ -969,26 +906,26 @@ Dev (172.16.60.0/24) & WAN & ALLOW & Mises à jour et dépôts de paquets \\
 \hline
 DMZ (172.16.80.0/24) & WAN & ALLOW & Services exposés nécessitant un accès sortant \\
 \hline
-DMZ (172.16.80.0/24) & Prod TCP 8000 & ALLOW & HAProxy (DMZ) vers backends Flask (Prod) \textit{[ajouté]} \\
+Prod (172.16.70.0/24) & DMZ & ALLOW & Communication production vers services exposés \\
 \hline
 Dev (172.16.60.0/24) & Prod & BLOCK & Isolation développement / production \\
 \hline
 Dev (172.16.60.0/24) & DMZ & BLOCK & Empêcher l'accès aux services exposés depuis Dev \\
 \hline
-Prod (172.16.70.0/24) & WAN & BLOCK & Prod n'a pas d'accès Internet direct~; les mises à jour doivent passer par une procédure contrôlée \\
+Prod (172.16.70.0/24) & WAN & BLOCK & Le trafic Prod passe obligatoirement par la DMZ \\
 \hline
 \end{tabular}
 \end{table}
 
-\par La règle \texttt{DMZ $\rightarrow$ Prod TCP 8000} est indispensable au fonctionnement de l'application Sona-Web : sans elle, HAProxy ne peut pas transmettre les requêtes vers les backends Flask. La suppression de \texttt{Prod $\rightarrow$ DMZ} est justifiée par le mécanisme d'inspection avec état d'OPNsense, qui autorise automatiquement les paquets \texttt{ESTABLISHED} et \texttt{RELATED} sans règle explicite. Le blocage de \texttt{Prod $\rightarrow$ WAN} est intentionnel : les serveurs de production ne doivent pas initier de connexions sortantes sans supervision.
+\par Ces règles assurent une isolation stricte entre les trois zones tout en autorisant les flux légitimes vers Internet. La politique de sortie directe de Prod vers WAN est bloquée afin de forcer le passage par la DMZ, seule zone autorisée à exposer des services.\\
 
 \subsubsection{Pare-feu Proxmox : Filtrage au Niveau Hyperviseur}
 
-\par En complément du filtrage OPNsense, le pare-feu natif Proxmox a été configuré au niveau de l'hyperviseur pour protéger les réseaux d'infrastructure et restreindre les accès à la plateforme de gestion. Ce pare-feu s'organise en trois niveaux hiérarchiques : le niveau datacenter pour les définitions globales et les règles communes, le niveau nœud pour les règles propres à chaque serveur physique, et le niveau VM pour les règles spécifiques à chaque machine virtuelle.
+\par En complément du filtrage OPNsense, le pare-feu natif Proxmox a été configuré au niveau de l'hyperviseur pour protéger les réseaux d'infrastructure et restreindre les accès à la plateforme de gestion. Ce pare-feu s'organise en trois niveaux hiérarchiques : le niveau datacenter pour les règles globales communes, le niveau nœud pour les règles propres à chaque serveur physique, et le niveau VM pour les règles spécifiques à chaque machine virtuelle.\\
 
-\paratitle{IPSets et alias}
+\paratitle{Configuration au niveau datacenter}
 
-\par Des alias symboliques ont été définis pour simplifier l'écriture des règles. Le tableau~\ref{tab:fw-datacenter-aliases} liste les alias créés, chacun associant un nom symbolique à l'adresse IP de l'instance correspondante.
+\par Des alias symboliques ont été définis pour simplifier l'écriture des règles. Le tableau~\ref{tab:fw-datacenter-aliases} liste les alias créés, chacun associant un nom symbolique à l'adresse IP de l'instance correspondante.\\
 
 \begin{table}[H]
 \centering
@@ -1009,71 +946,71 @@ Prod (172.16.70.0/24) & WAN & BLOCK & Prod n'a pas d'accès Internet direct~; le
 \end{tabular}
 \end{table}
 
-\par Des IPSets ont également été créés pour regrouper les adresses appartenant à un même domaine de sécurité. Suite à la révision, l'IPSet \texttt{vxlan-phys-net} a été supprimé car il référençait le même préfixe \texttt{192.168.10.0/24} que \texttt{management-net}. La règle du groupe \texttt{vxlan-overlay} utilise désormais \texttt{management-net}. Le tableau~\ref{tab:fw-datacenter-ipsets} liste les cinq IPSets conservés. Pour voir les détails des captures d'écran de la configuration de ces IPSets, veuillez consulter les annexes.
+\par Des IPSets ont également été créés pour regrouper les adresses appartenant à un même domaine de sécurité. Ces groupes centralisent les plages d'adresses des réseaux logiques et permettent d'appliquer une règle à un ensemble de machines sans dupliquer les adresses dans chaque règle individuelle. Le tableau~\ref{tab:fw-datacenter-ipsets} récapitule les IPSets configurés.\\
 
 \begin{table}[H]
 \centering
-\caption{IPSets configurés au niveau datacenter (après suppression du doublon).}
+\caption{IPSets configurés au niveau datacenter.}
 \label{tab:fw-datacenter-ipsets}
 \begin{tabular}{|l|l|l|}
 \hline
 \textbf{Nom de l'IPSet} & \textbf{Membres} & \textbf{Utilisation} \\
 \hline
-\texttt{management-net} & 192.168.10.0/24 & Accès administration et tunnels VxLAN \\
+\texttt{management-net} & 192.168.10.0/24 & Accès administration \\
 \hline
-\texttt{corosync-net} & 10.10.20.0/24 & Heartbeat cluster Corosync \\
+\texttt{corosync-net} & 10.10.20.0/24 & Heartbeat cluster \\
 \hline
-\texttt{ceph-cluster-net} & 10.10.30.0/24 & Réplication Ceph interne (OSD--OSD) \\
+\texttt{ceph-cluster-net} & 10.10.30.0/24 & Réplication Ceph interne \\
 \hline
-\texttt{ceph-public-net} & 10.10.40.0/24 & Accès RBD public (VMs vers OSDs) \\
+\texttt{ceph-public-net} & 10.10.40.0/24 & Accès RBD public \\
 \hline
-\texttt{migration-net} & 10.10.50.0/24 & Migrations live de VMs \\
+\texttt{migration-net} & 10.10.50.0/24 & Migration live \\
+\hline
+\texttt{vxlan-phys-net} & 192.168.10.0/24 & Tunnels VxLAN \\
 \hline
 \end{tabular}
 \end{table}
 
-\paratitle{Groupes de sécurité}
-
-\par Cinq groupes de sécurité encapsulent les règles de ports associées à chaque service d'infrastructure. Le groupe \texttt{ceph-storage} a été complété : les ports monitors Ceph (3300 et 6789) n'étaient autorisés que depuis le réseau Ceph interne (\texttt{10.10.30.0/24}), alors que les clients RBD s'authentifient auprès des monitors depuis le réseau public (\texttt{10.10.40.0/24}). Cette entrée manquante a été ajoutée. Le tableau~\ref{tab:fw-security-groups} présente l'ensemble des groupes après correction. Pour voir les détails des captures d'écran de la configuration de ces groupes, veuillez consulter les annexes.
+\par Cinq groupes de sécurité ont ensuite été créés pour encapsuler les règles de ports associées à chaque service d'infrastructure. Le tableau~\ref{tab:fw-security-groups} décrit ces groupes, leurs règles de ports et les sources autorisées.\\
 
 \begin{table}[H]
 \centering
-\caption{Groupes de sécurité Proxmox et leurs règles de ports (après révision).}
+\caption{Groupes de sécurité Proxmox et leurs règles de ports par service.}
 \label{tab:fw-security-groups}
 \begin{tabular}{|p{3.8cm}|p{2.5cm}|p{3cm}|p{4cm}|}
 \hline
 \textbf{Groupe} & \textbf{Protocole / Port} & \textbf{Source} & \textbf{Rôle} \\
 \hline
-\texttt{proxmox-management} & TCP 22 & \texttt{management-net} & Accès SSH \\
+\texttt{proxmox-management} & TCP 22 & 192.168.10.0/24 & Accès SSH \\
 \hline
-\texttt{proxmox-management} & TCP 8006 & \texttt{management-net} & Interface web Proxmox \\
+\texttt{proxmox-management} & TCP 8006 & 192.168.10.0/24 & Interface web Proxmox \\
 \hline
-\texttt{proxmox-management} & ICMP & \texttt{management-net} & Diagnostics réseau \\
+\texttt{proxmox-management} & ICMP & 192.168.10.0/24 & Diagnostics réseau \\
 \hline
-\texttt{proxmox-management} & TCP 9283 & \texttt{management-net} & Métriques Ceph MGR (Prometheus) \\
+\texttt{proxmox-management} & TCP 9283 & 192.168.10.0/24 & Métriques Ceph MGR (Prometheus) \\
 \hline
-\texttt{corosync-cluster} & UDP 5404--5405 & \texttt{corosync-net} & Heartbeat Corosync \\
+\texttt{corosync-cluster} & UDP 5404--5405 & 10.10.20.0/24 & Heartbeat Corosync \\
 \hline
-\texttt{vxlan-overlay} & UDP 4789 & \texttt{management-net} & Tunnels VxLAN \\
+\texttt{vxlan-overlay} & UDP 4789 & 192.168.10.0/24 & Tunnels VxLAN \\
 \hline
-\texttt{ceph-storage} & TCP 6800--7300 & \texttt{ceph-cluster-net} & Communications OSD--OSD \\
+\texttt{ceph-storage} & TCP 6800--7300 & 10.10.30.0/24 & Communications OSD--OSD \\
 \hline
-\texttt{ceph-storage} & TCP 3300, 6789 & \texttt{ceph-cluster-net} & Monitors Ceph (réseau interne) \\
+\texttt{ceph-storage} & TCP 3300, 6789 & 10.10.30.0/24 & Monitors Ceph \\
 \hline
-\texttt{ceph-storage} & TCP 6800--7300 & \texttt{ceph-public-net} & Accès RBD public (données) \\
+\texttt{ceph-storage} & TCP 6800--7300 & 10.10.40.0/24 & Accès RBD public \\
 \hline
-\texttt{ceph-storage} & TCP 3300, 6789 & \texttt{ceph-public-net} & Monitors Ceph (réseau public) \textit{[ajouté]} \\
-\hline
-\texttt{migration-live} & TCP any & \texttt{migration-net} & Migrations live (ports dynamiques) \\
+\texttt{migration-live} & TCP any & 10.10.50.0/24 & Migrations live (ports dynamiques) \\
 \hline
 \end{tabular}
 \end{table}
 
-\par Cette approche par groupes de sécurité et IPSets garantit une politique cohérente sur l'ensemble du cluster sans duplication des règles : toute modification d'un groupe se propage automatiquement sur les trois nœuds physiques. La règle \texttt{migration-live: TCP any} est intentionnellement permissive, car Proxmox utilise des ports TCP dynamiques pour le transfert de l'état mémoire lors des migrations live. Ce choix ne représente pas de risque réel puisque le réseau \texttt{10.10.50.0/24} est un VxLAN dédié, inaccessible depuis les zones applicatives.
+\par Cette approche par groupes de sécurité et IPSets garantit une politique de sécurité cohérente sur l'ensemble du cluster sans dupliquer les règles : toute modification d'un groupe se propage automatiquement sur les trois nœuds physiques.\\
 
 \paratitle{Configuration au niveau nœud}
 
-\par Le deuxième niveau du pare-feu Proxmox s'applique directement à chaque nœud physique du cluster. La politique par défaut adoptée est \texttt{DROP} en entrée et \texttt{ACCEPT} en sortie. Sur chacun des trois nœuds PVE-01, PVE-02 et PVE-03, les cinq groupes de sécurité définis au niveau datacenter sont référencés, héritant automatiquement de toutes les règles et IPSets définis centralement. Le tableau~\ref{tab:fw-node-rules} résume les flux autorisés en entrée après application des groupes.
+\par Le deuxième niveau du pare-feu Proxmox s'applique directement à chaque nœud physique du cluster. La politique par défaut adoptée est \texttt{DROP} en entrée et \texttt{ACCEPT} en sortie. Sur chacun des trois nœuds PVE-01, PVE-02 et PVE-03, le pare-feu est activé et les cinq groupes de sécurité définis au niveau datacenter sont référencés. Cette approche hérite automatiquement de toutes les règles et IPSets définis centralement, sans nécessiter de redéfinition nœud par nœud.\\
+
+\par Le tableau~\ref{tab:fw-node-rules} résume les flux effectivement autorisés en entrée sur chaque nœud une fois les groupes de sécurité appliqués.\\
 
 \begin{table}[H]
 \centering
@@ -1099,8 +1036,6 @@ Prod (172.16.70.0/24) & WAN & BLOCK & Prod n'a pas d'accès Internet direct~; le
 \hline
 \texttt{ceph-storage} & IN & ACCEPT & 10.10.40.0/24 & 6800--7300 TCP \\
 \hline
-\texttt{ceph-storage} & IN & ACCEPT & 10.10.40.0/24 & 3300, 6789 TCP \\
-\hline
 \texttt{vxlan-overlay} & IN & ACCEPT & 192.168.10.0/24 & 4789 UDP \\
 \hline
 \texttt{migration-live} & IN & ACCEPT & 10.10.50.0/24 & any TCP \\
@@ -1108,15 +1043,18 @@ Prod (172.16.70.0/24) & WAN & BLOCK & Prod n'a pas d'accès Internet direct~; le
 \end{tabular}
 \end{table}
 
-\par L'accès à l'interface web Proxmox (port 8006) et au service SSH (port 22) est restreint au seul réseau de management \texttt{192.168.10.0/24}, empêchant tout accès non autorisé depuis les réseaux applicatifs. Le port 9283 est autorisé depuis le même réseau uniquement, de sorte que seul le conteneur \texttt{monitoring} (\texttt{192.168.10.99}) peut interroger l'endpoint Prometheus du MGR Ceph. Le trafic Corosync est limité au VxLAN 20, tandis que les communications Ceph sont isolées sur leurs VxLAN dédiés (30 et 40). Ces règles constituent un rempart de défense en profondeur : même en cas de compromission d'une VM applicative, l'hyperviseur reste inaccessible depuis les réseaux internes.
+\par L'accès à l'interface web Proxmox (port 8006) et au service SSH (port 22) est restreint au seul réseau de management \texttt{192.168.10.0/24}, empêchant tout accès non autorisé depuis les réseaux applicatifs. La règle ICMP, limitée au même réseau, permet les diagnostics de connectivité sans exposer les nœuds à des requêtes provenant des VMs internes. Le port 9283 est autorisé depuis le réseau de management uniquement, de sorte que seul le conteneur \texttt{monitoring} (\texttt{192.168.10.99}) peut interroger l'endpoint Prometheus du MGR Ceph, empêchant toute exfiltration des métriques d'infrastructure depuis les réseaux applicatifs. Le trafic Corosync est limité au réseau VxLAN 20 (\texttt{10.10.20.0/24}), tandis que les communications Ceph sont isolées sur leurs VxLAN dédiés (30 et 40). Enfin, le réseau de migration (VxLAN 50) est autorisé sans restriction de port, car Proxmox utilise des ports dynamiques pour le transfert de l'état mémoire des VMs lors des migrations live.\\
+
+\par Ces règles au niveau nœud constituent un premier rempart de défense en profondeur, garantissant que même en cas de compromission d'une VM applicative, l'hyperviseur reste inaccessible depuis les réseaux internes.\\
 
 \paratitle{Règles au niveau des VMs}
 
-\par Chaque VM applicative dispose de règles adaptées à son rôle selon le principe du moindre privilège. La révision a ajouté des règles ICMP pour les VMs Flask et PostgreSQL, absentes des configurations initiales alors qu'elles sont présentes sur HAProxy et nécessaires pour les diagnostics de connectivité depuis le réseau d'administration. Le tableau~\ref{tab:fw-vm-rules} détaille les règles en vigueur pour chaque VM après correction. Pour voir les détails des captures d'écran de cette configuration, veuillez consulter les annexes.
+\par Chaque VM dispose de règles de pare-feu adaptées à son rôle. Le principe appliqué est celui du moindre privilège : seuls les ports strictement nécessaires sont ouverts en entrée, et les flux sortants sont autorisés uniquement vers les destinations légitimes. Le tableau~\ref{tab:fw-vm-rules} détaille ces règles pour chaque VM applicative.\\
 
+% === MODIFICATION 3 : tableau tab:fw-vm-rules mis à jour ===
 \begin{table}[H]
 \centering
-\caption{Règles de pare-feu par VM applicative (après révision).}
+\caption{Règles de pare-feu par VM applicative.}
 \label{tab:fw-vm-rules}
 \begin{tabular}{|l|l|l|l|l|}
 \hline
@@ -1124,32 +1062,38 @@ Prod (172.16.70.0/24) & WAN & BLOCK & Prod n'a pas d'accès Internet direct~; le
 \hline
 HAProxy (201) & IN & ACCEPT & 0.0.0.0/0 & 8080 TCP \\
 \hline
-HAProxy (201) & IN & ACCEPT & \texttt{management-net} & 8404 TCP \\
+HAProxy (201) & IN & ACCEPT & management-net & 8404 TCP \\
 \hline
-HAProxy (201) & IN & ACCEPT & \texttt{management-net} & 22 TCP \\
+HAProxy (201) & IN & ACCEPT & management-net & 22 TCP \\
 \hline
-HAProxy (201) & IN & ACCEPT & \texttt{management-net} & ICMP \\
+HAProxy (201) & IN & ACCEPT & management-net & ICMP \\
 \hline
 HAProxy (201) & OUT & ACCEPT & -- & 8000 TCP \\
 \hline
-Flask app-1/2 & IN & ACCEPT & \texttt{haproxy} & 8000 TCP \\
+Flask app-1/2 & IN & ACCEPT & haproxy & 8000 TCP \\
 \hline
-Flask app-1/2 & IN & ACCEPT & \texttt{management-net} & 22 TCP \\
-\hline
-Flask app-1/2 & IN & ACCEPT & \texttt{management-net} & ICMP \textit{[ajouté]} \\
+Flask app-1/2 & IN & ACCEPT & management-net & 22 TCP \\
 \hline
 Flask app-1/2 & OUT & ACCEPT & -- & 5432 TCP \\
 \hline
-PostgreSQL (205) & IN & ACCEPT & \texttt{sona-web1}, \texttt{sona-web2} & 5432 TCP \\
+PostgreSQL (205) & IN & ACCEPT & app1, app2 & 5432 TCP \\
 \hline
-PostgreSQL (205) & IN & ACCEPT & \texttt{management-net} & 22 TCP \\
-\hline
-PostgreSQL (205) & IN & ACCEPT & \texttt{management-net} & ICMP \textit{[ajouté]} \\
+PostgreSQL (205) & IN & ACCEPT & management-net & 22 TCP \\
 \hline
 \end{tabular}
 \end{table}
 
-\par Ces règles garantissent que chaque VM ne communique qu'avec les composants dont elle dépend directement. Pour la VM HAProxy, le port \texttt{8404} TCP restreint au réseau de management expose l'interface web de statistiques native d'HAProxy, permettant de consulter en temps réel le nombre de connexions actives et l'état de chaque backend. La règle ICMP, limitée au réseau de management sur l'ensemble des VMs, autorise les diagnostics de connectivité sans exposer les machines aux réseaux internes. Tout autre flux est implicitement bloqué par la politique par défaut, assurant une isolation stricte entre les composants de l'application.\\
+\par Ces règles garantissent que chaque VM ne communique qu'avec les
+composants dont elle dépend directement. Pour la VM HAProxy, deux règles
+supplémentaires ont été ajoutées : le port \texttt{8404} TCP, restreint au
+réseau de management, expose l'interface web de statistiques native
+d'HAProxy, permettant de consulter en temps réel le nombre de connexions
+actives, les codes de réponse et l'état de chaque backend sans passer par
+Grafana. La règle ICMP, également limitée au réseau de management, autorise
+les diagnostics de connectivité vers le frontal sans l'exposer aux réseaux
+internes. Tout autre flux est implicitement bloqué par la politique par
+défaut, assurant une isolation stricte entre les composants de
+l'application.\\
 
 \subsection{Validation de la haute disponibilité réseau et applicative}
 
