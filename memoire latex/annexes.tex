@@ -661,3 +661,74 @@ source /etc/network/interfaces.d/*
 \end{figure}
 
 \par La Figure~\ref{fig:rundeck-execution} présente la page de détail d'une exécution Rundeck. On y observe le statut global \texttt{Succeeded}, le nom du job déclenché, la durée d'exécution et le journal Ansible complet listant chaque tâche avec son état (\texttt{ok}, \texttt{changed} ou \texttt{skipped}). Le bouton ``Re-run'' permet de relancer le même job avec les mêmes paramètres sans repasser par le formulaire de création.\\
+
+% ============================================================
+\chapter{Configuration du Pare-feu}
+\label{ann:fw}
+% ============================================================
+
+\par Cette annexe présente les captures d'écran des configurations de pare-feu déployées dans l'infrastructure. Elle couvre les règles OPNsense inter-zones, les IPSets et groupes de sécurité Proxmox, ainsi que les règles par VM. Ces captures permettent de vérifier visuellement la correspondance entre les tableaux du chapitre IV et les paramètres effectivement appliqués dans les interfaces de gestion.
+
+\section*{D.1 \quad Règles de Filtrage OPNsense}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Règles de filtrage inter-zones dans l'interface OPNsense (\texttt{Firewall -> Rules}).}
+  [CAPTURE : ouvrir OPNsense, aller dans Firewall $\to$ Rules,
+  capturer les onglets LAN (Dev), OPT1 (Prod), OPT2 (DMZ) et WAN
+  montrant les règles ALLOW et BLOCK telles que configurées]
+  \label{fig:ann-fw-opnsense-rules}
+\end{figure}
+
+\par La Figure~\ref{fig:ann-fw-opnsense-rules} présente les règles de filtrage configurées dans OPNsense pour chacune des trois zones applicatives. On y retrouve les règles ALLOW pour les flux autorisés (Dev vers WAN, DMZ vers WAN, DMZ vers Prod port 8000) et les règles BLOCK pour les flux interdits (Dev vers Prod, Dev vers DMZ, Prod vers WAN), conformément au tableau~\ref{tab:fw-opnsense-rules} du chapitre IV.\\
+
+\section*{D.2 \quad IPSets et Alias Proxmox}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{IPSets et alias configurés au niveau datacenter dans le pare-feu Proxmox.}
+  [CAPTURE : dans l'interface Proxmox, aller dans Datacenter $\to$ Firewall $\to$ IPSets,
+  capturer la liste des cinq IPSets (management-net, corosync-net, ceph-cluster-net,
+  ceph-public-net, migration-net) et leurs membres]
+  \label{fig:ann-fw-proxmox-ipsets}
+\end{figure}
+
+\par La Figure~\ref{fig:ann-fw-proxmox-ipsets} présente les cinq IPSets conservés après la suppression du doublon \texttt{vxlan-phys-net}, conformément au tableau~\ref{tab:fw-datacenter-ipsets} du chapitre IV. Chaque IPSet regroupe les adresses d'un réseau logique distinct et est référencé par les groupes de sécurité pour éviter la duplication des règles.\\
+
+\section*{D.3 \quad Groupes de Sécurité Proxmox}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Groupes de sécurité configurés au niveau datacenter dans le pare-feu Proxmox.}
+  [CAPTURE : dans Proxmox $\to$ Datacenter $\to$ Firewall $\to$ Security Groups,
+  capturer la liste des groupes et, pour le groupe ceph-storage,
+  les quatre entrées dont les deux nouvelles sur ceph-public-net]
+  \label{fig:ann-fw-proxmox-secgroups}
+\end{figure}
+
+\par La Figure~\ref{fig:ann-fw-proxmox-secgroups} présente les groupes de sécurité après révision. Le groupe \texttt{ceph-storage} affiche désormais quatre entrées : deux pour le réseau interne (\texttt{ceph-cluster-net}) et deux pour le réseau public (\texttt{ceph-public-net}), conformément au tableau~\ref{tab:fw-security-groups} du chapitre IV.\\
+
+\section*{D.4 \quad Règles Pare-feu par VM}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Règles de pare-feu de la VM HAProxy dans l'interface Proxmox.}
+  [CAPTURE : dans Proxmox, sélectionner la VM HAProxy (201) $\to$ Firewall,
+  capturer la liste des règles IN et OUT avec les ports 8080, 8404, 22 et ICMP]
+  \label{fig:ann-fw-vm-haproxy}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \caption{Règles de pare-feu des VMs Flask et PostgreSQL dans l'interface Proxmox.}
+  [CAPTURE : dans Proxmox, sélectionner une VM Flask $\to$ Firewall et la VM PostgreSQL (205) $\to$ Firewall,
+  capturer les règles incluant les entrées ICMP ajoutées depuis management-net]
+  \label{fig:ann-fw-vm-flask-pg}
+\end{figure}
+
+\par Les figures~\ref{fig:ann-fw-vm-haproxy} et~\ref{fig:ann-fw-vm-flask-pg} présentent les règles de pare-feu appliquées aux VMs applicatives après révision, conformément au tableau~\ref{tab:fw-vm-rules} du chapitre IV. On y observe notamment les règles ICMP ajoutées sur les VMs Flask et PostgreSQL, absentes de la configuration initiale.\\
