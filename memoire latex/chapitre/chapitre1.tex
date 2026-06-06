@@ -4,74 +4,77 @@
 
 \section{Introduction}
 
-\par Ce chapitre présente le contexte dans lequel s'inscrit notre projet de fin d'études. Nous y aborderons les fondements de l'hyperconvergence, les enjeux liés à la virtualisation et à la gestion unifiée des ressources informatiques, ainsi que les besoins spécifiques de l'entreprise Sonatrach. Ce contexte permettra de mieux saisir les choix technologiques et les objectifs fixés pour le déploiement d'une infrastructure Cloud privée hyperconvergée basée sur des solutions open source.\\
+\par Ce chapitre présente le contexte de notre projet de fin d'études. On commence par présenter Sonatrach, l'entreprise d'accueil, puis on décrit l'infrastructure existante et les problèmes qu'elle pose. Ensuite on définit la problématique, les objectifs et les limites du projet.\\
 
 \section{Présentation de Sonatrach}
 
-\par Sonatrach est une entreprise publique algérienne créée le 31 décembre 1963, peu après l’indépendance de l’Algérie. Elle a été fondée dans le but de gérer, développer et exploiter les ressources hydrocarbures du pays, qui représentent une richesse stratégique pour l’économie nationale. À ses débuts, Sonatrach se consacrait essentiellement au transport et à la commercialisation du pétrole brut extrait en Algérie. \\
+\par Sonatrach est une entreprise publique algérienne créée le 31 décembre 1963, peu après l'indépendance. Au départ, elle s'occupait surtout du transport et de la commercialisation du pétrole brut extrait en Algérie.\\
 
-\par Avec le temps, Sonatrach a évolué pour devenir la plus grande entreprise en Afrique dans le domaine des hydrocarbures. Elle intervient aujourd’hui dans l’ensemble de la chaîne de valeur pétrolière et gazière : exploration, production, transport, transformation et commercialisation. L’entreprise est également active dans la pétrochimie et les énergies renouvelables. \\
+\par Avec le temps, Sonatrach est devenue la plus grande entreprise africaine dans le domaine des hydrocarbures. Elle couvre aujourd'hui toute la chaîne de valeur : exploration, production, transport, transformation et commercialisation. Elle est aussi active dans la pétrochimie et les énergies renouvelables.\\
 
-\par Dans les années 1970, suite à la nationalisation des hydrocarbures, Sonatrach a renforcé son rôle stratégique en prenant le contrôle total des ressources naturelles du pays. Cela a permis à l’Algérie de mieux contrôler ses revenus énergétiques et d’investir davantage dans son développement économique et social. \\
+\par La figure~\ref{fig:logo-sonatrach} présente le logo officiel de Sonatrach.\\
 
-\par Sonatrach entretient de nombreuses collaborations internationales avec des compagnies pétrolières et gazières étrangères. Elle est impliquée dans de grands projets de partenariat à travers des joint-ventures et accords technologiques, notamment avec des entreprises européennes, américaines, asiatiques et africaines. Ces coopérations ont permis un transfert de savoir-faire et de technologie vers l’Algérie. \\
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[width=0.35\textwidth]{image/ch1/logo-sonatrach.png}
+        \caption{Logo de Sonatrach}
+        \label{fig:logo-sonatrach}
+    \end{center}
+\end{figure}
 
-\par Sonatrach est également engagée dans la stratégie énergétique nationale, notamment dans la sécurité d’approvisionnement, la réduction progressive des émissions carbonées et le développement de nouveaux secteurs tels que le gaz naturel liquéfié (GNL), le gaz de schiste et les énergies renouvelables. \\
+\par Après la nationalisation des hydrocarbures dans les années 1970, Sonatrach a pris le contrôle total des ressources naturelles du pays. Elle travaille aujourd'hui en partenariat avec de nombreuses compagnies étrangères, à travers des ``joint-ventures'' et des accords technologiques avec des entreprises européennes, américaines, asiatiques et africaines. Aujourd'hui, Sonatrach opère dans plusieurs pays et représente l'une des principales sources d'exportation pour l'Algérie~\cite{ref1}.\\
 
-\par Aujourd’hui, Sonatrach opère dans plusieurs pays et représente l’un des principaux postes des exportations algériennes~\cite{ref1}.\\
+\par Notre projet a été réalisé au sein du Centre d'Innovation, qui dépend de la Direction Infrastructure et Service IT, elle-même rattachée à la Direction Centrale Digitalisation et Systèmes d'Information (DC DSI) de Sonatrach. L'organigramme de la figure~\ref{fig:organigramme-dcdsi} illustre la position du Centre d'Innovation au sein de cette structure.\\
 
-% Image à ajouter plus tard
-% \begin{figure}[h]
-%     \begin{center}
-%       \includegraphics[width=1\textwidth]{image-sonatrach.jpg}
-%       \caption{Légende de l'image}
-%       \label{fig:sonatrach}
-%%    \end{center}
-% \end{figure}
-
-\par Le projet est réalisé au sein du Data Center de la Direction Centrale Recherche et Développement (DC R&D) de Sonatrach. Cette direction coordonne les travaux de recherche appliquée en exploration et production et supervise l’optimisation des processus associés. Elle dispose de clusters de calcul et de solutions de stockage haute capacité dédiés à la simulation et au traitement sismique. C’est dans ce cadre que s’inscrit notre projet, avec pour objectif de renforcer les capacités de calcul et d’améliorer l’efficacité du traitement sismique grâce à une architecture HPC (``High Performance Computing'') performante.\\
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[width=1\textwidth]{image/ch1/organigramme-dcdsi.png}
+        \caption{Organigramme de la Direction Centrale Digitalisation et Systèmes d'Information}
+        \label{fig:organigramme-dcdsi}
+    \end{center}
+\end{figure}
 
 \section{Infrastructure Existante et Contexte Technologique}
 
-\par Cette section décrit l'environnement technologique dans lequel s'inscrit le projet. Elle présente d'abord l'infrastructure hyperconvergée actuellement déployée au sein de Sonatrach, puis les besoins spécifiques qui justifient la recherche d'une alternative open source pour les zones de test.\\
+\par Cette section décrit l'environnement technologique dans lequel s'inscrit le projet. Elle présente d'abord l'infrastructure hyperconvergée actuelle de Sonatrach, puis les besoins qui justifient la recherche d'une alternative open source pour les zones de test.\\
 
 \subsection{Infrastructure actuelle de Sonatrach}
 
-\par Sonatrach dispose actuellement d'une infrastructure hyperconvergée reposant sur deux solutions propriétaires complémentaires : Nutanix et VMware vSAN. Nutanix, déployé à l'échelle nationale sur plusieurs wilayas, équipe les infrastructures de grande envergure et les environnements de production critiques, tandis que VMware vSAN est privilégié pour les déploiements de plus petite taille. Ces deux solutions sont bien établies dans le domaine, avec une gestion centralisée, une haute disponibilité et une scalabilité éprouvées.\\
+\par Sonatrach dispose actuellement d'une infrastructure hyperconvergée basée sur deux solutions propriétaires : Nutanix et VMware vSAN. Nutanix est déployé à grande échelle sur plusieurs sites pour les environnements de production critiques, tandis que VMware vSAN est utilisé pour les déploiements de plus petite taille. Ces deux solutions sont bien établies, avec une gestion centralisée, une haute disponibilité et une scalabilité éprouvées.\\
 
-\par Cependant, ces solutions propriétaires présentent des contraintes structurelles communes qui deviennent de plus en plus préoccupantes dans une perspective d'évolution à long terme :\\
+\par Cependant, ces solutions présentent des contraintes qui deviennent préoccupantes sur le long terme :\\
 
 \begin{itemize}
 
-    \item \textbf{Coûts de licences croissants :} les frais de licence de ces plateformes propriétaires, Nutanix comme VMware, suivent une trajectoire haussière, représentant une charge financière significative et récurrente pour l'entreprise, indépendamment du niveau d'utilisation réel des plateformes.
+    \item \textbf{Coûts de licences croissants :} les frais de licence de Nutanix et VMware augmentent régulièrement et représentent une charge financière importante pour l'entreprise, indépendamment du niveau d'utilisation réel.
 
-    \item \textbf{Dépendance technologique forte :} le recours exclusif à des éditeurs propriétaires expose Sonatrach à un risque de ``vendor lock-in'', limitant sa capacité à négocier les conditions contractuelles et à adopter librement de nouvelles technologies.
+    \item \textbf{Dépendance technologique forte :} le recours exclusif à des éditeurs propriétaires crée un risque de ``vendor lock-in'', ce qui limite la capacité de négociation et l'adoption de nouvelles technologies.
 
-    \item \textbf{Manque de souveraineté technique :} les évolutions des plateformes, les mises à jour et les décisions d'architecture sont entièrement soumises à l'orientation technique des éditeurs, sans possibilité d'adaptation aux besoins spécifiques de l'entreprise.
+    \item \textbf{Manque de souveraineté technique :} toutes les décisions sur les évolutions et mises à jour sont imposées par les éditeurs, sans possibilité d'adaptation aux besoins spécifiques de Sonatrach.
 
-    \item \textbf{Inadaptation aux petits déploiements :} pour les environnements de test, de développement et de pré-production, le déploiement d'une solution propriétaire de ce type sur de petits clusters de 3 à 4 n\oe{}uds reste disproportionné par rapport aux besoins réels, tant en complexité qu'en coût.
+    \item \textbf{Inadaptation aux petits déploiements :} pour les environnements de test et de développement sur des clusters de 3 à 4 n\oe{}uds, ces solutions propriétaires sont disproportionnées par rapport aux besoins réels, tant en complexité qu'en coût.
 
 \end{itemize}
 
-\par Ce projet répond donc à un besoin concret de Sonatrach : explorer et valider la viabilité d'une infrastructure hyperconvergée open source, d'abord en environnement de test, et potentiellement en production à terme.\\
+\par Ce projet cherche donc à valider la viabilité d'une infrastructure hyperconvergée open source, d'abord en environnement de test, avec la possibilité de passer en production à terme.\\
 
 \subsection{Les besoins en infrastructure légère pour les zones de test}
 
-\par Au-delà des besoins immédiats en environnements de test et de pré-production, Sonatrach a besoin d'une infrastructure qui réponde à des exigences opérationnelles précises, tout en s'affranchissant des contraintes des solutions propriétaires. Ces besoins couvrent plusieurs dimensions :\\
+\par Pour les environnements de test et de pré-production, Sonatrach a besoin d'une infrastructure qui réponde à des exigences précises sans les contraintes des solutions propriétaires :\\
 
 \begin{itemize}
 
-    \item \textbf{Fiabilité et haute disponibilité :} l'infrastructure doit garantir la continuité de service en cas de défaillance d'un ou plusieurs n\oe{}uds, avec basculement automatique des charges de travail sans intervention humaine.
+    \item \textbf{Fiabilité et haute disponibilité :} l'infrastructure doit continuer à fonctionner si un n\oe{}ud tombe en panne, avec basculement automatique des machines virtuelles sans intervention humaine.
 
-    \item \textbf{Performance et scalabilité :} la solution doit pouvoir monter en charge progressivement, en ajoutant des n\oe{}uds au cluster sans interruption de service, pour accompagner la croissance des besoins de l'entreprise.
+    \item \textbf{Performance et scalabilité :} la solution doit pouvoir s'agrandir en ajoutant des n\oe{}uds au cluster sans interruption de service.
 
-    \item \textbf{Gestion unifiée des ressources :} calcul, stockage et réseau doivent être administrés depuis une interface centralisée unique, réduisant la complexité opérationnelle et les besoins en compétences spécialisées multiples.
+    \item \textbf{Gestion unifiée des ressources :} le calcul, le stockage et le réseau doivent être administrés depuis une seule interface centralisée.
 
-    \item \textbf{Équilibrage dynamique de charge :} la plateforme doit être capable de redistribuer automatiquement les charges de travail entre les n\oe{}uds en fonction de l'utilisation des ressources, optimisant ainsi l'efficacité globale du cluster.
+    \item \textbf{Équilibrage dynamique de charge :} la plateforme doit redistribuer automatiquement les machines virtuelles entre les n\oe{}uds selon leur utilisation des ressources.
 
-    \item \textbf{Souveraineté et indépendance technologique :} en s'appuyant exclusivement sur des technologies open source, l'entreprise reprend le contrôle total de son infrastructure, avec la liberté d'auditer, de modifier et d'adapter la solution à ses besoins propres.
+    \item \textbf{Souveraineté et indépendance technologique :} en s'appuyant uniquement sur des technologies open source, Sonatrach reprend le contrôle total de son infrastructure.
 
-    \item \textbf{Réduction du coût total de possession (TCO) :} l'absence de licences propriétaires représente une économie substantielle sur le long terme, réallouable vers des investissements matériels ou humains.
+    \item \textbf{Réduction du coût total de possession (TCO) :} l'absence de licences propriétaires représente une économie importante sur le long terme, réallouable vers des investissements matériels ou humains.
 
 \end{itemize}
 
@@ -81,15 +84,15 @@
 
 \par \textbf{Comment concevoir et déployer une infrastructure Cloud privée hyperconvergée, entièrement basée sur des technologies open source, capable de répondre aux exigences de fiabilité, de performance et de scalabilité d'une grande entreprise industrielle, tout en constituant une alternative crédible et souveraine aux solutions propriétaires de type Nutanix ?}\\
 
-\par Cette problématique soulève plusieurs questions techniques structurantes :\\
+\par Cette problématique soulève plusieurs questions techniques :\\
 
 \begin{itemize}
 
-    \item Comment concevoir un système de stockage distribué, redondant et performant garantissant l'intégrité des données en cas de défaillance d'un n\oe{}ud ?
+    \item Comment concevoir un système de stockage distribué, redondant et performant qui garantit l'intégrité des données en cas de défaillance d'un n\oe{}ud ?
 
     \item Comment assurer le basculement et l'équilibrage automatique des charges de travail dans un cluster à plusieurs n\oe{}uds, sans perte de données ni interruption prolongée de service ?
 
-    \item Comment segmenter et isoler strictement les flux réseau au sein d'une infrastructure hyperconvergée, en séparant les trafics de gestion, de réplication, de migration et de production ?
+    \item Comment segmenter et isoler les différents flux réseau au sein d'une infrastructure hyperconvergée, en séparant les trafics de gestion, de réplication, de migration et de production ?
 
     \item Dans quelle mesure une solution open source peut-elle répondre aux exigences d'une infrastructure de niveau production dans le contexte d'une grande entreprise ?
 
@@ -97,11 +100,11 @@
 
 \section{Objectifs du Projet}
 
-\par Les objectifs du projet se déclinent en un objectif général, qui fixe la finalité globale de la démarche, et en plusieurs objectifs spécifiques précisant les réalisations techniques attendues.\\
+\par Les objectifs du projet se déclinent en un objectif général et en plusieurs objectifs spécifiques précisant les réalisations techniques attendues.\\
 
 \subsection{Objectif général}
 
-\par Concevoir et déployer une infrastructure Cloud privée hyperconvergée, entièrement open source, sur trois serveurs physiques Dell PowerEdge R720 mis à disposition par Sonatrach, offrant des garanties de fiabilité, de performance et d'évolutivité comparables aux solutions propriétaires de type Nutanix, et constituant une alternative stratégique à moyen et long terme.\\
+\par Concevoir et déployer une infrastructure Cloud privée hyperconvergée entièrement open source sur trois serveurs physiques Dell PowerEdge R720 mis à disposition par Sonatrach, offrant des garanties de fiabilité, de performance et d'évolutivité comparables aux solutions propriétaires de type Nutanix.\\
 
 \subsection{Objectifs spécifiques}
 
@@ -109,38 +112,38 @@
 
     \item \textbf{Déployer un cluster de trois n\oe{}uds physiques à haute disponibilité} sur les serveurs Dell PowerEdge R720 fournis par Sonatrach, avec gestion centralisée, administration simplifiée et support de la migration à chaud.
 
-    \item \textbf{Configurer Proxmox VE sur chaque serveur physique} en exploitant pleinement les ressources matérielles disponibles (256 Go de RAM, 5 disques SAS (``Serial Attached SCSI'') par n\oe{}ud).
+    \item \textbf{Configurer Proxmox VE sur chaque serveur physique} en exploitant pleinement les ressources matérielles disponibles : 64 Go de RAM pour PVE-01, 254 Go pour PVE-02 et PVE-03, et 5 disques SAS (``Serial Attached SCSI'') par n\oe{}ud.
 
-    \item \textbf{Concevoir et mettre en place un système de stockage distribué Ceph} en s'appuyant sur les disques SAS 600 Go de chaque n\oe{}ud pour le stockage distribué, et les disques 300 Go pour le système d'exploitation.
+    \item \textbf{Mettre en place un système de stockage distribué Ceph} en allouant quatre disques par n\oe{}ud comme OSDs Ceph (1 × 300 Go et 3 × 600 Go), le cinquième disque de 300 Go étant réservé au système d'exploitation.
 
-    \item \textbf{Implémenter une segmentation réseau avancée} via Open vSwitch, en configurant une architecture multi-VLAN séparant les flux de gestion, de réplication, de migration et de production sur l'infrastructure physique réelle.
+    \item \textbf{Implémenter une segmentation réseau avancée} via Open vSwitch, en configurant une architecture multi-VXLAN séparant les flux de gestion, de réplication, de migration et de production.
 
     \item \textbf{Développer un mécanisme d'équilibrage dynamique de la charge}, capable de redistribuer automatiquement les machines virtuelles selon les métriques de performance en temps réel.
 
     \item \textbf{Valider la solution} à travers un scénario de haute disponibilité démontrant la tolérance aux pannes sans perte de données ni interruption de service.
 
-    \item \textbf{Fournir une base d'infrastructure évolutive}, accompagnée d'une documentation technique et d'une conception architecturale réutilisable à plus grande échelle au sein de Sonatrach.
+    \item \textbf{Fournir une base d'infrastructure évolutive}, accompagnée d'une documentation technique réutilisable à plus grande échelle au sein de Sonatrach.
 
 \end{itemize}
 
 \section{Périmètre et Limitations du Projet}
 
-\par Ce projet vise le déploiement d'un cluster hyperconvergé open source destiné aux environnements de test, de développement et de pré-production. L'infrastructure est déployée sur un cluster physique de trois serveurs Dell PowerEdge R720 mis à disposition par Sonatrach, offrant les ressources matérielles nécessaires à l'exécution de l'hyperviseur Proxmox VE directement sur le matériel physique, du stockage distribué Ceph et des machines virtuelles de démonstration.\\
+\par Ce projet vise le déploiement d'un cluster hyperconvergé open source destiné aux environnements de test, de développement et de pré-production. L'infrastructure est déployée sur trois serveurs Dell PowerEdge R720 mis à disposition par Sonatrach.\\
 
-\par Le passage à une architecture physique distribuée lève la contrainte majeure du point de défaillance unique (SPOF) matériel. Néanmoins, le périmètre de ce projet se limite volontairement à un environnement de laboratoire structuré, ce qui implique les contraintes suivantes :\\
+\par Le déploiement sur une architecture physique distribuée élimine le problème du point de défaillance unique (SPOF) matériel. Cependant, le périmètre reste volontairement limité à un environnement de laboratoire, ce qui implique les contraintes suivantes :\\
 
 \begin{itemize}
 
-    \item \textbf{Capacité de stockage :} La taille du pool de stockage distribué est techniquement contrainte par les disques physiques alloués au stockage (3 disques de 600 Go par serveur). Avec une réplication de facteur 3, le cluster offre environ 1,8 To d'espace utilisable. Cela rend cette infrastructure parfaitement adaptée aux charges de développement et de validation, mais insuffisante pour des charges de données à très grande échelle.
+    \item \textbf{Capacité de stockage :} chaque serveur dispose de quatre disques OSD (1 × 300 Go + 3 × 600 Go, soit 2,1 To brut par n\oe{}ud). Avec une réplication de facteur 3, le cluster offre environ 2,1 To d'espace utilisable. C'est suffisant pour des charges de développement et de validation, mais insuffisant pour des données à très grande échelle.
 
-    \item \textbf{Limite de configuration du commutateur :} la segmentation réseau avancée repose sur une configuration précise des commutateurs physiques (affectation des ports aux VLANs, mode trunk). Cette configuration est du ressort exclusif de l'équipe réseau de Sonatrach et ne peut être modifiée dans le cadre de ce projet.
+    \item \textbf{Limite de configuration du commutateur :} la segmentation réseau repose sur une configuration précise des commutateurs physiques (affectation des ports, mode trunk). Cette configuration est gérée exclusivement par l'équipe réseau de Sonatrach et ne peut pas être modifiée dans le cadre de ce projet.
 
-    \item \textbf{Absence de multilocation :} Proxmox VE, dans la configuration mise en \oe{}uvre, est orienté Cloud privé. La gestion multilocataire stricte (isolation forte entre différents clients ou départements totalement hermétiques), propre aux environnements Cloud publics, n'entre pas dans le périmètre de ce projet.
+    \item \textbf{Absence de multilocation :} la configuration mise en \oe{}uvre est orientée Cloud privé. La gestion multilocataire stricte, propre aux environnements Cloud publics, n'entre pas dans le périmètre de ce projet.
 
-    \item \textbf{Maintenance à long terme :} La gestion opérationnelle continue de l'infrastructure (cycle de mises à jour, configuration d'un serveur de sauvegarde externe sécurisé, gestion des pannes matérielles physiques) n'est pas couverte par la phase de déploiement de ce projet et constitue une perspective d'évolution naturelle pour l'équipe d'exploitation.
+    \item \textbf{Maintenance à long terme :} la gestion opérationnelle continue de l'infrastructure (mises à jour, sauvegardes, pannes matérielles) n'est pas couverte par ce projet et constitue une perspective d'évolution naturelle pour l'équipe d'exploitation.
 
 \end{itemize}
 
 \section{Conclusion}
 
-\par Dans ce chapitre, nous avons présenté le contexte général du projet, les besoins identifiés au sein de Sonatrach, et la problématique qui motive notre démarche. Nous avons défini les objectifs, le périmètre et les limites du projet. Ce cadre nous permettra d'aborder, dans le chapitre suivant, l'état de l'art des solutions disponibles et les fondements théoriques de l'hyperconvergence, de la virtualisation et des technologies retenues.\\
+\par Dans ce chapitre, on a présenté le contexte du projet, les besoins identifiés au sein de Sonatrach et la problématique qui motive notre démarche. On a défini les objectifs, le périmètre et les limites du projet. Le chapitre suivant présente l'état de l'art des solutions disponibles et les bases théoriques de l'hyperconvergence et des technologies retenues.\\
