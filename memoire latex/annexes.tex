@@ -16,8 +16,6 @@
 \label{ann:grafana}
 % ============================================================
 
-\par Cette annexe présente les captures complètes des tableaux de bord Grafana déployés pour superviser l'ensemble de l'infrastructure hyperconvergée. Ces dashboards sont accessibles depuis l'interface Grafana sur le conteneur LXC \texttt{monitoring} (\texttt{192.168.10.99}).\\
-
 \section*{A.1 \quad Dashboard Infrastructure Proxmox}
 
 \begin{figure}[H]
@@ -26,8 +24,6 @@
     \caption{Dashboard Grafana Infrastructure -- vue complète des métriques CPU, mémoire et réseau des trois nœuds Proxmox.}
     \label{fig:ann-grafana-proxmox-full}
 \end{figure}
-
-\par Ce tableau de bord, alimenté par InfluxDB via le mécanisme natif ``Metric Server'' de Proxmox, affiche en temps réel l'utilisation du CPU, la mémoire disponible, la charge réseau et le nombre de VMs en cours d'exécution pour chacun des trois nœuds PVE-01, PVE-02 et PVE-03. Les séries temporelles permettent d'identifier les tendances de charge sur les dernières heures et de corréler les événements de migration CLBS avec l'évolution des ressources.\\
 
 \section*{A.2 \quad Dashboard Cluster Ceph}
 
@@ -38,8 +34,6 @@
     \label{fig:ann-grafana-ceph-full}
 \end{figure}
 
-\par Ce tableau de bord, alimenté par Prometheus via le module MGR Ceph, centralise les métriques de santé du cluster : état global (\texttt{HEALTH\_OK}/\texttt{HEALTH\_WARN}), capacité utilisée et disponible par pool, débit I/O en lecture et écriture, latence des OSDs et taux de réplication en temps réel. Il constitue la vue de référence pour diagnostiquer tout incident affectant la couche stockage.\\
-
 \section*{A.3 \quad Journaux Système via Loki}
 
 \begin{figure}[H]
@@ -49,14 +43,10 @@
     \label{fig:ann-grafana-loki-full}
 \end{figure}
 
-\par Ce tableau de bord, utilisant Loki comme source de données dans Grafana, permet d'interroger les journaux système de l'ensemble des nœuds et VMs via le langage LogQL. Les logs sont filtrables par hôte (label \texttt{host}), par fichier source (label \texttt{filename}) et par niveau de sévérité. Cette vue unifiée coexiste avec les tableaux de bord de métriques, offrant une corrélation directe entre les événements système et les variations de charge.\\
-
 % ============================================================
 \chapter{Configuration Complète des Interfaces Réseau}
 \label{ann:vxlan}
 % ============================================================
-
-\par Cette annexe présente le fichier \texttt{/etc/network/interfaces} complet de chacun des trois nœuds Proxmox. Ces fichiers définissent l'ensemble des tunnels VxLAN point-à-point en maillage complet ainsi que les bridges OVS associés. Seule l'adresse IP du bridge de management et les adresses des interfaces internes diffèrent d'un nœud à l'autre.\\
 
 \section*{B.1 \quad Configuration complète de PVE-01}
 
@@ -648,8 +638,6 @@ source /etc/network/interfaces.d/*
 \label{ann:rundeck}
 % ============================================================
 
-\par Cette annexe présente le résultat d'une exécution complète d'un job Rundeck déclenché depuis l'interface web. Le job exécuté est \textbf{Provision VM}, qui invoque le playbook Ansible \texttt{provision\_vm.yml} pour créer une machine virtuelle à partir du template Debian stocké dans le pool Ceph.\\
-
 \begin{figure}[H]
   \centering
   \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
@@ -660,14 +648,9 @@ source /etc/network/interfaces.d/*
   \label{fig:rundeck-execution}
 \end{figure}
 
-\par La Figure~\ref{fig:rundeck-execution} présente la page de détail d'une exécution Rundeck. On y observe le statut global \texttt{Succeeded}, le nom du job déclenché, la durée d'exécution et le journal Ansible complet listant chaque tâche avec son état (\texttt{ok}, \texttt{changed} ou \texttt{skipped}). Le bouton ``Re-run'' permet de relancer le même job avec les mêmes paramètres sans repasser par le formulaire de création.\\
-
-% ============================================================
 \chapter{Configuration du Pare-feu}
 \label{ann:fw}
 % ============================================================
-
-\par Cette annexe présente les captures d'écran des configurations de pare-feu déployées dans l'infrastructure. Elle couvre les règles OPNsense inter-zones, les IPSets et groupes de sécurité Proxmox, ainsi que les règles par VM. Ces captures permettent de vérifier visuellement la correspondance entre les tableaux du chapitre IV et les paramètres effectivement appliqués dans les interfaces de gestion.
 
 \section*{D.1 \quad Règles de Filtrage OPNsense}
 
@@ -681,7 +664,6 @@ source /etc/network/interfaces.d/*
   \label{fig:ann-fw-opnsense-rules}
 \end{figure}
 
-\par La Figure~\ref{fig:ann-fw-opnsense-rules} présente les règles de filtrage configurées dans OPNsense pour chacune des trois zones applicatives. On y retrouve les règles ALLOW pour les flux autorisés (Dev vers WAN, DMZ vers WAN, DMZ vers Prod port 8000) et les règles BLOCK pour les flux interdits (Dev vers Prod, Dev vers DMZ, Prod vers WAN), conformément au tableau~\ref{tab:fw-opnsense-rules} du chapitre IV.\\
 
 \section*{D.2 \quad IPSets et Alias Proxmox}
 
@@ -695,7 +677,6 @@ source /etc/network/interfaces.d/*
   \label{fig:ann-fw-proxmox-ipsets}
 \end{figure}
 
-\par La Figure~\ref{fig:ann-fw-proxmox-ipsets} présente les cinq IPSets conservés après la suppression du doublon \texttt{vxlan-phys-net}, conformément au tableau~\ref{tab:fw-datacenter-ipsets} du chapitre IV. Chaque IPSet regroupe les adresses d'un réseau logique distinct et est référencé par les groupes de sécurité pour éviter la duplication des règles.\\
 
 \section*{D.3 \quad Groupes de Sécurité Proxmox}
 
@@ -709,7 +690,6 @@ source /etc/network/interfaces.d/*
   \label{fig:ann-fw-proxmox-secgroups}
 \end{figure}
 
-\par La Figure~\ref{fig:ann-fw-proxmox-secgroups} présente les groupes de sécurité après révision. Le groupe \texttt{ceph-storage} affiche désormais quatre entrées : deux pour le réseau interne (\texttt{ceph-cluster-net}) et deux pour le réseau public (\texttt{ceph-public-net}), conformément au tableau~\ref{tab:fw-security-groups} du chapitre IV.\\
 
 \section*{D.4 \quad Règles Pare-feu par VM}
 
@@ -730,5 +710,3 @@ source /etc/network/interfaces.d/*
   capturer les règles incluant les entrées ICMP ajoutées depuis management-net]
   \label{fig:ann-fw-vm-flask-pg}
 \end{figure}
-
-\par Les figures~\ref{fig:ann-fw-vm-haproxy} et~\ref{fig:ann-fw-vm-flask-pg} présentent les règles de pare-feu appliquées aux VMs applicatives après révision, conformément au tableau~\ref{tab:fw-vm-rules} du chapitre IV. On y observe notamment les règles ICMP ajoutées sur les VMs Flask et PostgreSQL, absentes de la configuration initiale.\\

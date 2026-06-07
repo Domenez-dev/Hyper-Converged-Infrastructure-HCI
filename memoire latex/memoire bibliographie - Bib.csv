@@ -1,11 +1,10 @@
 ﻿[1],"I. N. Sonatrach. (2012, août 13). « Historique et évolution ». Institut-numérique. https://www.institut-numerique.org/2-historique-et-evolution-5028f58cb09d3"
 [2],"Schneider, J., Susnjara, S., et Smalley, I. (2024, 12 février). « Hyperconverged infrastructure explained ». IBM. https://www.ibm.com/think/topics/hyperconverged-infrastructure"
-,
+[3],"Tiago Rosado and Jorge Bernardino. 2014. An overview of openstack architecture. In Proceedings of the 18th International Database Engineering &amp; Applications Symposium (IDEAS '14). Association for Computing Machinery, New York, NY, USA, 366–367. https://doi.org/10.1145/2628194.2628195"
 [4],"Pande, A. (2025, February 23). « Proxmox vs. Harvester: Can the enterprise-grade platform beat the community favorite?» XDA Developers. https://www.xda-developers.com/proxmox-vs-harvester/"
 [5],SUSE. (s. d.). « Harvester HCI documentation ». Harvester HCI. https://harvesterhci.io/
-[6],"Proxmox Server Solutions. (s. d.). « Proxmox virtual environment overview ». Proxmox.
-https://www.proxmox.com/en/products/proxmox-virtual-environment/overview"
-,
+[6],"Proxmox Server Solutions. (s. d.). « Proxmox virtual environment overview ». Proxmox. https://www.proxmox.com/en/products/proxmox-virtual-environment/overview"
+[7],"Azeem, Shaikh Abdul, and Satyendra Kumar Sharma. 'Study of converged infrastructure & hyper converge infrastructre as future of data centre'. International Journal of Advanced Research in Computer Science 8.5 (2017): 900-903."
 [8],Open vSwitch Authors. (s. d.). « What is Open vSwitch ? ». Documentation Open vSwitch. https://docs.openvswitch.org/en/latest/intro/what-is-ovs/
 [9],Open vSwitch Authors. (s. d.). « Features ». Open vSwitch. https://www.openvswitch.org/features/
 [10],"Proxmox Server Solutions. (2025, 19 novembre). « Deploy hyper-converged Ceph cluster ». Proxmox VE Wiki. https://pve.proxmox.com/wiki/Deploy_Hyper-Converged_Ceph_Cluster"
@@ -18,8 +17,8 @@ https://www.proxmox.com/en/products/proxmox-virtual-environment/overview"
 [17],"Watts, J. (1995). « A practical approach to dynamic load balancing » [Mémoire de master, California Institute of Technology]. Caltech THESIS. https://thesis.caltech.edu/6924/1/Watts_j_1995.pdf",article
 [18],Broadcom. (s. d.). « VMware DRS overview : Optimizing resource allocation in vSphere cluster ». Broadcom Knowledge Base. https://knowledge.broadcom.com/external/article/391137/vmware-drs-overview-optimizing-resource.html,
 [19],KVM Authors. (s. d.). « Nested guests ». Linux KVM Wiki. https://www.linux-kvm.org/page/Nested_Guests,
-[20],Corosync Project. (s. d.). « The Corosync cluster engine ». Corosync. https://corosync.github.io/corosync/,
-,,
+[20],"Dake, Steven C., Christine Caulfield, and Andrew Beekhof. 'The corosync cluster engine'. Linux Symposium. Vol. 85. 2008."
+[21],"VMware Distributed Resource Management: Design, Implementation, and Lessons Learned, link: https://www.waldspurger.org/carl/papers/drs-vmtj-mar12.pdf",
 [22],Broadcom. (s. d.). « vSphere availability ». VMware vSphere 8.0 Documentation. https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/vsphere-availability.html,
 [23],VMware. (s. d.). « vSphere DRS performance ». VMware Documentation. https://www.vmware.com/docs/vsphere6-drs-perf,Article/Pas Utilisé
 [24],InfluxData. (s. d.). « InfluxDB v2 documentation ». InfluxData. https://docs.influxdata.com/influxdb/v2/,Necessite une màj
@@ -40,8 +39,8 @@ https://www.proxmox.com/en/products/proxmox-virtual-environment/overview"
 39,https://www.techwrix.com/containers-vs-vms-choosing-the-right-approach-for-your-proxmox-ve-part-4/,
 40,https://docs.gitlab.com/install/requirements/,
 41,https://www.researchgate.net/publication/285489396_VMware_distributed_resource_management_Design_implementation_and_lessons_learned,
-42,,
-43,,
+42,"Mahalingam, Mallik, et al. Virtual extensible local area network (VXLAN): A framework for overlaying virtualized layer 2 networks over layer 3 networks. No. rfc7348. 2014. page 6",
+43,"Rajendran, Cedric. Getting Started with VMware Virtual SAN. Packt Publishing Ltd, 2015 page 9-15",
 44,,
 45,,
 46,,
