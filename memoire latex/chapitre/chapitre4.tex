@@ -1196,7 +1196,90 @@ stricte entre les composants de l'application.\\
 
 \par Les règles d'alerte sont définies directement dans Grafana sous ``Alerting -> Alert Rules''. Chaque règle spécifie une expression PromQL ou une requête InfluxDB, un seuil de déclenchement, une durée de maintien avant passage en état ``Firing'', et le groupe de contact destinataire.\\
 
-\par Parmi les règles configurées figurent notamment la détection d'une charge CPU élevée sur les nœuds Proxmox, la surveillance de l'état de santé du cluster Ceph, et la détection d'un OSD passé hors ligne. Ces règles couvrent les scenarios de défaillance les plus critiques de l'infrastructure.
+\par Parmi les règles configurées figurent notamment celles décrites ci-dessous, chacune accompagnée de sa requête et de sa condition de déclenchement.\\
+
+\par \textbf{Charge CPU élevée} sur les nœuds Proxmox -- requête Flux sur le bucket InfluxDB ``proxmox'', déclenchée lorsque l'utilisation moyenne dépasse 85~\% pendant 5 minutes (Figure~\ref{lst:alert-cpu}).\\
+
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- Charge CPU élevée sur les nœuds Proxmox},label={lst:alert-cpu}]
+Source de donnees : InfluxDB (bucket "proxmox")
+
+Requete (Flux) :
+  from(bucket: "proxmox")
+    |> range(start: -5m)
+    |> filter(fn: (r) => r._measurement == "cpustat" and r._field == "cpu")
+    |> last()
+
+Condition : WHEN last() OF A IS ABOVE 85   (maintien 5 min -> Firing)
+\end{lstlisting}
+
+\par \textbf{RAM disponible faible} sur les nœuds Proxmox -- ratio mémoire utilisée / mémoire totale calculé via Flux, déclenché au-delà de 90~\% d'utilisation, soit moins de 10~\% de RAM disponible (Figure~\ref{lst:alert-ram}).\\
+
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- RAM disponible faible sur les nœuds Proxmox},label={lst:alert-ram}]
+Source de donnees : InfluxDB (bucket "proxmox")
+
+Requete (Flux) :
+  from(bucket: "proxmox")
+    |> range(start: -5m)
+    |> filter(fn: (r) => r._measurement == "memory"
+                     and (r._field == "memused" or r._field == "memtotal"))
+    |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+    |> map(fn: (r) => ({ r with _value: float(v: r.memused) / float(v: r.memtotal) * 100.0 }))
+    |> last()
+
+Condition : WHEN last() OF A IS ABOVE 90   (RAM utilisee > 90 % <=> disponible < 10 %)
+\end{lstlisting}
+
+\par \textbf{OSD Ceph hors ligne} -- requête PromQL instantanée sur la métrique \texttt{ceph\_osd\_up}, déclenchée dès qu'un OSD passe à l'état arrêté (Figure~\ref{lst:alert-osd-down}).\\
+
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- OSD Ceph hors ligne},label={lst:alert-osd-down}]
+Source de donnees : Prometheus (module mgr)
+
+Requete (PromQL, instantanee) : ceph_osd_up
+
+Condition : WHEN last() OF A IS BELOW 1
+\end{lstlisting}
+
+\par \textbf{Latence OSD anormale} -- requête PromQL instantanée sur \texttt{ceph\_osd\_apply\_latency\_ms}, déclenchée au-delà de 100~ms (Figure~\ref{lst:alert-osd-latency}).\\
+
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- Latence OSD Ceph élevée},label={lst:alert-osd-latency}]
+Source de donnees : Prometheus (module mgr)
+
+Requete (PromQL, instantanee) : ceph_osd_apply_latency_ms
+
+Condition : WHEN last() OF A IS ABOVE 100
+\end{lstlisting}
+
+\par \textbf{Migrations excessives / circuit breaker CLBS} -- comptage des migrations sur 5 minutes via \texttt{increase(clbs\_migrations\_total[5m])}, déclenché au-delà de 5 migrations (Figure~\ref{lst:alert-clbs-migrations}).\\
+
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- Migrations excessives / circuit breaker CLBS},label={lst:alert-clbs-migrations}]
+Source de donnees : Prometheus (exporter clbs:9101)
+
+Requete (PromQL, instantanee) : increase(clbs_migrations_total[5m])
+
+Condition : WHEN last() OF A IS ABOVE 5
+\end{lstlisting}
+
+\par \textbf{Erreurs API Proxmox / InfluxDB côté CLBS} -- comptage des erreurs de cycle sur 5 minutes via \texttt{increase(clbs\_cycle\_errors\_total[5m])}, déclenché dès qu'une erreur est détectée (Figure~\ref{lst:alert-clbs-errors}).\\
+
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- Erreurs API Proxmox / InfluxDB côté CLBS},label={lst:alert-clbs-errors}]
+Source de donnees : Prometheus (exporter clbs:9101)
+
+Requete (PromQL, instantanee) : increase(clbs_cycle_errors_total[5m])
+
+Condition : WHEN last() OF A IS ABOVE 0
+\end{lstlisting}
+
+\par \textbf{Service CLBS indisponible} -- requête PromQL instantanée sur \texttt{up\{job="clbs"\}}, déclenchée lorsque la cible n'est plus joignable (Figure~\ref{lst:alert-clbs-down}).\\
+
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- Service CLBS indisponible},label={lst:alert-clbs-down}]
+Source de donnees : Prometheus (exporter clbs:9101)
+
+Requete (PromQL, instantanee) : up{job="clbs"}
+
+Condition : WHEN last() OF A IS BELOW 1
+\end{lstlisting}
+
+\par Ces règles couvrent les scénarios de défaillance les plus critiques de l'infrastructure : surcharge des nœuds Proxmox, dégradation du cluster de stockage Ceph et indisponibilité du service d'équilibrage de charge CLBS.\\
 
 \subsubsection{Configuration du contact point Gmail}
 
@@ -1216,18 +1299,7 @@ starttls_policy = MandatoryStartTLS
 
 \subsubsection{Validation}
 
-\par La validation du système de notification s'appuie sur deux vérifications. La Figure~\ref{fig:grafana-alert-rules} présente les règles d'alerte configurées dans Grafana Alerting ainsi que leur état. Le contact point associé pour l'acheminement des notifications est configuré via Gmail, en utilisant l'adresse email de destination directement dans l'interface Grafana Alerting.\\
-
-\begin{figure}[H]
-  \centering
-  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
-  \caption{Règles d'alerte configurées dans Grafana Alertin.}
-  [CAPTURE : ouvrir Grafana, aller dans Alerting -> Alert Rules,
-  capturer la liste des règles définies (ex : CPU nœud, santé Ceph)
-  avec leur état affiché (Normal / Pending / Firing)]
-  \label{fig:grafana-alert-rules}
-\end{figure}
-% CAPTURE : A demain + recherche des regle alertmanager
+\par La validation du système de notification s'appuie sur deux vérifications. La capture d'écran de la page ``Alerting -> Alert Rules'' présentant l'ensemble des règles configurées dans Grafana Alerting ainsi que leur état est disponible en Annexe~\ref{ann:grafana} (Figure~\ref{fig:ann-grafana-alert-rules}). Le contact point associé pour l'acheminement des notifications est configuré via Gmail, en utilisant l'adresse email de destination directement dans l'interface Grafana Alerting.\\
 
 \subsection{Centralisation des Journaux : Loki et Alloy}
 
@@ -1354,7 +1426,7 @@ driftfile /var/lib/chrony/drift
 
 \subsubsection{Validation}
 
-\par La validation de l'instance GitLab porte sur la présence des dépôts et sur le bon déroulement des pipelines. La Figure~\ref{fig:gitlab-projects} présente la page des projets de l'instance GitLab, et la Figure~\ref{fig:gitlab-pipeline} montre un pipeline CI/CD exécuté avec succès pour le projet \texttt{clbs}.\\
+\par La validation de l'instance GitLab porte sur la présence des dépôts et sur le bon déroulement des pipelines. La Figure~\ref{fig:gitlab-projects} présente la page des projets de l'instance GitLab.\\
 
 \begin{figure}[H]
   \centering
@@ -1409,11 +1481,8 @@ systemctl start rundeckd
 
 \begin{figure}[H]
   \centering
-  \fbox{\parbox{0.85\textwidth}{\textit{[CAPTURE À INSÉRER]}}}
+  \includegraphics[width=1\textwidth]{image/ch4/rundeck jobs.png}
   \caption{Interface Rundeck affichant les jobs de provisionnement Ansible.}
-  [CAPTURE : ouvrir l'interface web Rundeck (port 4440),
-  aller dans Jobs, capturer la liste des jobs configurés
-  (provisionnement VM, intégration nœud, etc.) avec leurs noms visibles]
   \label{fig:rundeck-jobs}
 \end{figure}
 

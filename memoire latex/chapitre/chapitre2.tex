@@ -12,13 +12,13 @@
 
 \subsection{Définition}
 
-\par L'hyperconvergence (HCI, ``Hyper-Converged Infrastructure\) est une architecture qui regroupe dans un même système le calcul, le stockage et le réseau, pilotés par une couche logicielle centralisée. On n'a plus besoin de gérer des équipements distincts pour chaque fonction~\cite{ref2, ref7}.\\
+\par L'hyperconvergence (HCI, ``Hyper-Converged Infrastructure'') est une architecture qui regroupe dans un même système le calcul, le stockage et le réseau, pilotés par une couche logicielle centralisée. On n'a plus besoin de gérer des équipements distincts pour chaque fonction~\cite{ref2, ref7}.\\
 
 \par L'infrastructure hyperconvergée repose sur trois composantes fondamentales :\\
 
 \begin{itemize}
 
-    \item \textbf{Le calcul} : des processeurs virtuels (vCPU, ``Virtual Central Processing Unit\) alloués dynamiquement aux machines virtuelles.
+    \item \textbf{Le calcul} : des processeurs virtuels (vCPU, ``Virtual Central Processing Unit'') alloués dynamiquement aux machines virtuelles.
 
     \item \textbf{Le stockage} : un système de stockage distribué logiciel, agrégé à partir des disques locaux de chaque n\oe{}ud.
 
@@ -495,7 +495,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \par Cependant, sur l'infrastructure de Sonatrach, les trois serveurs Dell R720 sont connectés à un switch administré par l'équipe réseau de l'entreprise. Ce switch a déjà des VLANs définis (VLAN 10 pour le management, VLAN 20 pour un usage interne), et l'équipe projet n'a aucun droit d'administration dessus. Les serveurs sont connectés en mode access sur le VLAN de gestion uniquement.\\
 
-\par Face à cette contrainte, on a remplacé les VLANs 802.1Q par des tunnels \textbf{VXLAN} \(Virtual eXtensible LAN'', RFC 7348)~\cite{refVXLAN}.\\
+\par Face à cette contrainte, on a remplacé les VLANs 802.1Q par des tunnels \textbf{VXLAN} (``Virtual eXtensible LAN'', RFC 7348)~\cite{refVXLAN}.\\
 
 \paratitle{VXLAN : principe de fonctionnement}
 
@@ -575,7 +575,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \begin{itemize}
     \item \textbf{DHCP :} attribution d'une adresse IP temporaire et indication du serveur de boot (options DHCP 66 et 67).
-    \item \textbf{TFTP} \(Trivial File Transfer Protocol'', UDP/69) : téléchargement du bootloader. C'est le seul protocole utilisable dans un firmware pre-OS.
+    \item \textbf{TFTP} (``Trivial File Transfer Protocol'', UDP/69) : téléchargement du bootloader. C'est le seul protocole utilisable dans un firmware pre-OS.
     \item \textbf{HTTP :} téléchargement de l'image d'installation (plusieurs centaines de Mo). TFTP ne convient pas aux gros fichiers car il n'a pas de contrôle de flux.
 \end{itemize}
 
