@@ -33,7 +33,7 @@
   vars:
     ansible_user: root
     ansible_password: "{{ bootstrap_password }}"
-    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o PreferredAuthentications=password"
     _key_file: "{{ ssh_public_key_file | default('~/.ssh/ansible_ed25519.pub') }}"
     ssh_public_key: "{{ lookup('file', _key_file) }}"
 
