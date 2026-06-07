@@ -10,6 +10,7 @@
 {Annexe \thechapter}
 {20pt}
 {\Huge}
+\titlespacing*{\chapter}{0pt}{0pt}{40pt}
 
 % ============================================================
 \chapter{Dashboards Grafana de Supervision}
@@ -650,8 +651,22 @@ source /etc/network/interfaces.d/*
 \begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{image/annexes/bootstrap job.png}
-  \caption{Résultat d'exécution d'un job Rundeck avec le journal Ansible complet.}
+  \caption{Résultat d'exécution du job Rundeck \texttt{Bootstrap VM} avec le journal Ansible complet.}
   \label{fig:rundeck-execution}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{image/annexes/rundeck provisioning.png}
+  \caption{Résultat d'exécution du job Rundeck \texttt{Provision VM}, déclenchant le playbook \texttt{provision\_vm.yml}.}
+  \label{fig:rundeck-provisioning}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{image/annexes/ntp_sync.png}
+  \caption{Résultat d'exécution du job Rundeck \texttt{ntp\_sync}, exécutant le playbook \texttt{ntp\_sync.yml} sur la cible ciblée.}
+  \label{fig:rundeck-ntp-sync}
 \end{figure}
 
 \chapter{Configuration du Pare-feu}
