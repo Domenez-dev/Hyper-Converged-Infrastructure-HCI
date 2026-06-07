@@ -688,19 +688,29 @@ source /etc/network/interfaces.d/*
   \label{fig:ann-fw-proxmox-secgroups}
 \end{figure}
 
+%*******************
+\section*{D.4 \quad Règles Pare-feu au Niveau Nœud}
 
-\section*{D.4 \quad Règles Pare-feu par VM}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{image/annexes/firewall_node.png}
+  \caption{Règles de pare-feu configurées au niveau nœud (PVE-01) dans l'interface Proxmox
+           (\texttt{Datacenter -> pve-01 -> Firewall}).}
+  \label{fig:ann-fw-node-pve01}
+\end{figure}
+%*********
+\section*{D.5 \quad Règles Pare-feu par VM}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.85\textwidth]{image/annexes/firewall vm.png}
-  \caption{Règles de pare-feu de la VM HAProxy dans l'interface Proxmox.}
+  \caption{Règles de pare-feu de la VM Monitoring dans l'interface Proxmox.}
   \label{fig:ann-fw-vm-haproxy}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.85\textwidth]{image/annexes/pare-feu_App-1.png}
-  \caption{Règles de pare-feu des VMs Flask et PostgreSQL dans l'interface Proxmox.}
+  \caption{Règles de pare-feu des VMs Flask App-1 dans l'interface Proxmox.}
   \label{fig:ann-fw-vm-flask-pg}
 \end{figure}

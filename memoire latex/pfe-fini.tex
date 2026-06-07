@@ -30,6 +30,7 @@
 \usepackage{layout}
 \usepackage{ragged2e}
 \usepackage{longtable}% tableaux pouvant s'étendre sur plusieurs pages (liste des abréviations)
+\usepackage{pdfpages}% pour insérer le résumé trilingue (page composée séparément avec XeLaTeX pour l'arabe)
 
 % Tikz for graphs
 \usepackage{tikz}
@@ -42,6 +43,8 @@
 \usepackage{caption}
 \usepackage{listings}
 \usepackage[most]{tcolorbox}
+
+\geometry{margin=2cm}
 
 \definecolor{codebg}{RGB}{245,245,244}
 \definecolor{codeframe}{RGB}{210,210,210}
@@ -214,4 +217,6 @@
 \clearpage
 \input{annexes.tex}
 
+\newpage
+\includepdf[pages=-]{resume_trilingue_xelatex.pdf}
 \end{document}
