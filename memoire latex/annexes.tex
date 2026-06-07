@@ -21,7 +21,7 @@
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{image/annexes/grafana cluster dashboard_full.png}
-    \caption{Dashboard Grafana Infrastructure -- vue complète des métriques CPU, mémoire et réseau des trois nœuds Proxmox.}
+    \caption{Dashboard Grafana Infrastructure: vue complète des métriques CPU, mémoire et réseau des trois nœuds Proxmox.}
     \label{fig:ann-grafana-proxmox-full}
 \end{figure}
 
@@ -30,7 +30,7 @@
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{image/annexes/grafana_ceph_dashboard_full.png}
-    \caption{Dashboard Grafana Ceph -- vue complète de l'état du cluster, des pools et de la latence des OSDs.}
+    \caption{Dashboard Grafana Ceph: vue complète de l'état du cluster, des pools et de la latence des OSDs.}
     \label{fig:ann-grafana-ceph-full}
 \end{figure}
 
@@ -39,7 +39,7 @@
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{image/annexes/grafana syslog dashboard_full.png}
-    \caption{Dashboard Grafana Loki -- journaux système centralisés des nœuds Proxmox et des VMs.}
+    \caption{Dashboard Grafana Loki: journaux système centralisés des nœuds Proxmox et des VMs.}
     \label{fig:ann-grafana-loki-full}
 \end{figure}
 
@@ -59,7 +59,7 @@
 
 \section*{B.1 \quad Configuration complète de PVE-01}
 
-\begin{lstlisting}[style=sonacode,language={},caption={Fichier /etc/network/interfaces complet -- PVE-01 (192.168.10.100)},label={lst:ann-pve01-full}]
+\begin{lstlisting}[style=sonacode,language={},caption={Fichier /etc/network/interfaces complet, PVE-01 (192.168.10.100)},label={lst:ann-pve01-full}]
 auto lo
 iface lo inet loopback
 
@@ -254,7 +254,7 @@ source /etc/network/interfaces.d/*
 
 \section*{B.2 \quad Configuration complète de PVE-02}
 
-\begin{lstlisting}[style=sonacode,language={},caption={Fichier /etc/network/interfaces complet -- PVE-02 (192.168.10.213)},label={lst:ann-pve02-full}]
+\begin{lstlisting}[style=sonacode,language={},caption={Fichier /etc/network/interfaces complet, PVE-02 (192.168.10.213)},label={lst:ann-pve02-full}]
 auto lo
 iface lo inet loopback
 
@@ -449,7 +449,7 @@ source /etc/network/interfaces.d/*
 
 \section*{B.3 \quad Configuration complète de PVE-03}
 
-\begin{lstlisting}[style=sonacode,language={},caption={Fichier /etc/network/interfaces complet -- PVE-03 (192.168.10.84)},label={lst:ann-pve03-full}]
+\begin{lstlisting}[style=sonacode,language={},caption={Fichier /etc/network/interfaces complet, PVE-03 (192.168.10.84)},label={lst:ann-pve03-full}]
 auto lo
 iface lo inet loopback
 
@@ -694,8 +694,7 @@ source /etc/network/interfaces.d/*
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.85\textwidth]{image/annexes/firewall_node.png}
-  \caption{Règles de pare-feu configurées au niveau nœud (PVE-01) dans l'interface Proxmox
-           (\texttt{Datacenter -> pve-01 -> Firewall}).}
+  \caption{Règles de pare-feu configurées au niveau nœud PVE-01.}
   \label{fig:ann-fw-node-pve01}
 \end{figure}
 %*********
