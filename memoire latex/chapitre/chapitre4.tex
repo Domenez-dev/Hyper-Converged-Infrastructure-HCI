@@ -677,7 +677,7 @@ ovs-vsctl add-port vmbr0 nic0
 
 \par Pour rendre la configuration plus facile à comprendre, elle est organisée en plusieurs parties selon le rôle des interfaces : réseau physique, réseaux Ceph et Corosync, migration et sauvegarde, puis réseaux applicatifs. La Figure~\ref{fig:pve01-overview} présente une vue d'ensemble avant le détail de chaque partie. \\
 
-% Figure TikZ externalisée -- fichier : figures/fig_pve01_overview.tex
+% Figure TikZ externalisée - fichier : figures/fig_pve01_overview.tex
 \input{image/ch4/fig_pve01_overview}
 
 \par La Figure~\ref{fig:pve01-overview} illustre l'organisation en quatre couches de la configuration réseau de PVE-01 : le bridge de management (Partie 1), les VxLAN d'infrastructure Corosync et Ceph interne (Partie 2), les VxLAN de migration, Ceph public et sauvegarde (Partie 3), et enfin les VxLAN applicatifs avec leurs bridges Linux (Partie 4).\\
@@ -715,7 +715,7 @@ iface nic3 inet manual
 
 \par Ces deux VxLAN transportent respectivement le trafic de heartbeat Corosync entre les nœuds du cluster, et le trafic de réplication interne Ceph entre les OSDs. Chaque tunnel est créé en mode point-à-point, avec une interface interne OVS associée pour l'adressage IP local.\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={VxLAN Corosync (clé 20) et Ceph interne (clé 30) -- interfaces internes PVE-01},label={lst:pve01-vxlan-2030}]
+\begin{lstlisting}[style=sonacode,language={},caption={VxLAN Corosync (clé 20) et Ceph interne (clé 30) - interfaces internes PVE-01},label={lst:pve01-vxlan-2030}]
 # ===== COROSYNC VXLAN (key=20) =====
 auto vxlan20-int
 iface vxlan20-int inet static
@@ -737,7 +737,7 @@ iface vxlan30-int inet static
 
 \par Ces trois VxLAN couvrent respectivement le réseau public Ceph utilisé pour les accès RBD des VMs, le réseau dédié aux migrations live de VMs entre nœuds, et le réseau de sauvegarde. Leur séparation évite toute interférence entre ces flux lors des opérations intensives.\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Ceph public (clé 40), migration (clé 50) et sauvegarde (clé 90) -- interfaces internes PVE-01},label={lst:pve01-vxlan-405090}]
+\begin{lstlisting}[style=sonacode,language={},caption={Ceph public (clé 40), migration (clé 50) et sauvegarde (clé 90) - interfaces internes PVE-01},label={lst:pve01-vxlan-405090}]
 # ===== CEPH PUBLIC VXLAN (key=40) =====
 auto vxlan40-int
 iface vxlan40-int inet static
@@ -766,7 +766,7 @@ iface vxlan90-int inet static
 
 \par Les trois derniers VxLAN portent le trafic des zones applicatives Dev (clé 60), Prod (clé 70) et DMZ (clé 80). Chacun dispose d'une interface interne OVS et d'un bridge Linux associé (\texttt{vmbr60}, \texttt{vmbr70}, \texttt{vmbr80}), qui constitue le point de connexion effectif pour les interfaces réseau des VMs applicatives.\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={VxLAN applicatifs (clés 60, 70, 80) et bridges Linux -- PVE-01},label={lst:pve01-vxlan-vm-bridges}]
+\begin{lstlisting}[style=sonacode,language={},caption={VxLAN applicatifs (clés 60, 70, 80) et bridges Linux - PVE-01},label={lst:pve01-vxlan-vm-bridges}]
 # ===== VXLAN 60 (Dev) =====
 auto vxlan60-int
 iface vxlan60-int inet static
@@ -811,13 +811,13 @@ source /etc/network/interfaces.d/*
 
 \subsection{Déploiement de la VM OPNsense}
 
-\par OPNsense joue un rôle central dans l'architecture réseau en assurant le routage inter-réseaux, le NAT sortant et le service DHCP pour les trois zones applicatives.
+\par OPNsense est au cœur du réseau~: c'est lui qui s'occupe du routage entre les zones, du NAT sortant et du DHCP pour les trois réseaux applicatifs.
 
 \subsubsection{Création et interfaces réseau}
 
-\par OPNsense a été déployé sous forme de machine virtuelle sur le cluster Proxmox. Son disque système est stocké sur le pool Ceph, ce qui permet de bénéficier du stockage distribué et de la haute disponibilité.\\
+\par Comme les autres VMs, OPNsense a été créée sur le cluster Proxmox avec son disque stocké sur le pool Ceph, pour profiter du stockage distribué.\\
 
-\par La VM dispose de 4 Go de RAM, de 2 vCPUs et d'un disque de 20 Go. Quatre interfaces réseau lui ont été attribuées afin de jouer le rôle de routeur et pare-feu pour les différents segments de l'infrastructure. Le tableau~\ref{tab:opnsense-interfaces} récapitule ces interfaces avec leur bridge Proxmox, leur rôle et leur adresse IP.\\
+\par Elle est configurée avec 4 Go de RAM, 2 vCPUs et 20 Go de disque, et possède quatre interfaces réseau pour faire office de routeur et de pare-feu entre les différents segments. Le tableau~\ref{tab:opnsense-interfaces} liste ces interfaces avec leur bridge Proxmox, leur rôle et leur adresse IP.\\
 
 \begin{table}[H]
 \centering
@@ -923,29 +923,31 @@ l'interface OPNsense correspondantes sont disponibles en \textbf{Annexe~D}.
 \centering
 \caption{Règles de filtrage inter-réseaux configurées sur OPNsense.}
 \label{tab:fw-opnsense-rules}
-\begin{tabular}{|l|l|l|c|p{4.8cm}|}
+\small
+\begin{tabular}{|l|l|c|c|l|}
 \hline
 \textbf{Source} & \textbf{Destination} & \textbf{Port / Proto} & \textbf{Action} & \textbf{Justification} \\
 \hline
-Dev (172.16.60.0/24)  & WAN              & any       & ALLOW & Mises à jour, dépôts de paquets \\
+172.16.60.0/24 & WAN            & any      & ALLOW & Mises à jour et dépôts \\
 \hline
-DMZ (172.16.80.0/24)  & WAN              & any       & ALLOW & Services exposés nécessitant un accès sortant \\
+172.16.80.0/24 & WAN            & any      & ALLOW & Sortie des services exposés \\
 \hline
-DMZ (172.16.80.0/24)  & Prod             & TCP 8000  & ALLOW & HAProxy $\rightarrow$ Flask app-1 / app-2 \\
+172.16.80.0/24 & Prod           & TCP 8000 & ALLOW & HAProxy $\rightarrow$ Flask app-1/2 \\
 \hline
-Prod (172.16.70.0/24) & Prod             & TCP 5432  & ALLOW & Flask app-1/2 $\rightarrow$ PostgreSQL \\
+172.16.70.0/24 & Prod           & TCP 5432 & ALLOW & Flask app-1/2 $\rightarrow$ PostgreSQL \\
 \hline
-any                   & DMZ              & TCP 8080  & ALLOW & Accès public vers HAProxy \\
+any            & DMZ            & TCP 8080 & ALLOW & Accès public vers HAProxy \\
 \hline
-any                   & 192.168.10.100   & UDP 123   & ALLOW & Synchronisation NTP des VMs vers PVE-01 \\
+any            & 192.168.10.100 & UDP 123  & ALLOW & Synchro NTP vers PVE-01 \\
 \hline
-Dev (172.16.60.0/24)  & Prod             & any       & BLOCK & Isolation développement / production \\
+172.16.60.0/24 & Prod           & any      & BLOCK & Isolation Dev / Prod \\
 \hline
-Dev (172.16.60.0/24)  & DMZ              & any       & BLOCK & Isolation Dev / services exposés \\
+172.16.60.0/24 & DMZ            & any      & BLOCK & Isolation Dev / DMZ \\
 \hline
-Prod (172.16.70.0/24) & WAN              & any       & BLOCK & Trafic Prod via DMZ obligatoire \\
+172.16.70.0/24 & WAN            & any      & BLOCK & Trafic Prod via DMZ obligatoire \\
 \hline
 \end{tabular}
+\normalsize
 \end{table}
 
 \par Ces règles assurent une isolation stricte entre les trois zones tout en
@@ -1153,23 +1155,25 @@ l'interface Proxmox sont disponibles en \textbf{Annexe~D}.
 \centering
 \caption{Règles de pare-feu spécifiques par VM applicative (hors règles héritées).}
 \label{tab:fw-vm-rules}
-\begin{tabular}{|l|l|l|l|p{3.8cm}|}
+\small
+\begin{tabular}{|l|c|c|l|l|}
 \hline
 \textbf{VM} & \textbf{Dir.} & \textbf{Action} & \textbf{Source / Dest.} & \textbf{Port / Justification} \\
 \hline
-HAProxy (VM 201) & IN  & ACCEPT & \texttt{0.0.0.0/0}      & TCP 8080 — accès public \\
+HAProxy (VM 201) & IN  & ACCEPT & \texttt{0.0.0.0/0}             & TCP 8080 — accès public \\
 \hline
-HAProxy (VM 201) & IN  & ACCEPT & \texttt{management-net} & TCP 8404 — stats HAProxy \\
+HAProxy (VM 201) & IN  & ACCEPT & \texttt{management-net}        & TCP 8404 — stats HAProxy \\
 \hline
 HAProxy (VM 201) & OUT & ACCEPT & \texttt{App-1}, \texttt{App-2} & TCP 8000 — backends Flask \\
 \hline
-Flask app-1/2    & IN  & ACCEPT & \texttt{haproxy}        & TCP 8000 — trafic applicatif \\
+Flask app-1/2    & IN  & ACCEPT & \texttt{haproxy}               & TCP 8000 — trafic applicatif \\
 \hline
-Flask app-1/2    & OUT & ACCEPT & \texttt{postgres}       & TCP 5432 — base de données \\
+Flask app-1/2    & OUT & ACCEPT & \texttt{postgres}              & TCP 5432 — base de données \\
 \hline
 PostgreSQL (VM 205) & IN & ACCEPT & \texttt{App-1}, \texttt{App-2} & TCP 5432 — connexions SQL \\
 \hline
 \end{tabular}
+\normalsize
 \end{table}
 
 \par HAProxy est la seule VM exposée vers l'extérieur sur le port
@@ -1198,25 +1202,21 @@ stricte entre les composants de l'application.\\
 
 \par Parmi les règles configurées figurent notamment celles décrites ci-dessous, chacune accompagnée de sa requête et de sa condition de déclenchement.\\
 
-\par \textbf{Charge CPU élevée} sur les nœuds Proxmox -- requête Flux sur le bucket InfluxDB ``proxmox'', déclenchée lorsque l'utilisation moyenne dépasse 85~\% pendant 5 minutes (Figure~\ref{lst:alert-cpu}).\\
+\medskip
+\par \textbf{\textcolor{bleu}{Charge CPU élevée}} sur les nœuds Proxmox, requête Flux sur le bucket InfluxDB ``proxmox'', déclenchée lorsque l'utilisation moyenne dépasse 85~\% pendant 5 minutes (Figure~\ref{lst:alert-cpu}).\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- Charge CPU élevée sur les nœuds Proxmox},label={lst:alert-cpu}]
-Source de donnees : InfluxDB (bucket "proxmox")
-
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte, Charge CPU élevée sur les nœuds Proxmox},label={lst:alert-cpu}]
 Requete (Flux) :
   from(bucket: "proxmox")
     |> range(start: -5m)
     |> filter(fn: (r) => r._measurement == "cpustat" and r._field == "cpu")
     |> last()
-
-Condition : WHEN last() OF A IS ABOVE 85   (maintien 5 min -> Firing)
 \end{lstlisting}
 
-\par \textbf{RAM disponible faible} sur les nœuds Proxmox -- ratio mémoire utilisée / mémoire totale calculé via Flux, déclenché au-delà de 90~\% d'utilisation, soit moins de 10~\% de RAM disponible (Figure~\ref{lst:alert-ram}).\\
+\medskip
+\par \textbf{\textcolor{bleu}{RAM disponible faible}} sur les nœuds Proxmox, ratio mémoire utilisée / mémoire totale calculé via Flux, déclenché au-delà de 90~\% d'utilisation, soit moins de 10~\% de RAM disponible (Figure~\ref{lst:alert-ram}).\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- RAM disponible faible sur les nœuds Proxmox},label={lst:alert-ram}]
-Source de donnees : InfluxDB (bucket "proxmox")
-
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte, RAM disponible faible sur les nœuds Proxmox},label={lst:alert-ram}]
 Requete (Flux) :
   from(bucket: "proxmox")
     |> range(start: -5m)
@@ -1225,58 +1225,39 @@ Requete (Flux) :
     |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
     |> map(fn: (r) => ({ r with _value: float(v: r.memused) / float(v: r.memtotal) * 100.0 }))
     |> last()
-
-Condition : WHEN last() OF A IS ABOVE 90   (RAM utilisee > 90 % <=> disponible < 10 %)
 \end{lstlisting}
 
-\par \textbf{OSD Ceph hors ligne} -- requête PromQL instantanée sur la métrique \texttt{ceph\_osd\_up}, déclenchée dès qu'un OSD passe à l'état arrêté (Figure~\ref{lst:alert-osd-down}).\\
+\medskip
+\par \textbf{\textcolor{bleu}{OSD Ceph hors ligne}}: requête PromQL instantanée sur la métrique \texttt{ceph\_osd\_up}, déclenchée dès qu'un OSD passe à l'état arrêté (Figure~\ref{lst:alert-osd-down}).\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- OSD Ceph hors ligne},label={lst:alert-osd-down}]
-Source de donnees : Prometheus (module mgr)
-
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte - OSD Ceph hors ligne},label={lst:alert-osd-down}]
 Requete (PromQL, instantanee) : ceph_osd_up
-
-Condition : WHEN last() OF A IS BELOW 1
 \end{lstlisting}
 
-\par \textbf{Latence OSD anormale} -- requête PromQL instantanée sur \texttt{ceph\_osd\_apply\_latency\_ms}, déclenchée au-delà de 100~ms (Figure~\ref{lst:alert-osd-latency}).\\
+\medskip
+\par \textbf{\textcolor{bleu}{Latence OSD anormale}}: requête PromQL instantanée sur \texttt{ceph\_osd\_apply\_latency\_ms}, déclenchée au-delà de 100~ms (Figure~\ref{lst:alert-osd-latency}).\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- Latence OSD Ceph élevée},label={lst:alert-osd-latency}]
-Source de donnees : Prometheus (module mgr)
-
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte - Latence OSD Ceph élevée},label={lst:alert-osd-latency}]
 Requete (PromQL, instantanee) : ceph_osd_apply_latency_ms
-
-Condition : WHEN last() OF A IS ABOVE 100
 \end{lstlisting}
 
-\par \textbf{Migrations excessives / circuit breaker CLBS} -- comptage des migrations sur 5 minutes via \texttt{increase(clbs\_migrations\_total[5m])}, déclenché au-delà de 5 migrations (Figure~\ref{lst:alert-clbs-migrations}).\\
+\medskip
+\par \textbf{\textcolor{bleu}{Migrations excessives / circuit breaker CLBS}}: comptage des migrations sur 5 minutes via \texttt{increase(clbs\_migrations\_total[5m])}, déclenché au-delà de 5 migrations (Figure~\ref{lst:alert-clbs-migrations}).\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- Migrations excessives / circuit breaker CLBS},label={lst:alert-clbs-migrations}]
-Source de donnees : Prometheus (exporter clbs:9101)
-
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte - Migrations excessives / circuit breaker CLBS},label={lst:alert-clbs-migrations}]
 Requete (PromQL, instantanee) : increase(clbs_migrations_total[5m])
-
-Condition : WHEN last() OF A IS ABOVE 5
 \end{lstlisting}
 
-\par \textbf{Erreurs API Proxmox / InfluxDB côté CLBS} -- comptage des erreurs de cycle sur 5 minutes via \texttt{increase(clbs\_cycle\_errors\_total[5m])}, déclenché dès qu'une erreur est détectée (Figure~\ref{lst:alert-clbs-errors}).\\
+\medskip
+\par \textbf{\textcolor{bleu}{Erreurs API Proxmox / InfluxDB côté CLBS}}: comptage des erreurs de cycle sur 5 minutes via \texttt{increase(clbs\_cycle\_errors\_total[5m])}, déclenché dès qu'une erreur est détectée (Figure~\ref{lst:alert-clbs-errors}).\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- Erreurs API Proxmox / InfluxDB côté CLBS},label={lst:alert-clbs-errors}]
-Source de donnees : Prometheus (exporter clbs:9101)
-
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte - Erreurs API Proxmox / InfluxDB côté CLBS},label={lst:alert-clbs-errors}]
 Requete (PromQL, instantanee) : increase(clbs_cycle_errors_total[5m])
-
-Condition : WHEN last() OF A IS ABOVE 0
 \end{lstlisting}
+\par \textbf{\textcolor{bleu}{Service CLBS indisponible}}: requête PromQL instantanée sur \texttt{up\{job="clbs"\}}, déclenchée lorsque la cible n'est plus joignable (Figure~\ref{lst:alert-clbs-down}).\\
 
-\par \textbf{Service CLBS indisponible} -- requête PromQL instantanée sur \texttt{up\{job="clbs"\}}, déclenchée lorsque la cible n'est plus joignable (Figure~\ref{lst:alert-clbs-down}).\\
-
-\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte -- Service CLBS indisponible},label={lst:alert-clbs-down}]
-Source de donnees : Prometheus (exporter clbs:9101)
-
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte - Service CLBS indisponible},label={lst:alert-clbs-down}]
 Requete (PromQL, instantanee) : up{job="clbs"}
-
-Condition : WHEN last() OF A IS BELOW 1
 \end{lstlisting}
 
 \par Ces règles couvrent les scénarios de défaillance les plus critiques de l'infrastructure : surcharge des nœuds Proxmox, dégradation du cluster de stockage Ceph et indisponibilité du service d'équilibrage de charge CLBS.\\

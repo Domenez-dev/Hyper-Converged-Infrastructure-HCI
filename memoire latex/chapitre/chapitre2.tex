@@ -541,7 +541,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
     \item \textbf{Exécution de la migration :} live migration vers le n\oe{}ud avec la charge la plus faible.
 \end{enumerate}
 
-\par La live migration n'est possible que si le stockage est partagé entre tous les n\oe{}uds. Avec Ceph RBD, le disque d'une VM est accessible depuis n'importe quel n\oe{}ud sans déplacer de données~\cite{ref14}.
+\par La live migration n'est possible que si le stockage est partagé entre tous les n\oe{}uds. Avec Ceph RBD, le disque d'une VM est accessible depuis n'importe quel n\oe{}ud ~\cite{ref14}.
 
 % ============================================================
 \section{Outils Complémentaires d'Infrastructure}
@@ -551,17 +551,17 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \subsection{HAProxy : Équilibrage de Charge Applicatif}
 
-\par HAProxy \(High Availability Proxy\) est un proxy TCP/HTTP open source pour la haute disponibilité et l'équilibrage de charge~\cite{ref26}. Il agit comme point d'entrée unique pour un ensemble de serveurs, distribue les requêtes selon différents algorithmes (round-robin, moins de connexions, hachage par IP source) et vérifie la disponibilité des backends via des contrôles de santé. Si un backend tombe, HAProxy redirige automatiquement le trafic sans interruption pour l'utilisateur.
+\par HAProxy \(High Availability Proxy\) est un proxy TCP/HTTP open source pour la haute disponibilité et l'équilibrage de charge~\cite{ref26}. Il agit comme point d'entrée unique pour un ensemble de serveurs, distribue les requêtes selon différents algorithmes (round-robin, moins de connexions) et vérifie la disponibilité des backends via des contrôles de santé. Si un backend tombe, HAProxy redirige automatiquement le trafic sans interruption pour l'utilisateur.
 
 \subsection{Stack de Supervision : InfluxDB, Prometheus et Grafana}
 
 \par Pour superviser l'infrastructure, on a besoin d'outils qui collectent, stockent et visualisent les métriques en temps réel : charge des n\oe{}uds, état du stockage, historique des migrations et alertes. Trois outils complémentaires forment cette stack.\\
 
-\par \textbf{InfluxDB}~\cite{ref24} est une base de données orientée séries temporelles \(time series database\), optimisée pour les données horodatées à haute fréquence. Elle reçoit les métriques Proxmox (CPU, RAM, réseau, stockage) via le mécanisme natif ``Metric Server'' sans agent supplémentaire. Ces données sont utilisées par Grafana pour la visualisation et par le CLBS pour ses décisions de migration.\\
+\par \textbf{InfluxDB}~\cite{ref24} est une base de données de séries temporelles optimisée pour les données horodatées. Elle collecte les métriques Proxmox (CPU, mémoire, réseau et stockage) via le mécanisme natif Metric Server. Ces données sont exploitées par Grafana pour la visualisation et par le CLBS pour les décisions de migration.\\
 
 \par \textbf{Prometheus}~\cite{refPrometheus} collecte les métriques par interrogation HTTP selon un modèle de données par étiquettes. Il surveille le cluster Ceph via son point d'accès natif et les métriques du service CLBS.\\
 
-\par \textbf{Grafana}~\cite{ref25} est l'outil de visualisation connecté aux deux sources précédentes. Il affiche des tableaux de bord unifiés sur l'état des n\oe{}uds, du stockage et du CLBS, avec des règles d'alerte configurables.\\
+\par \textbf{Grafana}~\cite{ref25} est l'outil de visualisation connecté aux deux sources précédentes. Il affiche des tableaux de bord unifiés sur l'état des n\oe{}uds, du stockage et du CLBS.\\
 
 \subsection{Ansible : Automatisation d'Infrastructure}
 
