@@ -163,10 +163,11 @@ Panne CLBS & VM CLBS & Aucun impact applicatif. Le service redémarre automatiqu
 \par Notre mécanisme, nommé \textbf{CLBS}, est une adaptation du CSLB~\cite{ref38}. L'algorithme original repose sur cinq phases : évaluation de charge, détermination de rentabilité, calcul du vecteur de transfert, sélection de VM, et exécution de la migration~\cite{ref17}. La charge CPU de chaque nœud est évaluée par rapport à un seuil dynamique (moyenne des charges de tous les nœuds) :
 
 \[
-\text{seuil} = \frac{\sum_{i=1}^{n} \alpha_i}{n}, \quad \text{diff} = \left|\text{seuil} - \frac{\alpha_{min} + \alpha_{max}}{2}\right|
+\text{seuil} = \frac{\sum_{i=1}^{n} \alpha_i}{n}\text{...(1)}, \quad \text{diff} = \left|\text{seuil} - \frac{\alpha_{min} + \alpha_{max}}{2} \text{...(2)}\right|
 \]
 
-\par La bande modérée est définie à $\pm\max(\text{diff},\ 10\%)$ autour du seuil. Les nœuds hors de cette bande sont candidats à une action d'équilibrage.\\
+\par La bande modérée est définie, à partir des équations~(1) et~(2), à $\pm\max(\text{diff},\ 10\%)$ autour du seuil. Les nœuds hors de cette bande sont candidats à une action d'équilibrage.\\
+
 
 \subsubsection{Modifications Apportées au CSLB}
 
@@ -181,9 +182,10 @@ Panne CLBS & VM CLBS & Aucun impact applicatif. Le service redémarre automatiqu
 
     \item \textbf{Sélection du nœud destination pondérée :} le choix du nœud de destination se fonde sur un score pondéré :
     \[
-    \text{score} = \Delta_{CPU} \times 0.7 + \Delta_{RAM} \times 0.3
+    \text{score} = \Delta_{CPU} \times 0.7 + \Delta_{RAM} \times 0.3 \text{...(3)}
     \]
-    Avant validation, CLBS simule l'état post-migration du nœud cible pour s'assurer que l'ajout de la VM ne le fait pas dépasser la bande haute.
+    Avant validation, CLBS simule l'état post-migration du nœud cible en appliquant le score pondéré défini par l'équation~(3) pour s'assurer que l'ajout de la VM ne le fait pas dépasser la bande haute.
+
 
     \item \textbf{Exclusion des VMs système :} OPNsense, la VM monitoring et la VM CLBS sont explicitement exclues du périmètre de migration.
 
@@ -381,10 +383,11 @@ SSH/SFTP & TCP & Oui & Post-installation uniquement \\
 \par Avec un facteur de réplication de 3, la capacité utilisable est calculée ainsi :\\
 
 \[
-\text{Capacité utilisable} = \frac{3 \times (300 + 3 \times 600)\ \text{GB}}{3} = \frac{3 \times 2100\ \text{GB}}{3} = 2100\ \text{GB} \approx 2{,}05\ \text{TB}
+\text{Capacité utilisable} = \frac{3 \times (300 + 3 \times 600)\ \text{GB}}{3} = \frac{3 \times 2100\ \text{GB}}{3} = 2100\ \text{GB} \approx 2{,}05\ \text{TB} \text{...(4)}
 \]
 
-\par L'algorithme CRUSH est configuré pour respecter les domaines de défaillance au niveau du nœud physique, garantissant que les trois répliques d'un même bloc ne se retrouvent jamais sur le même serveur. Le tableau suivant présente la répartition prévue :\\
+\par L'algorithme CRUSH est configuré pour respecter les domaines de défaillance au niveau du nœud physique, garantissant que les trois répliques d'un même bloc ne se retrouvent jamais sur le même serveur. La capacité utilisable du pool, calculée par l'équation~(4), s'établit à 2\,100~GB, soit environ 2,05~TB. Le tableau suivant présente la répartition prévue :\\
+
 
 \begin{table}[H]
 \centering
