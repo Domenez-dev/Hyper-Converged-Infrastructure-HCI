@@ -280,15 +280,15 @@ CLBS & Prometheus & Historique des migrations \\
 
 \subsubsection{Structure du service}
 
-\par Le service CLBS (``Cluster Load Balancing Service'') a été développé en langage Go dans une VM dédiée accessible sur le réseau de management. Son rôle est d'analyser périodiquement la charge CPU du cluster et de déclencher automatiquement des migrations live lorsque cela est nécessaire.\\
+\par Le service CLBS est développé en Go et tourne dans une VM dédiée sur le réseau de management. Il analyse périodiquement la charge CPU du cluster et déclenche des migrations live si nécessaire.\\
 
-\par Le code est structuré en plusieurs composants : un lecteur InfluxDB pour les métriques historiques, un client API Proxmox pour piloter le cluster, un calculateur de bandes de charge, et un moteur principal de décision. Les paramètres de connexion sont placés dans un fichier \texttt{.env} chargé au démarrage du service.\\
+\par Le code se compose de quatre éléments principaux : un lecteur InfluxDB, un client API Proxmox, un calculateur de charge, et un moteur de décision. La configuration est chargée depuis un fichier \texttt{.env} au démarrage.\\
 
 \subsubsection{Logique de décision}
 
-\par À chaque cycle, le service récupère la charge des nœuds, calcule les bornes de charge modérée, puis classe les nœuds dans les catégories ``heavy'', ``moderate'' ou ``light''. Si un déséquilibre est détecté entre un nœud surchargé et un nœud léger, le moteur choisit la VM la plus adaptée à migrer.\\
+\par À chaque cycle, le service récupère la charge des nœuds et les classe en trois catégories : \textit{heavy}, \textit{moderate} ou \textit{light}. En cas de déséquilibre, le moteur sélectionne la VM la plus adaptée à migrer.\\
 
-\par Plusieurs mécanismes de protection ont été ajoutés pour éviter les migrations excessives, comme un temps de cooldown global, un cooldown individuel par VM et une suspension temporaire en cas de fréquence de migration trop élevée.\\
+\par Pour éviter les migrations excessives, plusieurs garde-fous sont en place : un cooldown global, un cooldown par VM, et une suspension temporaire si la fréquence de migration devient trop élevée.\\
 
 \subsubsection{Déploiement comme service systemd}
 
@@ -1434,11 +1434,11 @@ systemctl start rundeckd
 
 \subsubsection{Intégration du dépôt ansible-infra via GitLab Runner}
 
-\par Après le déploiement du conteneur, le dépôt \texttt{ansible-infra} a été cloné depuis l'instance GitLab locale vers \texttt{/root} sur la machine Rundeck. Un ``GitLab Runner'' a ensuite été enregistré sur ce conteneur et intégré au pipeline CI/CD du dépôt.
+\par Après le déploiement du conteneur, le dépôt \texttt{ansible-infra} a été cloné depuis l'instance GitLab locale vers \texttt{/root} sur la machine Rundeck. Un ``GitLab Runner'' a ensuite été enregistré sur ce conteneur et intégré au pipeline CI/CD du dépôt. \\
 
-\par Le rôle de ce runner est de synchroniser automatiquement les playbooks à chaque push validé : le pipeline copie le contenu du dépôt vers \texttt{/opt/ansible-infra}, répertoire appartenant à l'utilisateur système \texttt{rundeck} (\texttt{chown -R rundeck:rundeck /opt/ansible-infra}). Cette configuration garantit que Rundeck dispose des permissions nécessaires pour lire et exécuter les playbooks directement depuis ce répertoire, sans manipulation manuelle des fichiers.
+\par Le rôle de ce runner est de synchroniser automatiquement les playbooks à chaque push validé : le pipeline copie le contenu du dépôt vers \texttt{/opt/ansible-infra}, répertoire appartenant à l'utilisateur système \texttt{rundeck} (\texttt{chown -R rundeck:rundeck /opt/ansible-infra}). Cette configuration garantit que Rundeck dispose des permissions nécessaires pour lire et exécuter les playbooks directement depuis ce répertoire, sans manipulation manuelle des fichiers. \\
 
-\par Les clés SSH générées précédemment pour l'utilisateur \texttt{ansible} ont été déposées dans \texttt{/opt/ansible-infra/.ssh/}, rendant ce répertoire la source unique de vérité pour à la fois les playbooks et les secrets d'authentification SSH vers les VMs gérées.
+\par Les clés SSH générées précédemment pour l'utilisateur \texttt{ansible} ont été déposées dans \texttt{/opt/ansible-infra/.ssh/}, rendant ce répertoire la source unique de vérité pour à la fois les playbooks et les secrets d'authentification SSH vers les VMs gérées. \\
 
 \subsubsection{Définition des jobs}
 
