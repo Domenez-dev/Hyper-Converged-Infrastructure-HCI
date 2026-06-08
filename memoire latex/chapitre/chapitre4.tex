@@ -636,9 +636,9 @@ ceph df
 
 \subsection{Validation de la tolérance aux pannes}
 
-\par La tolérance aux pannes de la couche stockage a été vérifiée par un scénario de panne simulée. Lors de l'extinction d'un nœud, le cluster Ceph est passé temporairement à l'état \texttt{HEALTH\_WARN}, mais les données sont restées accessibles grâce au facteur de réplication.\\
+\par La tolérance aux pannes de la couche stockage a été vérifiée par un scénario de panne simulée. Lors de l'extinction d'un nœud, le cluster Ceph est passé temporairement à l'état \texttt{HEALTH\_WARN}, mais les données sont restées accessibles grâce au facteur de réplication.
 
-\par Après le retour du nœud défaillant, Ceph a automatiquement lancé la resynchronisation des données et l'état du cluster est revenu à \texttt{HEALTH\_OK}. Ce test valide le bon comportement de la couche stockage distribuée.\\
+\par Après le retour du nœud défaillant, Ceph a automatiquement lancé la resynchronisation des données et l'état du cluster est revenu à \texttt{HEALTH\_OK}. Ce test valide le bon comportement de la couche stockage distribuée.
 
 % ============================================================
 \section{Partie III: Couche Réseau}
