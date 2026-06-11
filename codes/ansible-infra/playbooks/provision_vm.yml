@@ -24,13 +24,19 @@
 #   vm 200 -> .110
 #
 # The playbook:
-#   1. Clones debian-Template (id 101) on the chosen proxmox node
+#   1. Clones debian-Template on the chosen proxmox node
 #   2. Applies hardware config (cpu/ram from template unless overridden)
 #   3. Sets cloud-init static IP derived from vm_id
 #   4. Starts the VM
-#   5. Waits for SSH to be reachable
-#   6. Verifies the IP address matches expectation
-#   7. Runs apt update and apt upgrade
+#
+# This playbook does NOT connect to the new VM over SSH (the template's
+# user/key isn't set up for Ansible management yet) and does NOT run
+# apt update/upgrade. Once the VM is up, bootstrap it with:
+#
+#   ansible-playbook playbooks/bootstrap.yml \
+#     -e "target=<vm_ip> bootstrap_password=<root_password>"
+#
+# bootstrap.yml also runs apt update/upgrade once SSH access is ready.
 
 - name: Provision VM from debian-Template
   # Always runs on the node that owns the template config.
@@ -64,14 +70,14 @@
     vm_ip: "172.16.60.{{ vm_id | int - 90 }}" # 172.16.60.(vm_id - 90)
     vm_cidr: "{{ vm_ip }}/24"
 
-    # ---- SSH connection to the new VM ----
-    vm_user: "ansible"
-    vm_ssh_key: "~/.ssh/ansible_ed25519"
-    vm_boot_timeout: 180 # seconds to wait for SSH after start
-
     # ---- Proxmox API (local to the node) ----
     pve_api_host: "127.0.0.1"
     pve_node: "{{ target_node | default('pve-01') }}"
+
+    # Node that actually holds the VM's config after cloning:
+    #   - full clone   -> lands on pve_node (the --target node)
+    #   - linked clone -> stays on vm_template_node (no --target used)
+    vm_actual_node: "{{ pve_node if (vm_full_clone | bool) else vm_template_node }}"
 
   pre_tasks:
     - name: Ensure proxmoxer is installed on the node
@@ -147,6 +153,7 @@
           qm set {{ vm_id }}
           --cores {{ vm_cores }}
           --memory {{ vm_memory }}
+      delegate_to: "{{ vm_actual_node }}"
       become: true
       tags: [hardware]
 
@@ -154,6 +161,7 @@
     - name: Attach cloud-init drive
       ansible.builtin.shell:
         cmd: "qm set {{ vm_id }} --ide2 {{ ceph_pool }}:cloudinit"
+      delegate_to: "{{ vm_actual_node }}"
       become: true
       register: cloudinit_attach
       failed_when:
@@ -169,18 +177,21 @@
           qm set {{ vm_id }}
           --ipconfig0 ip={{ vm_cidr }},gw={{ vm_gw }}
           --nameserver {{ vm_dns }}
+      delegate_to: "{{ vm_actual_node }}"
       become: true
       tags: [network]
 
     - name: Set cloud-init DNS
       ansible.builtin.shell:
         cmd: "qm set {{ vm_id }} --nameserver 8.8.8.8 --searchdomain localdomain"
+      delegate_to: "{{ vm_actual_node }}"
       become: true
       tags: [network]
 
     - name: Regenerate cloud-init drive
       ansible.builtin.shell:
         cmd: "qm cloudinit update {{ vm_id }}"
+      delegate_to: "{{ vm_actual_node }}"
       become: true
       tags: [network]
 
@@ -202,6 +213,7 @@
     - name: Start the VM
       ansible.builtin.shell:
         cmd: "qm start {{ vm_id }}"
+      delegate_to: "{{ vm_actual_node }}"
       become: true
       register: start_result
       failed_when: >
@@ -210,93 +222,12 @@
       changed_when: start_result.rc == 0
       tags: [start]
 
-    # 5. Wait for SSH
-    - name: Wait for VM SSH to become reachable (up to {{ vm_boot_timeout }}s)
-      ansible.builtin.wait_for:
-        host: "{{ vm_ip }}"
-        port: 22
-        delay: 10
-        timeout: "{{ vm_boot_timeout }}"
-        state: started
-      delegate_to: "{{ pve_node }}"
-      become: false
-      tags: [ssh]
-
-    - name: Add new VM to in-memory inventory
-      ansible.builtin.add_host:
-        name: "{{ vm_name }}"
-        ansible_host: "{{ vm_ip }}"
-        ansible_user: "{{ vm_user }}"
-        ansible_ssh_private_key_file: "{{ vm_ssh_key }}"
-        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
-        groups: provisioned_vms
-      become: false
-      tags: [inventory]
-
-# ------------------------------------------------------------------
-# Play 2: verify + update on the new VM itself
-- name: Verify and update the newly provisioned VM
-  hosts: provisioned_vms
-  gather_facts: true
-  become: true
-
-  vars:
-    expected_ip: "172.16.60.{{ hostvars[groups['proxmox_nodes'][0]]['vm_id'] | default(vm_id) | int - 90 }}"
-
-  tasks:
-    # 6. Verify IP
-    - name: Collect all IPv4 addresses on the VM
-      ansible.builtin.set_fact:
-        vm_actual_ips: >-
-          {{ ansible_facts.interfaces
-             | map('extract', ansible_facts, 'ipv4')
-             | select('defined')
-             | map(attribute='address')
-             | list }}
-
-    - name: Show detected IPs
+    - name: Show next steps
       ansible.builtin.debug:
-        msg: "Interfaces with IPv4: {{ vm_actual_ips }}"
-
-    - name: Assert that the expected IP is configured
-      ansible.builtin.assert:
-        that:
-          - ansible_host in vm_actual_ips
-        fail_msg: >
-          IP verification failed.
-          Expected {{ ansible_host }} but found {{ vm_actual_ips }}.
-        success_msg: "IP {{ ansible_host }} is correctly configured."
-
-    - name: Ensure nameserver is set for this session
-      ansible.builtin.lineinfile:
-        path: /etc/resolv.conf
-        line: "nameserver 8.8.8.8"
-        state: present
-      tags: [dns]
-
-    # 7. apt update + upgrade
-    - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: true
-        cache_valid_time: 0 # force refresh
-
-    - name: Upgrade all packages
-      ansible.builtin.apt:
-        upgrade: dist
-        autoremove: true
-        autoclean: true
-      register: upgrade_result
-
-    - name: Show upgrade summary
-      ansible.builtin.debug:
-        msg: "{{ upgrade_result.stdout_lines | default(['Nothing to upgrade']) }}"
-
-    - name: Check if a reboot is required
-      ansible.builtin.stat:
-        path: /var/run/reboot-required
-      register: reboot_flag
-
-    - name: Notify if reboot is needed
-      ansible.builtin.debug:
-        msg: "NOTICE: VM {{ inventory_hostname }} requires a reboot (kernel or libc updated)."
-      when: reboot_flag.stat.exists
+        msg:
+          - "VM {{ vm_name }} ({{ vm_id }}) is provisioned and starting at {{ vm_ip }}."
+          - "It is not yet bootstrapped for Ansible management."
+          - >-
+            Run: ansible-playbook playbooks/bootstrap.yml
+            -e "target={{ vm_ip }} bootstrap_password=<root_password>"
+      tags: [always]

@@ -33,7 +33,7 @@
   vars:
     ansible_user: root
     ansible_password: "{{ bootstrap_password }}"
-    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o PreferredAuthentications=password"
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no -o PreferredAuthentications=password"
     _key_file: "{{ ssh_public_key_file | default('~/.ssh/ansible_ed25519.pub') }}"
     ssh_public_key: "{{ lookup('file', _key_file) }}"
 
@@ -75,3 +75,46 @@
         owner: ansible
         group: ansible
         mode: "0600"
+
+# ------------------------------------------------------------------
+# Play 3: connect as the ansible user and bring packages up to date
+- name: Update and upgrade packages on bootstrapped host(s)
+  hosts: "{{ 'all' if target == 'all' else 'bootstrap_target' }}"
+  gather_facts: true
+  become: true
+
+  vars:
+    ansible_user: ansible
+    ansible_ssh_private_key_file: "{{ ssh_private_key_file | default('~/.ssh/ansible_ed25519') }}"
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+  tasks:
+    - name: Wait for SSH as the ansible user
+      ansible.builtin.wait_for_connection:
+        timeout: 60
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0 # force refresh
+
+    - name: Upgrade all packages
+      ansible.builtin.apt:
+        upgrade: dist
+        autoremove: true
+        autoclean: true
+      register: upgrade_result
+
+    - name: Show upgrade summary
+      ansible.builtin.debug:
+        msg: "{{ upgrade_result.stdout_lines | default(['Nothing to upgrade']) }}"
+
+    - name: Check if a reboot is required
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_flag
+
+    - name: Notify if reboot is needed
+      ansible.builtin.debug:
+        msg: "NOTICE: {{ inventory_hostname }} requires a reboot (kernel or libc updated)."
+      when: reboot_flag.stat.exists
