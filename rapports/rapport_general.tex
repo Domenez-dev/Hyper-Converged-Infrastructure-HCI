@@ -1,0 +1,866 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[french]{babel}
+\frenchbsetup{StandardLists=true}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{mdframed}
+\usepackage{makecell}
+
+%================ COLORS =================
+\definecolor{bleu}{RGB}{0,76,153}
+\definecolor{bleuclair}{RGB}{0,102,204}
+\definecolor{grislight}{RGB}{245,245,244}
+\definecolor{grisborder}{RGB}{210,210,210}
+\definecolor{orange}{RGB}{200,80,0}
+\definecolor{vert}{RGB}{0,120,60}
+\definecolor{rouge}{RGB}{180,20,20}
+\definecolor{jaune}{RGB}{180,130,0}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=bleu,
+    urlcolor=bleuclair,
+    citecolor=bleu
+}
+
+%================ HEADER / FOOTER =================
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{bleu}\textbf{Infrastructure HCI Open Source, Documentation Generale}}
+\fancyhead[R]{\small\color{bleu}Juin 2026}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+%================ SECTION TITLES =================
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{bleu}}
+  {\thesection}{1em}{}[\vspace{-0.2em}\rule{\linewidth}{0.4pt}]
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{bleuclair}}
+  {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{bleu!70!black}}
+  {\thesubsubsection}{1em}{}
+
+%================ CODE BOX =================
+\lstdefinestyle{shellstyle}{
+    backgroundcolor=\color{grislight},
+    frame=single,
+    rulecolor=\color{grisborder},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{bleu}\bfseries,
+    commentstyle=\color{vert},
+    stringstyle=\color{rouge},
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=2
+}
+
+%================ WARNING / INFO BOXES =================
+\newenvironment{infobox}{%
+  \begin{mdframed}[linecolor=bleu,backgroundcolor=bleu!5,linewidth=1pt,
+    leftmargin=0pt,rightmargin=0pt,innertopmargin=6pt,innerbottommargin=6pt]
+}{%
+  \end{mdframed}
+}
+
+\newenvironment{warnbox}{%
+  \begin{mdframed}[linecolor=orange,backgroundcolor=orange!8,linewidth=1pt,
+    leftmargin=0pt,rightmargin=0pt,innertopmargin=6pt,innerbottommargin=6pt]
+}{%
+  \end{mdframed}
+}
+
+\newenvironment{successbox}{%
+  \begin{mdframed}[linecolor=vert,backgroundcolor=vert!7,linewidth=1pt,
+    leftmargin=0pt,rightmargin=0pt,innertopmargin=6pt,innerbottommargin=6pt]
+}{%
+  \end{mdframed}
+}
+
+%================ TABLE STYLE =================
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+%================ DOCUMENT =================
+\begin{document}
+
+%----------- PAGE DE TITRE -----------
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\color{bleu}\rule{\linewidth}{1.5pt}}\vspace{0.4cm}
+
+  {\Huge\bfseries\color{bleu} Infrastructure Hyperconvergee\\[0.3em]
+  Open Source}\par\vspace{0.5cm}
+  {\color{bleu}\rule{\linewidth}{0.6pt}}\par\vspace{0.8cm}
+
+  {\LARGE Documentation Generale d'Exploitation}\par\vspace{0.4cm}
+  {\large\color{gray} Etat de l'infrastructure, Juin 2026}\par\vspace{2cm}
+
+  \begin{tabular}{ll}
+    \textbf{Realise par :} & Bouzara Zakaria \& Ilyes \\[0.4em]
+    \textbf{Contexte :}    & Projet de Fin d'Etudes, Master 2 RSD \\[0.4em]
+    \textbf{Encadrement :} & USTHB \\[0.4em]
+    \textbf{Date :}        & Juin 2026 \\
+  \end{tabular}
+
+  \vfill
+  {\color{bleu}\rule{\linewidth}{1.5pt}}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+%============================================================
+\section{Presentation generale du projet}
+%============================================================
+
+Ce document constitue la documentation technique d'exploitation de l'infrastructure
+hyperconvergee deployee dans le cadre du projet de fin d'etudes. Il decrit l'etat
+reel de chaque composant~: ce qui fonctionne, ce qui presente des limitations,
+et les points a completer ou corriger.
+
+L'objectif du projet est de concevoir et deployer une infrastructure \textit{cloud prive}
+entierement basee sur des logiciels libres, reproduisant les fonctionnalites essentielles
+d'une plateforme d'entreprise~: hyperconvergence, haute disponibilite, ordonnancement
+des ressources, segmentation reseau, supervision et automatisation.
+
+%============================================================
+\section{Infrastructure physique}
+%============================================================
+
+\subsection{Materiel disponible}
+
+L'infrastructure repose sur trois serveurs physiques \textbf{Dell PowerEdge R720},
+connectes entre eux via un commutateur physique et relies a Internet a travers
+un ordinateur portable faisant office de passerelle NAT.
+
+\begin{table}[H]
+  \caption{Serveurs physiques du cluster}
+  \centering
+  \begin{tabular}{L{2.5cm}L{3.5cm}L{3.5cm}L{4cm}}
+    \toprule
+    \textbf{Hote} & \textbf{IP de gestion} & \textbf{Role} & \textbf{Remarques} \\
+    \midrule
+    pve-01 & 192.168.10.100 & Noeud Proxmox & Noeud primaire \\
+    pve-02 & 192.168.10.213 & Noeud Proxmox & MGR Ceph actif \\
+    pve-03 & 192.168.10.84  & Noeud Proxmox & MGR Ceph standby \\
+    Laptop  & 192.168.10.36  & Passerelle NAT / admin & Acces internet \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Acces SSH et identifiants}
+
+Tous les composants de l'infrastructure sont accessibles par SSH. Le tableau ci-dessous
+recapitule les identifiants pour chaque composant.
+
+\begin{table}[H]
+  \caption{Identifiants d'acces a l'infrastructure}
+  \centering
+  \begin{tabular}{L{4.5cm}L{3.2cm}L{4.5cm}}
+    \toprule
+    \textbf{Composant} & \textbf{Identifiants} & \textbf{Remarques} \\
+    \midrule
+    Serveurs Proxmox (pve-01/02/03) & \texttt{root:ZakiIlyes} & SSH + interface web \\
+    VMs et conteneurs (Sona-Web, CLBS, monitoring\ldots) & \texttt{root:ZakiIlyes} & SSH direct \\
+    GitLab & \texttt{root:ZakiIlyes7} & Interface web + API \\
+    Semaphore UI & \texttt{admin:admin} & Interface playbooks Ansible \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{infobox}
+  \textbf{Connexion SSH aux noeuds Proxmox~:}\\
+  \texttt{ssh root@192.168.10.100} \quad (pve-01)\\
+  \texttt{ssh root@192.168.10.213} \quad (pve-02)\\
+  \texttt{ssh root@192.168.10.84}  \quad (pve-03)
+\end{infobox}
+
+%============================================================
+\section{Cluster Proxmox VE}
+%============================================================
+
+\subsection{Etat general}
+
+Les trois noeuds forment un cluster Proxmox VE pleinement operationnel.
+Corosync assure la gestion du quorum et du \textit{heartbeat} inter-noeuds.
+Le cluster est accessible depuis l'interface web sur le port \texttt{8006}
+de n'importe quel noeud.
+
+\begin{successbox}
+  \textbf{Statut~: Fonctionnel} \\
+  Cluster a 3 noeuds, quorum maintenu, API Proxmox disponible, migrations a chaud operationnelles.
+\end{successbox}
+
+Les commandes de verification de l'etat du cluster~:
+
+\begin{lstlisting}[style=shellstyle]
+pvecm status        # etat du cluster et du quorum
+pvecm nodes         # liste des noeuds
+ceph -s             # etat du stockage distribue
+\end{lstlisting}
+
+%============================================================
+\section{Reseau: OVS et VxLAN}
+%============================================================
+
+\subsection{Architecture reseau}
+
+Le reseau de l'infrastructure est entierement gere par \textbf{Open vSwitch (OVS)}.
+Neuf reseaux logiques distincts ont ete crees sous forme de \textbf{VxLAN}
+(et non de VLAN traditionnels).
+
+\begin{warnbox}
+  \textbf{Important: Limitation de gestion reseau~:}\\
+  L'infrastructure utilise des tunnels \textbf{VxLAN} (protocole RFC~7348, encapsulation UDP
+  sur le port~4789) et non des VLAN 802.1Q classiques. L'interface web de Proxmox VE
+  \textbf{ne supporte pas nativement la configuration VxLAN}~: toute modification
+  des parametres reseau (ajout d'interface, modification d'adresses, changement de
+  configuration OVS) doit imperativement etre effectuee \textbf{en ligne de commande}
+  via \texttt{/etc/network/interfaces}, et non depuis l'interface graphique.
+  Toute tentative de modification via l'interface web risque de supprimer la
+  configuration VxLAN existante.
+\end{warnbox}
+
+\subsection{Plan d'adressage VxLAN}
+
+\begin{table}[H]
+  \caption{Reseaux VxLAN de l'infrastructure}
+  \centering
+  \begin{tabular}{C{1.5cm}L{3.5cm}L{3.5cm}L{4cm}}
+    \toprule
+    \textbf{VxLAN} & \textbf{Nom} & \textbf{Sous-reseau} & \textbf{Usage} \\
+    \midrule
+    \makecell{10\\~} &
+    \makecell[l]{Management\\~} &
+    \makecell[l]{192.168.10.0/24\\~} &
+    \makecell[l]{Web UI, SSH, API Proxmox\\~} \\
+    \makecell{20\\~} &
+    \makecell[l]{Corosync\\~} &
+    \makecell[l]{192.168.20.0/24\\~} &
+    \makecell[l]{Heartbeat, quorum\\~} \\
+    \makecell{30\\~} &
+    \makecell[l]{Ceph Cluster\\~} &
+    \makecell[l]{10.10.30.0/24\\~} &
+    \makecell[l]{Replication OSD interne\\~} \\
+    \makecell{40\\~} &
+    \makecell[l]{Ceph Public\\~} &
+    \makecell[l]{10.10.40.0/24\\~} &
+    \makecell[l]{Acces RBD depuis les VMs\\~} \\
+    \makecell{50\\~} &
+    \makecell[l]{Live Migration\\~} &
+    \makecell[l]{10.10.50.0/24\\~} &
+    \makecell[l]{Migrations a chaud (CLBS)\\~} \\
+    \makecell{60\\~} &
+    \makecell[l]{Production\\~} &
+    \makecell[l]{172.16.60.0/24\\~} &
+    \makecell[l]{VMs applicatives Sona-Web\\~} \\
+    \makecell{70\\~} &
+    \makecell[l]{Dev / Test\\~} &
+    \makecell[l]{172.16.70.0/24\\~} &
+    \makecell[l]{Environnement de test\\~} \\
+    \makecell{80\\~} &
+    \makecell[l]{DMZ\\~} &
+    \makecell[l]{172.16.80.0/24\\~} &
+    \makecell[l]{HAProxy, services exposes\\~} \\
+    \makecell{90\\~} &
+    \makecell[l]{Backup\\~} &
+    \makecell[l]{10.10.90.0/24\\~} &
+    \makecell[l]{Proxmox Backup Server\\~} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Etat du reseau}
+
+\begin{successbox}
+  \textbf{Statut~: Fonctionnel} \\
+  OVS actif sur les trois noeuds, tous les tunnels VxLAN etablis,
+  connectivite inter-noeuds verifiee.
+\end{successbox}
+
+%============================================================
+\section{Stockage distribue: Ceph}
+%============================================================
+
+\subsection{Configuration Ceph}
+
+Le cluster Ceph est deploye sur les trois noeuds physiques selon la configuration suivante~:
+
+\begin{itemize}[noitemsep]
+  \item \textbf{3 Monitors (MON)}~: un par noeud, assurant le quorum Ceph
+  \item \textbf{2 Managers (MGR)}~: pve-02 (actif) et pve-03 (standby)
+  \item \textbf{3 OSD}~: un disque dedie par noeud (facteur de replication~: 3)
+  \item \textbf{Pool}~: \texttt{vmpool}, replication~x3, \texttt{pg\_autoscale} active
+  \item Reseau cluster~: VxLAN~30 (\texttt{10.10.30.0/24})
+  \item Reseau public~: VxLAN~40 (\texttt{10.10.40.0/24})
+\end{itemize}
+
+\begin{successbox}
+  \textbf{Statut~: Fonctionnel} \\
+  Ceph en etat \texttt{HEALTH\_OK}, tous les OSD \texttt{up+in}, replication active.
+  Le pool \texttt{vmpool} est le stockage par defaut pour les disques de VMs.
+\end{successbox}
+
+Commandes de verification~:
+
+\begin{lstlisting}[style=shellstyle]
+ceph -s              # etat global (HEALTH_OK attendu)
+ceph osd tree        # arborescence des OSD
+ceph df              # utilisation du stockage
+\end{lstlisting}
+
+%============================================================
+\section{Haute disponibilite (HA)}
+%============================================================
+
+\subsection{Configuration}
+
+La haute disponibilite est geree par le gestionnaire HA integre de Proxmox VE.
+Les VMs critiques (\textit{Sona-Web}, \textit{CLBS}) sont enregistrees dans le gestionnaire HA
+avec une politique de redemarrage automatique sur un noeud sain en cas de defaillance.
+
+\subsection{Test de basculement}
+
+Le basculement HA a ete teste en simulant la perte d'un noeud via le blocage du
+port Corosync (UDP~5405). Le test a confirme que~:
+
+\begin{itemize}[noitemsep]
+  \item Le CRM detecte la perte du noeud apres environ 30 secondes
+  \item Les VMs sont redemarrees sur les noeuds survivants
+  \item Le watchdog (\textit{softdog}) assure le \textit{fencing} du noeud defaillant
+\end{itemize}
+
+\begin{warnbox}
+  \textbf{Prerequis HA~:} Sans watchdog/fencing configure, Proxmox hesite a effectuer
+  le basculement pour eviter le \textit{split-brain}. La configuration du watchdog
+  \texttt{softdog} est indispensable au bon fonctionnement du HA.
+\end{warnbox}
+
+\begin{successbox}
+  \textbf{Statut~: Fonctionnel} \\
+  HA valide par test de basculement. Redemarrage automatique des VMs confirme.
+\end{successbox}
+
+%============================================================
+\section{Routage et pare-feu: OPNsense}
+%============================================================
+
+\subsection{Role d'OPNsense}
+
+Une VM OPNsense fait office de routeur et de pare-feu inter-zones pour les VMs
+applicatives. Les noeuds Proxmox eux-memes conservent le laptop (192.168.10.36)
+comme passerelle afin de decoupler la disponibilite du cluster de l'etat de la
+VM OPNsense.
+
+\subsection{Etat des fonctionnalites OPNsense}
+
+\subsubsection{NAT et routage}
+
+\begin{successbox}
+  \textbf{NAT~: Fonctionnel}: Le NAT sortant est actif (mode automatique).
+  Les VMs des zones PROD, TEST et DMZ acce\-dent a Internet via la VM OPNsense.\\[0.3em]
+  \textbf{Routage inter-zones~: Fonctionnel}: Le routage entre les zones PROD (172.16.60.0/24),
+  TEST (172.16.70.0/24) et DMZ (172.16.80.0/24) est operationnel.
+\end{successbox}
+
+\subsubsection{DHCP}
+
+\begin{warnbox}
+  \textbf{DHCP~: Partiellement fonctionnel: Conflit intermittent.}\\
+  Le serveur DHCP d'OPNsense entre en conflit avec le commutateur physique
+  qui dispose lui-meme d'un serveur DHCP actif. Il s'agit d'une \textit{course DHCP}
+  (\textit{DHCP race}) entre les deux serveurs~: selon lequel repond en premier,
+  les VMs peuvent recevoir une adresse incorrecte ou ne pas en recevoir du tout.
+  Les adresses IP statiques sont recommandees pour contourner ce probleme.
+\end{warnbox}
+
+\subsubsection{Pare-feu inter-zones (PROD / TEST / DMZ)}
+
+\begin{warnbox}
+  \textbf{Statut~: Partiellement valide.}\\
+  Les regles de segmentation entre les zones PROD, TEST et DMZ sont configurees
+  et fonctionnelles dans les cas standards. Les cas limites (ports applicatifs
+  specifiques, protocoles non standard) n'ont pas ete exhaustivement testes.
+\end{warnbox}
+
+\subsubsection{DNS}
+
+\begin{warnbox}
+  \textbf{DNS~: Active mais non configure.}\\
+  Le serveur DNS d'OPNsense est active mais aucune regle ni zone DNS personnalisee
+  n'a ete definie. Il transfere les requetes vers les serveurs upstream par defaut
+  (8.8.8.8).
+\end{warnbox}
+
+\subsubsection{Desactivation temporaire du pare-feu OPNsense}
+
+Lors des phases de configuration ou de debogage, il est parfois necessaire de
+desactiver temporairement le pare-feu d'OPNsense pour acceder a son interface
+web depuis l'adresse IP de la VM. La commande a executer depuis la console
+OPNsense (ou via SSH) est~:
+
+\begin{lstlisting}[style=shellstyle]
+pfctl -d    # desactive le packet filter (pare-feu) d'OPNsense
+\end{lstlisting}
+
+\textbf{Attention~:} Cette commande desactive entierement le filtrage de paquets.
+Elle doit rester temporaire et etre annulee avec \texttt{pfctl -e} apres configuration.
+
+%============================================================
+\section{Pare-feu Proxmox VE}
+%============================================================
+
+\subsection{Architecture et etat}
+
+Le pare-feu integre de Proxmox VE a ete configure et active sur les trois noeuds.
+Il s'appuie sur \texttt{iptables} et s'organise en trois niveaux~: Datacenter, Noeud, et VM.
+
+\begin{successbox}
+  \textbf{Statut~: Fonctionnel et active.}\\
+  Le pare-feu est en mode \texttt{DROP} en entree. Les groupes de securite
+  (Corosync, VxLAN, Ceph, migration a chaud, administration) sont definis
+  au niveau Datacenter et propage aux trois noeuds.
+\end{successbox}
+
+\subsection{Limitation~: ports applicatifs non declares}
+
+\begin{warnbox}
+  \textbf{Ports de developpement non ouverts.}\\
+  Les ports utilises par les services en developpement (par exemple~: \texttt{8000},
+  \texttt{5432} (PostgreSQL depuis l'exterieur), \texttt{5423} et autres ports applicatifs
+  non standards) ne sont pas definis dans les regles du pare-feu Proxmox. Ces ports doivent
+  etre ouverts \textbf{a la demande}, au moment ou le service correspondant en a besoin.\\[0.3em]
+  Pour ouvrir un port sur une VM~: \textit{Proxmox Web UI} puis
+  selectionner la VM, puis \textit{Firewall}, puis \textit{Rules}, puis bouton \textit{Add}.
+\end{warnbox}
+
+\subsection{Ports cles configures}
+
+\begin{table}[H]
+  \caption{Principaux ports ouverts dans le pare-feu Proxmox}
+  \centering
+  \begin{tabular}{C{2.5cm}C{2cm}L{4cm}L{4cm}}
+    \toprule
+    \textbf{Port(s)} & \textbf{Proto} & \textbf{Service} & \textbf{Reseau source} \\
+    \midrule
+    22            & TCP & SSH administration       & VxLAN~10 (192.168.10.0/24) \\
+    8006          & TCP & Web UI + API Proxmox     & VxLAN~10 + noeuds pairs \\
+    4789          & UDP & Tunnels VxLAN (CRITIQUE) & Noeuds physiques \\
+    5404--5405    & UDP & Corosync heartbeat       & VxLAN~20 \\
+    3300, 6789    & TCP & Ceph MON v2/v1           & VxLAN~30, 40 \\
+    6800--7300    & TCP & Ceph OSD                 & VxLAN~30, 40 \\
+    60000--60050  & TCP & QEMU live migration      & VxLAN~50 \\
+    80, 443       & TCP & HTTP/HTTPS (HAProxy)     & Toutes origines \\
+    3000          & TCP & Grafana                  & VxLAN~10 \\
+    8086          & TCP & InfluxDB API             & VxLAN~10 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%============================================================
+\section{Ordonnancement dynamique: CLBS}
+%============================================================
+
+\subsection{Description}
+
+Le \textit{Custom Load Balancing Service} (CLBS) est un service ecrit en \textbf{Go}
+qui surveille en temps reel l'utilisation CPU et memoire des noeuds Proxmox
+via l'API REST, et declenche des migrations a chaud (\textit{live migration})
+pour reequilibrer la charge entre les noeuds.
+
+\begin{itemize}[noitemsep]
+  \item Seuil de declenchement~: 80\,\% CPU ou memoire sur un noeud
+  \item Seuil bas~: 30\,\% (noeud cible des migrations)
+  \item Periode de refroidissement~: 60 secondes entre deux migrations
+  \item Interface web de supervision~: \textit{Sona-Web} affiche les migrations
+        effectuees et l'etat du cluster en temps reel
+\end{itemize}
+
+\begin{successbox}
+  \textbf{Statut~: Fonctionnel.}\\
+  Le service CLBS est deploye, les migrations automatiques ont ete validees.
+  L'interface web Sona-Web reflete l'etat des migrations en temps reel.
+\end{successbox}
+
+Les sources se trouvent dans \texttt{codes/CLBS-golang/}~: \texttt{main.go},
+\texttt{metrics.go}, \texttt{store.go}.
+
+\subsection{Perspective: CRS natif de Proxmox}
+
+Les versions recentes de Proxmox VE integrent un mecanisme natif d'equilibrage
+de charge appele \textbf{CRS} (\textit{Cluster Resource Scheduler}). Il est preferable
+au CLBS sur plusieurs points~:
+
+\begin{itemize}[noitemsep]
+  \item Le CRS fonctionne comme un service systeme sur les noeuds Proxmox eux-memes,
+        et non dans une VM qui peut etre indisponible au moment d'un basculement HA.
+  \item Il utilise le quorum Corosync pour la communication et la synchronisation
+        entre noeuds, ce qui le rend plus reactif et plus robuste que le mecanisme
+        de secours par HA d'une VM.
+  \item La reintegration dans l'ecosysteme Proxmox est native, sans API externe.
+\end{itemize}
+
+\begin{infobox}
+  \textbf{Recommandation~:} Il est envisageable de creer un \textit{playbook} Ansible
+  pour mettre a jour la version de Proxmox sur les trois noeuds, puis de basculer
+  du CLBS vers le CRS. Cette evolution permettrait de supprimer la VM CLBS et de
+  beneficier d'un ordonnancement plus fiable, directement integre dans le cluster.
+\end{infobox}
+
+%============================================================
+\section{Application Sona-Web}
+%============================================================
+
+\subsection{Architecture applicative}
+
+Sona-Web est l'application de demonstration deployee sur l'infrastructure.
+Elle est constituee de quatre VMs applicatives~:
+
+\begin{table}[H]
+  \caption{VMs de l'application Sona-Web}
+  \centering
+  \begin{tabular}{L{2.5cm}L{3cm}C{2.5cm}L{4cm}}
+    \toprule
+    \textbf{VM} & \textbf{Role} & \textbf{Reseau} & \textbf{Remarques} \\
+    \midrule
+    haproxy     & Repartiteur de charge  & VxLAN 60 + 80 & Equilibrage round-robin \\
+    flask-app-1 & Serveur Flask (Python) & VxLAN 60      & Application backend \\
+    flask-app-2 & Serveur Flask (Python) & VxLAN 60      & Replique pour HA \\
+    postgresql  & Base de donnees        & VxLAN 60      & Disque sur Ceph RBD \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{successbox}
+  \textbf{Statut~: Fonctionnel.}\\
+  L'application est accessible via HAProxy. La repartition de charge est active.
+  La base de donnees PostgreSQL est accessible depuis les deux instances Flask.
+\end{successbox}
+
+Les sources se trouvent dans \texttt{codes/sona-web/}~: \texttt{app.py} (Flask),
+\texttt{haproxy.cfg}, schema de la base de donnees.
+
+%============================================================
+\section{Supervision: Conteneur de monitoring}
+%============================================================
+
+\subsection{Stack de supervision}
+
+La supervision de l'infrastructure est assuree par trois services regroupes dans un
+\textbf{conteneur LXC dedie} (CT~102) deploye sur Proxmox~:
+
+\begin{itemize}[noitemsep]
+  \item \textbf{InfluxDB}~: collecte des metriques Proxmox (CPU, memoire, reseau par noeud et par VM),
+        envoyes par les noeuds via \textit{Metric Server} (\texttt{Datacenter > Metric Server > InfluxDB})
+  \item \textbf{Prometheus}~: active via le module \textit{Prometheus MGR} de Ceph pour l'exposition
+        des metriques Ceph
+  \item \textbf{Loki}~: service de centralisation des logs (deploye mais non alimente en sources de logs)
+  \item \textbf{Grafana}~: visualisation des metriques, accessible sur le port~\texttt{3000}
+\end{itemize}
+
+\begin{successbox}
+  \textbf{Statut~: Fonctionnel.}\\
+  Grafana operationnel, metriques des noeuds et VMs visibles.
+  Prometheus MGR de Ceph actif.
+\end{successbox}
+
+\subsection{Acces au conteneur de monitoring}
+
+\begin{warnbox}
+  \textbf{Acces depuis l'interface Proxmox non disponible.}\\
+  Le conteneur de monitoring (CT~102) ne dispose pas de l'agent QEMU guest.
+  La console integree de l'interface web Proxmox ne fonctionne pas pour ce conteneur.
+  Deux methodes d'acces sont disponibles~:
+\end{warnbox}
+
+\begin{enumerate}[noitemsep]
+  \item \textbf{SSH direct} (recommande)~:
+\begin{lstlisting}[style=shellstyle]
+ssh root@192.168.10.99   # mot de passe : ZakiIlyes
+\end{lstlisting}
+  \item \textbf{Entree directe depuis le noeud hote} (si SSH indisponible)~:
+\begin{lstlisting}[style=shellstyle]
+pct enter 102   # depuis pve-02 (ou le noeud qui heberge CT 102 apres HA)
+\end{lstlisting}
+\end{enumerate}
+
+Le conteneur est normalement heberge sur \textbf{pve-02}. S'il a ete deplace par le
+mecanisme HA, verifier sur quel noeud il se trouve depuis l'interface web Proxmox
+avant d'utiliser \texttt{pct enter}.
+
+\subsection{Fichiers de configuration}
+
+\begin{table}[H]
+  \caption{Fichiers de configuration des services de supervision (CT~102)}
+  \centering
+  \begin{tabular}{L{3cm}L{5.5cm}L{5cm}}
+    \toprule
+    \textbf{Service} & \textbf{Fichier de configuration} & \textbf{Remarques} \\
+    \midrule
+    Grafana     & \texttt{/etc/grafana/grafana.ini}              & Config generale, section \texttt{[smtp]} \\
+    Prometheus  & \texttt{/etc/prometheus/prometheus.yml}         & Cibles de scraping \\
+    Loki        & \texttt{/etc/loki/local-config.yaml}            & Stockage et retention des logs \\
+    InfluxDB    & \texttt{/etc/influxdb/config.toml}              & Ports, auth, organisation \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Alertmanager et notifications}
+
+\begin{warnbox}
+  \textbf{Alertmanager~: Configure mais canaux de notification a corriger.}\\
+  Alertmanager est deploye et configure. Cependant, la configuration SMTP actuelle
+  (section \texttt{[smtp]} dans \texttt{/etc/grafana/grafana.ini}) utilise un ancien
+  compte Google avec un \textit{App Password} qui n'est plus valide. Pour que les
+  alertes par e-mail fonctionnent, il faut soit~:\\[0.3em]
+  \begin{itemize}[noitemsep]
+    \item Remplacer le compte Google par un serveur SMTP dedie ou un relais SMTP
+          valide (ex.~: Postfix local, SendGrid, Mailgun).
+    \item Ou configurer un canal de notification alternatif directement dans Grafana
+          (Grafana supporte Slack, Telegram, webhook, PagerDuty et d'autres, chacun
+          necessitant l'ajout d'un \textit{contact point} dedie dans
+          \texttt{Alerting > Contact points}).
+  \end{itemize}
+  Les regles d'alerte (seuils CPU, perte d'OSD Ceph, perte de quorum) sont a
+  definir dans \texttt{Alerting > Alert rules} une fois le canal de notification valide.
+\end{warnbox}
+
+%============================================================
+\section{GitLab et CI/CD Ansible}
+%============================================================
+
+\subsection{Instance GitLab}
+
+Une instance GitLab est deployee sur l'infrastructure sous forme de
+\textbf{conteneur LXC Turnkey} (image preconstruite \textit{Turnkey GitLab} pour Proxmox).
+Elle heberge le depot du projet Ansible (\texttt{ansible-infra}).
+Identifiants~: \texttt{root:ZakiIlyes7}.
+
+\begin{successbox}
+  \textbf{Statut~: Fonctionnel dans les conditions normales.}\\
+  GitLab operationnel, depot \texttt{ansible-infra} disponible, runners configures.
+\end{successbox}
+
+\subsection{Probleme connu: Arret apres migration ou basculement HA}
+
+\begin{warnbox}
+  \textbf{GitLab peut s'arreter apres une migration a chaud ou un basculement HA.}\\
+  Apres chaque deplacement du conteneur GitLab (declenche par CLBS ou par le
+  mecanisme HA), les services GitLab peuvent ne pas redemarrer automatiquement.
+  Pour relancer GitLab manuellement, entrer dans le conteneur puis executer~:
+\end{warnbox}
+
+\begin{lstlisting}[style=shellstyle]
+gitlab-ctl start        # demarre tous les services GitLab
+gitlab-ctl status       # verifie l'etat de chaque service
+\end{lstlisting}
+
+Si certains services restent en echec~:
+
+\begin{lstlisting}[style=shellstyle]
+gitlab-ctl restart <nom-du-service>   # ex. : gitlab-ctl restart puma
+\end{lstlisting}
+
+\subsection{Versions et mises a jour necessaires}
+
+Le conteneur Turnkey GitLab presente deux problemes de version qu'il faudra
+corriger manuellement (Turnkey ne fournit pas de guide de mise a jour pour ces deux points)~:
+
+\begin{table}[H]
+  \caption{Etat des versions du conteneur GitLab Turnkey}
+  \centering
+  \begin{tabular}{L{3.5cm}C{2.5cm}C{2.5cm}L{4cm}}
+    \toprule
+    \textbf{Composant} & \textbf{Version actuelle} & \textbf{Version cible} & \textbf{Methode} \\
+    \midrule
+    Debian (OS)  & 12 (Bookworm) & 13 (Trixie) & Mise a jour manuelle via \texttt{apt} \\
+    GitLab CE    & 17.x          & 18.x        & Mise a jour manuelle via paquets GitLab \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{warnbox}
+  \textbf{Attention avant toute mise a jour~:} Sauvegarder l'etat du conteneur GitLab
+  via Proxmox Backup Server avant d'entreprendre une mise a jour majeure.
+  La mise a jour de Debian 12 vers 13 peut affecter les dependances de GitLab.
+  Il est conseille de d'abord mettre a jour GitLab vers la derniere version 17.x stable,
+  puis de passer a Debian 13, puis enfin de migrer vers GitLab 18.x.
+\end{warnbox}
+
+\subsection{Runner GitLab CI/CD: Probleme de linter}
+
+Un \textit{runner} GitLab CI/CD est configure pour executer automatiquement
+les verifications (\textit{lint}) et les controles syntaxiques (\textit{syntax-check})
+sur les \textit{playbooks} Ansible a chaque \textit{push}.
+
+\begin{warnbox}
+  \textbf{Pipeline CI/CD~: Probleme au stage \texttt{lint}.}\\
+  L'etape \texttt{ansible-lint} du pipeline echoue en raison de regles de linter
+  trop strictes ou incompatibles avec les \textit{playbooks} actuels. Deux options
+  pour resoudre ce probleme~:
+  \begin{enumerate}[noitemsep]
+    \item \textbf{Assouplir les regles}~: modifier \texttt{.ansible-lint} pour exclure
+          les regles problematiques (ajouter \texttt{skip\_list:} avec les identifiants
+          des regles qui echouent).
+    \item \textbf{Supprimer l'etape lint}~: retirer les jobs \texttt{yaml-lint} et
+          \texttt{ansible-lint} du fichier \texttt{.gitlab-ci.yml} et ne conserver que
+          l'etape \texttt{syntax-check}, qui fonctionne correctement.
+  \end{enumerate}
+\end{warnbox}
+
+Le fichier CI se trouve a \texttt{codes/ansible-infra/.gitlab-ci.yml}.
+La configuration du linter est dans \texttt{.ansible-lint} et \texttt{.yamllint.yml}.
+
+%============================================================
+\section{Automatisation Ansible: Etat des playbooks}
+%============================================================
+
+\subsection{Playbooks disponibles}
+
+Les \textit{playbooks} Ansible sont regroupes dans \texttt{codes/ansible-infra/playbooks/}.
+L'interface graphique \textbf{Semaphore UI} (identifiants~: \texttt{admin:admin})
+permet de les lancer sans passer par la ligne de commande.
+
+\begin{table}[H]
+  \caption{Etat des playbooks Ansible}
+  \centering
+  \begin{tabular}{L{4.5cm}L{3cm}L{6cm}}
+    \toprule
+    \textbf{Playbook} & \textbf{Statut} & \textbf{Remarques} \\
+    \midrule
+    \texttt{bootstrap.yml}   & \textcolor{vert}{\textbf{Fonctionnel}}  & Enrolement d'une nouvelle VM dans l'inventaire Ansible \\
+    \texttt{hardening.yml}   & \textcolor{vert}{\textbf{Fonctionnel}}  & Durcissement SSH, mise a jour, configuration de base \\
+    \texttt{ntp\_sync.yml}   & \textcolor{vert}{\textbf{Fonctionnel}}  & Synchronisation NTP des noeuds \\
+    \texttt{pbs.yml}         & \textcolor{vert}{\textbf{Fonctionnel}}  & Configuration du Proxmox Backup Server \\
+    \texttt{provision\_vm.yml} & \textcolor{orange}{\textbf{Partiel}} & Provisionnement unitaire de VM~; certains cas d'echec non resolus \\
+    \texttt{provision\_vm\_batch.yml} & \textcolor{orange}{\textbf{Partiel}} & Provisionnement en lot~; pas entierement valide \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{warnbox}
+  \textbf{Playbooks de provisionnement~: Tests incomplets.}\\
+  Les \textit{playbooks} \texttt{provision\_vm.yml} et \texttt{provision\_vm\_batch.yml}
+  ont ete testes partiellement et ont echoue dans certains cas.
+  L'integration d'un nouveau noeud au cluster via Ansible et la migration de VMs
+  entre environnements (dev vers prod) n'ont pas ete entierement validees.
+  Ces \textit{playbooks} necessitent des corrections avant utilisation en production.
+\end{warnbox}
+
+%============================================================
+\section{Scalabilite: PXE / TFTP}
+%============================================================
+
+\subsection{Contexte}
+
+Le deploiement de nouveaux noeuds physiques par demarrage reseau (PXE) a ete
+envisage comme mecanisme de scalabilite horizontale de l'infrastructure.
+
+\begin{warnbox}
+  \textbf{PXE/TFTP~: Non deploye sur l'infrastructure reelle.}\\
+  Aucun serveur PXE/TFTP n'a ete installe sur les serveurs physiques de l'infrastructure.
+  Les tests realises l'ont ete \textbf{localement} sur les machines des developpeurs,
+  en utilisant \textbf{iPXE} et un serveur TFTP. Ces tests ont rencontre des problemes
+  lors du demarrage iPXE (difficultes de chainage du \textit{bootloader} et de
+  chargement des images). La fonctionnalite reste en phase de preuve de concept
+  et n'est pas prete pour un deploiement reel.
+\end{warnbox}
+
+Cette fonctionnalite est documentee dans le memoire (chapitre III, section Conception,
+et perspectives) mais est explicitement marquee comme non realisee.
+
+%============================================================
+\section{Recapitulatif de l'etat de l'infrastructure}
+%============================================================
+
+\begin{table}[H]
+  \caption{Etat global des composants}
+  \centering
+  \begin{tabular}{L{5.5cm}C{3cm}L{4.5cm}}
+    \toprule
+    \textbf{Composant} & \textbf{Statut} & \textbf{Remarques} \\
+    \midrule
+    Cluster Proxmox VE (3 noeuds) & \textcolor{vert}{\textbf{OK}} & Pleinement operationnel \\
+    Reseau OVS + VxLAN            & \textcolor{vert}{\textbf{OK}} & 9 reseaux actifs \\
+    Stockage Ceph                 & \textcolor{vert}{\textbf{OK}} & \texttt{HEALTH\_OK} \\
+    Haute disponibilite (HA)      & \textcolor{vert}{\textbf{OK}} & Valide par test \\
+    CLBS (DRS)                    & \textcolor{vert}{\textbf{OK}} & Migrations automatiques actives \\
+    Application Sona-Web          & \textcolor{vert}{\textbf{OK}} & Flask + HAProxy + PostgreSQL \\
+    Supervision (Grafana / InfluxDB) & \textcolor{vert}{\textbf{OK}} & Metriques disponibles \\
+    GitLab (fonctionnement)       & \textcolor{vert}{\textbf{OK}} & Instance operationnelle \\
+    Pare-feu Proxmox              & \textcolor{vert}{\textbf{OK}} & Active, mode DROP \\
+    NAT OPNsense                  & \textcolor{vert}{\textbf{OK}} & Internet accessible depuis VMs \\
+    Routage inter-zones OPNsense  & \textcolor{vert}{\textbf{OK}} & PROD / TEST / DMZ \\
+    DHCP OPNsense                 & \textcolor{jaune}{\textbf{Partiel}} & Conflit avec switch physique \\
+    Pare-feu OPNsense (inter-zones) & \textcolor{jaune}{\textbf{Partiel}} & Cas limites non testes \\
+    DNS OPNsense                  & \textcolor{jaune}{\textbf{Partiel}} & Active, aucune regle personnalisee \\
+    Pipeline CI/CD GitLab Ansible & \textcolor{jaune}{\textbf{Partiel}} & Etape lint en echec \\
+    Playbooks de provisionnement  & \textcolor{jaune}{\textbf{Partiel}} & Cas d'echec non resolus \\
+    Alertmanager / Notifications  & \textcolor{jaune}{\textbf{Partiel}} & SMTP invalide, a reconfigurer \\
+    GitLab (versions)             & \textcolor{jaune}{\textbf{A mettre a jour}} & Debian 12, GitLab 17 \\
+    Logs centralises (Loki)       & \textcolor{jaune}{\textbf{Partiel}} & Service deploye, sans sources de logs \\
+    PXE / TFTP                    & \textcolor{rouge}{\textbf{Non deploye}} & Test local uniquement, problemes iPXE \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%============================================================
+\section{Points d'action prioritaires}
+%============================================================
+
+\begin{enumerate}
+  \item \textbf{Pipeline CI/CD}~: Corriger ou supprimer l'etape \texttt{ansible-lint}
+        dans \texttt{.gitlab-ci.yml} pour restaurer un pipeline fonctionnel.
+
+  \item \textbf{DHCP}~: Desactiver le DHCP sur le commutateur physique ou definir
+        des adresses statiques sur toutes les VMs pour eliminer le conflit.
+
+  \item \textbf{Ports applicatifs}~: Documenter et ouvrir au fur et a mesure les
+        ports necessaires aux services en developpement (ex.~: 8000, 5432, 5000, 5423\ldots)
+        dans le pare-feu Proxmox.
+
+  \item \textbf{Alertmanager / SMTP}~: Remplacer la configuration SMTP invalide
+        dans \texttt{/etc/grafana/grafana.ini} par un relais SMTP fonctionnel
+        ou configurer un canal alternatif dans Grafana (Telegram, Slack, webhook).
+
+  \item \textbf{GitLab: Mises a jour}~: Effectuer les mises a jour manuelles
+        de Debian 12 vers 13 et de GitLab 17 vers 18 (sauvegarder le conteneur avant).
+
+  \item \textbf{Playbooks de provisionnement}~: Identifier et corriger les cas
+        d'echec de \texttt{provision\_vm.yml} et \texttt{provision\_vm\_batch.yml}
+        avant toute utilisation en conditions reelles.
+
+  \item \textbf{DNS OPNsense}~: Definir des enregistrements DNS internes pour
+        les VMs afin de ne pas dependre des adresses IP brutes.
+
+  \item \textbf{Migration vers CRS}~: Evaluer la mise a jour de Proxmox et le
+        passage du CLBS au CRS natif pour un ordonnancement plus robuste.
+
+  \item \textbf{Loki}~: Configurer les sources de logs (systemd, conteneurs, VMs)
+        pour alimenter Loki et rendre la centralisation des logs effective.
+\end{enumerate}
+
+\end{document}
