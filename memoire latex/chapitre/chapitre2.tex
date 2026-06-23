@@ -340,7 +340,7 @@ Cas d'usage & Applications nécessitant un noyau spécifique & Services Linux st
 
 \end{enumerate}
 
-\par C'est ce mécanisme que le service CLBS utilise pour redistribuer la charge entre les n\oe{}uds. Le trafic de migration doit transiter sur un réseau dédié pour ne pas impacter les autres flux.\\
+\par C'est ce mécanisme que le service CSLB utilise pour redistribuer la charge entre les n\oe{}uds. Le trafic de migration doit transiter sur un réseau dédié pour ne pas impacter les autres flux.\\
 
 \paratitle{Interface de gestion et API REST}
 
@@ -515,7 +515,7 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \section{L'Équilibrage Dynamique de Charge dans les Clusters Virtualisés}
 
-\par Cette section expose la problématique du déséquilibre de charge, passe en revue les mécanismes existants, puis présente l'algorithme CSLB sur lequel s'appuie le CLBS développé dans ce projet.\\
+\par Cette section expose la problématique du déséquilibre de charge, passe en revue les mécanismes existants, puis présente l'algorithme CSLB sur lequel s'appuie le CSLB développé dans ce projet.\\
 
 \subsection{Problématique du Déséquilibre de Charge}
 
@@ -527,11 +527,11 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \par D'autres plateformes proposent des mécanismes similaires : \textbf{Microsoft SCVMM} avec la ``Dynamic Optimization''~\cite{refSCVMM} pour Hyper-V, \textbf{oVirt} avec son planificateur de cluster via libvirt~\cite{refOvirt}, et \textbf{OpenStack Nova} avec son planificateur distribué par filtres et pondérations~\cite{refNova}. \\
 
-\par Proxmox VE n'a pas de tel mécanisme natif. Ce projet développe un service équivalent, nommé CLBS, s'appuyant sur l'API REST Proxmox et le stockage partagé Ceph. \\
+\par Proxmox VE n'a pas de tel mécanisme natif. Ce projet développe un service équivalent, nommé CSLB, s'appuyant sur l'API REST Proxmox et le stockage partagé Ceph. \\
 
-\subsection{L'Algorithme CSLB : Base Théorique du CLBS}
+\subsection{L'Algorithme CSLB : Base Théorique du CSLB}
 
-\par Le CLBS est fondé sur l'algorithme CSLB de Wilcox pour les environnements de virtualisation distribués~\cite{ref38}. L'algorithme repose sur un scheduler centralisé qui opère en cinq phases~\cite{ref17} :\\
+\par Le CSLB est fondé sur l'algorithme CSLB de Wilcox pour les environnements de virtualisation distribués~\cite{ref38}. L'algorithme repose sur un scheduler centralisé qui opère en cinq phases~\cite{ref17} :\\
 
 \begin{enumerate}
     \item \textbf{Évaluation de la charge :} lecture des métriques CPU et RAM de chaque n\oe{}ud sur une fenêtre temporelle glissante, pour s'affranchir des pics instantanés.
@@ -557,11 +557,11 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \par Pour superviser l'infrastructure, on a besoin d'outils qui collectent, stockent et visualisent les métriques en temps réel : charge des n\oe{}uds, état du stockage, historique des migrations et alertes. Trois outils complémentaires forment cette stack.\\
 
-\par \textbf{InfluxDB}~\cite{ref24} est une base de données de séries temporelles optimisée pour les données horodatées. Elle collecte les métriques Proxmox (CPU, mémoire, réseau et stockage) via le mécanisme natif Metric Server. Ces données sont exploitées par Grafana pour la visualisation et par le CLBS pour les décisions de migration.\\
+\par \textbf{InfluxDB}~\cite{ref24} est une base de données de séries temporelles optimisée pour les données horodatées. Elle collecte les métriques Proxmox (CPU, mémoire, réseau et stockage) via le mécanisme natif Metric Server. Ces données sont exploitées par Grafana pour la visualisation et par le CSLB pour les décisions de migration.\\
 
-\par \textbf{Prometheus}~\cite{refPrometheus} collecte les métriques par interrogation HTTP selon un modèle de données par étiquettes. Il surveille le cluster Ceph via son point d'accès natif et les métriques du service CLBS.\\
+\par \textbf{Prometheus}~\cite{refPrometheus} collecte les métriques par interrogation HTTP selon un modèle de données par étiquettes. Il surveille le cluster Ceph via son point d'accès natif et les métriques du service CSLB.\\
 
-\par \textbf{Grafana}~\cite{ref25} est l'outil de visualisation connecté aux deux sources précédentes. Il affiche des tableaux de bord unifiés sur l'état des n\oe{}uds, du stockage et du CLBS.\\
+\par \textbf{Grafana}~\cite{ref25} est l'outil de visualisation connecté aux deux sources précédentes. Il affiche des tableaux de bord unifiés sur l'état des n\oe{}uds, du stockage et du CSLB.\\
 
 \subsection{Ansible : Automatisation d'Infrastructure}
 
@@ -595,4 +595,4 @@ API REST (port 8006) & Interface de pilotage programmatique et d'automatisation 
 
 \section{Conclusion}
 
-\par Ce chapitre a posé les bases théoriques du projet. On a défini l'hyperconvergence, comparé les solutions open source et justifié le choix de Proxmox VE, Ceph et Open vSwitch. On a présenté la pile de virtualisation, les mécanismes de clustering, de haute disponibilité et de migration à chaud, ainsi que la segmentation réseau par VXLAN comme réponse à la contrainte du switch Sonatrach. Les fondements de l'algorithme CLBS ont été établis, et les outils complémentaires ont été présentés. Le chapitre suivant détaille la conception de l'architecture proposée.\\
+\par Ce chapitre a posé les bases théoriques du projet. On a défini l'hyperconvergence, comparé les solutions open source et justifié le choix de Proxmox VE, Ceph et Open vSwitch. On a présenté la pile de virtualisation, les mécanismes de clustering, de haute disponibilité et de migration à chaud, ainsi que la segmentation réseau par VXLAN comme réponse à la contrainte du switch Sonatrach. Les fondements de l'algorithme CSLB ont été établis, et les outils complémentaires ont été présentés. Le chapitre suivant détaille la conception de l'architecture proposée.\\

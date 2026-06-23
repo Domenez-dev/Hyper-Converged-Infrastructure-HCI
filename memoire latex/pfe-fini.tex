@@ -121,6 +121,12 @@
   \@afterheading}
 \makeatother
 
+%======== SOURCE DES FIGURES ========
+% Légende secondaire affichée sous l'image (à placer après \caption/\label).
+% N'apparaît pas dans la table des figures.
+\newcommand{\source}[1]{%
+  \par\vspace{0.3em}{\footnotesize\itshape Source~: #1}\par}
+
 %================ NUMBERING =================
 \setcounter{secnumdepth}{3}
 \setcounter{tocdepth}{3}
@@ -168,6 +174,10 @@
 \input{./pagedegarde.tex}
 %remerciments
 \input{./merci.tex}
+
+% Numérotation romaine (i, ii, iii, ...) pour les pages liminaires :
+% table des matières, table des figures, liste des tableaux et abréviations.
+\pagenumbering{roman}
 
 %================ TABLE OF CONTENTS =================
 \clearpage

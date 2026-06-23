@@ -19,7 +19,7 @@
 \section{Partie I: Couche Calcul}
 % ============================================================
 
-\par Cette partie couvre l'ensemble des opérations réalisées au niveau de la couche de calcul de l'infrastructure : installation de Proxmox VE, formation du cluster, déploiement du monitoring, implémentation du mécanisme CLBS, et déploiement des services applicatifs.
+\par Cette partie couvre l'ensemble des opérations réalisées au niveau de la couche de calcul de l'infrastructure : installation de Proxmox VE, formation du cluster, déploiement du monitoring, implémentation du mécanisme CSLB, et déploiement des services applicatifs.
 
 \subsection{Préparation de l'Infrastructure Physique}
 
@@ -188,7 +188,7 @@ pvecm status
 
 \subsubsection{Déploiement de Prometheus}
 
-\par Prometheus a été installé dans le même conteneur afin de collecter les métriques exposées par Ceph et par le service applicatif CLBS. La configuration du fichier \texttt{prometheus.yml} contient deux jobs principaux : un job pour les métriques Ceph via le module MGR Prometheus, et un job pour l'application CLBS développée en Go.\\
+\par Prometheus a été installé dans le même conteneur afin de collecter les métriques exposées par Ceph et par le service applicatif CSLB. La configuration du fichier \texttt{prometheus.yml} contient deux jobs principaux : un job pour les métriques Ceph via le module MGR Prometheus, et un job pour l'application CSLB développée en Go.\\
 
 \par Avant de configurer Prometheus, le module MGR Prometheus de Ceph a été activé sur les nœuds PVE-02 et PVE-03 via la commande suivante, exécutée une seule fois sur le cluster :
 
@@ -213,29 +213,29 @@ scrape_configs:
         labels:
           cluster: "proxmox-lab"
 
-  - job_name: "clbs"
+  - job_name: "CSLB"
     static_configs:
       - targets: ["192.168.10.104:9101"]
         scrape_interval: 30s
         scrape_timeout: 10s
 \end{lstlisting}
 
-\par la Figure~\ref{lst:prometheus-yml} définit deux jobs de collecte : le premier interroge les endpoints Ceph MGR des trois nœuds sur le port 9283, le second scrute le service CLBS sur le port 9101. L'intervalle de 30 secondes constitue un bon compromis entre fraîcheur des données et charge générée sur les cibles.\\
+\par la Figure~\ref{lst:prometheus-yml} définit deux jobs de collecte : le premier interroge les endpoints Ceph MGR des trois nœuds sur le port 9283, le second scrute le service CSLB sur le port 9101. L'intervalle de 30 secondes constitue un bon compromis entre fraîcheur des données et charge générée sur les cibles.\\
 
 \par Après déploiement, l'interface web Prometheus a permis de confirmer que l'ensemble des cibles déclarées apparaissaient avec l'état \texttt{UP}, comme l'illustre la Figure~\ref{fig:prometheus-targets}.\\
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{image/ch4/prometheus_targets.png}
-    \caption{Interface Prometheus montrant les cibles Ceph et CLBS avec l'état UP.}
+    \caption{Interface Prometheus montrant les cibles Ceph et CSLB avec l'état UP.}
     \label{fig:prometheus-targets}
 \end{figure}
 
-\par La Figure~\ref{fig:prometheus-targets} présente la page ``Targets'' de l'interface web Prometheus. On observe que deux des trois endpoints Ceph MGR affichent l'état \texttt{UP} (PVE-02 et PVE-03), tandis que celui de PVE-01 apparaît en état \texttt{DOWN}. Ce comportement est tout à fait normal : le module MGR Prometheus n'expose ses métriques sur le port 9283 que lorsque le manager Ceph est en rôle \textit{actif} sur le nœud concerné. PVE-01 héberge un MGR en mode \textit{standby}, c'est-à-dire qu'il ne devient actif qu'en cas de défaillance simultanée des managers de PVE-02 et PVE-03 ; en fonctionnement nominal, son endpoint reste donc inaccessible. Le service CLBS, quant à lui, affiche bien l'état \texttt{UP}, confirmant que la collecte des métriques applicatives est opérationnelle.\\
+\par La Figure~\ref{fig:prometheus-targets} présente la page ``Targets'' de l'interface web Prometheus. On observe que deux des trois endpoints Ceph MGR affichent l'état \texttt{UP} (PVE-02 et PVE-03), tandis que celui de PVE-01 apparaît en état \texttt{DOWN}. Ce comportement est tout à fait normal : le module MGR Prometheus n'expose ses métriques sur le port 9283 que lorsque le manager Ceph est en rôle \textit{actif} sur le nœud concerné. PVE-01 héberge un MGR en mode \textit{standby}, c'est-à-dire qu'il ne devient actif qu'en cas de défaillance simultanée des managers de PVE-02 et PVE-03 ; en fonctionnement nominal, son endpoint reste donc inaccessible. Le service CSLB, quant à lui, affiche bien l'état \texttt{UP}, confirmant que la collecte des métriques applicatives est opérationnelle.\\
 
 \subsubsection{Déploiement de Grafana}
 
-\par Grafana a été ajouté comme couche de visualisation unifiée pour les métriques de Proxmox, Ceph et CLBS. Deux sources de données ont été configurées : InfluxDB pour les métriques de Proxmox, et Prometheus pour les métriques Ceph et applicatives. Le tableau~\ref{tab:grafana-dashboards} récapitule les tableaux de bord configurés ainsi que leur source de données respective.\\
+\par Grafana a été ajouté comme couche de visualisation unifiée pour les métriques de Proxmox, Ceph et CSLB. Deux sources de données ont été configurées : InfluxDB pour les métriques de Proxmox, et Prometheus pour les métriques Ceph et applicatives. Le tableau~\ref{tab:grafana-dashboards} récapitule les tableaux de bord configurés ainsi que leur source de données respective.\\
 
 \begin{table}[H]
 \centering
@@ -249,12 +249,12 @@ Proxmox Cluster & InfluxDB & CPU, RAM, réseau par nœud \\
 \hline
 Ceph & Prometheus & Santé cluster, pools, latence OSD \\
 \hline
-CLBS & Prometheus & Historique des migrations \\
+CSLB & Prometheus & Historique des migrations \\
 \hline
 \end{tabular}
 \end{table}
 
-\par Trois dashboards principaux ont ainsi été utilisés : un dashboard infrastructure Proxmox, un dashboard Ceph, et un dashboard personnalisé pour le service CLBS. La Figure~\ref{fig:grafana-proxmox-dashboard} présente le dashboard dédié à l'infrastructure Proxmox, tandis que la Figure~\ref{fig:grafana-ceph-dashboard} illustre celui consacré au cluster Ceph.\\
+\par Trois dashboards principaux ont ainsi été utilisés : un dashboard infrastructure Proxmox, un dashboard Ceph, et un dashboard personnalisé pour le service CSLB. La Figure~\ref{fig:grafana-proxmox-dashboard} présente le dashboard dédié à l'infrastructure Proxmox, tandis que la Figure~\ref{fig:grafana-ceph-dashboard} illustre celui consacré au cluster Ceph.\\
 
 \begin{figure}[H]
     \centering
@@ -274,13 +274,13 @@ CLBS & Prometheus & Historique des migrations \\
 
 \par La Figure~\ref{fig:grafana-ceph-dashboard} présente le dashboard Grafana dédié au cluster Ceph. On y retrouve l'état global de santé du cluster, les métriques I/O par pool, la latence des OSDs et le taux de réplication en temps réel, permettant de superviser en continu la couche stockage depuis la même interface unifiée. La vue complète du dashboard est disponible en Annexe~\ref{ann:grafana}.\\
 
-\subsection{Implémentation du mécanisme CLBS}
+\subsection{Implémentation du mécanisme CSLB}
 
-\par Le mécanisme CLBS constitue l'une des contributions principales de ce projet. Il s'agit d'un service d'équilibrage proactif développé spécifiquement pour pallier l'absence de DRS natif dans Proxmox VE.
+\par Le mécanisme CSLB constitue l'une des contributions principales de ce projet. Il s'agit d'un service d'équilibrage proactif développé spécifiquement pour pallier l'absence de DRS natif dans Proxmox VE.
 
 \subsubsection{Structure du service}
 
-\par Le service CLBS est développé en Go et tourne dans une VM dédiée sur le réseau de management. Il analyse périodiquement la charge CPU du cluster et déclenche des migrations live si nécessaire.\\
+\par Le service CSLB est développé en Go et tourne dans une VM dédiée sur le réseau de management. Il analyse périodiquement la charge CPU du cluster et déclenche des migrations live si nécessaire.\\
 
 \par Le code se compose de quatre éléments principaux : un lecteur InfluxDB, un client API Proxmox, un calculateur de charge, et un moteur de décision. La configuration est chargée depuis un fichier \texttt{.env} au démarrage.\\
 
@@ -292,43 +292,43 @@ CLBS & Prometheus & Historique des migrations \\
 
 \subsubsection{Déploiement comme service systemd}
 
-\par Une fois compilé, le binaire Go a été déployé sur la VM CLBS puis intégré comme service \texttt{systemd} afin d'assurer un démarrage automatique et une relance en cas de panne.\\
+\par Une fois compilé, le binaire Go a été déployé sur la VM CSLB puis intégré comme service \texttt{systemd} afin d'assurer un démarrage automatique et une relance en cas de panne.\\
 
-\begin{lstlisting}[style=sonacode,language=bash,caption={Gestion du service CLBS avec systemd},label={lst:clbs-systemd}]
-systemctl enable clbs
-systemctl start clbs
-journalctl -u clbs.service -f -o cat
+\begin{lstlisting}[style=sonacode,language=bash,caption={Gestion du service CSLB avec systemd},label={lst:CSLB-systemd}]
+systemctl enable CSLB
+systemctl start CSLB
+journalctl -u CSLB.service -f -o cat
 \end{lstlisting}
 
-\par Les trois commandes de la Figure~\ref{lst:clbs-systemd} activent le démarrage automatique du service au boot, le démarrent immédiatement, et affichent les journaux en temps réel. Comme le montre la Figure~\ref{fig:clbs-logs}, ces journaux permettent de suivre en direct les décisions de migration et les éventuelles erreurs de connexion à l'API Proxmox ou à InfluxDB.\\
+\par Les trois commandes de la Figure~\ref{lst:CSLB-systemd} activent le démarrage automatique du service au boot, le démarrent immédiatement, et affichent les journaux en temps réel. Comme le montre la Figure~\ref{fig:CSLB-logs}, ces journaux permettent de suivre en direct les décisions de migration et les éventuelles erreurs de connexion à l'API Proxmox ou à InfluxDB.\\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\textwidth]{image/ch4/clbs_logs.png}
-    \caption{Journaux systemd du service CLBS lors d'un cycle de détection et de migration.}
-    \label{fig:clbs-logs}
+    \includegraphics[width=1\textwidth]{image/ch4/CSLB_logs.png}
+    \caption{Journaux systemd du service CSLB lors d'un cycle de détection et de migration.}
+    \label{fig:CSLB-logs}
 \end{figure}
 
-\par La Figure~\ref{fig:clbs-logs} présente la sortie de la commande \texttt{journalctl} pour le service CLBS pendant un cycle de détection actif. On y observe la classification des nœuds par bande de charge (heavy/moderate/light), la sélection de la VM candidate à la migration, le déclenchement de l'opération via l'API Proxmox et l'activation du cooldown post-migration.\\
+\par La Figure~\ref{fig:CSLB-logs} présente la sortie de la commande \texttt{journalctl} pour le service CSLB pendant un cycle de détection actif. On y observe la classification des nœuds par bande de charge (heavy/moderate/light), la sélection de la VM candidate à la migration, le déclenchement de l'opération via l'API Proxmox et l'activation du cooldown post-migration.\\
 
 \subsubsection{Validation du mécanisme}
 
-\par Pour valider le comportement du service, deux VMs de test ont été créées puis soumises à une charge CPU artificielle avec l'outil \texttt{stress-ng}. Le service CLBS a détecté la surcharge et a déclenché une migration live vers un nœud moins chargé.\\
+\par Pour valider le comportement du service, deux VMs de test ont été créées puis soumises à une charge CPU artificielle avec l'outil \texttt{stress-ng}. Le service CSLB a détecté la surcharge et a déclenché une migration live vers un nœud moins chargé.\\
 
 \begin{lstlisting}[style=sonacode,language=bash,caption={Génération d'une charge CPU de test},label={lst:stress-ng}]
 stress-ng --cpu 8 --timeout 10m
 \end{lstlisting}
 
-\par La commande de la Figure~\ref{lst:stress-ng} lance 8 workers saturant les cœurs CPU disponibles. Cette surcharge artificielle déclenche la logique de détection du service CLBS qui, après vérification des seuils, sélectionne la VM candidate et initie sa migration vers un nœud moins chargé. Comme l'illustre la Figure~\ref{fig:clbs-migration-event}, le résultat est directement visible dans le dashboard dédié.\\
+\par La commande de la Figure~\ref{lst:stress-ng} lance 8 workers saturant les cœurs CPU disponibles. Cette surcharge artificielle déclenche la logique de détection du service CSLB qui, après vérification des seuils, sélectionne la VM candidate et initie sa migration vers un nœud moins chargé. Comme l'illustre la Figure~\ref{fig:CSLB-migration-event}, le résultat est directement visible dans le dashboard dédié.\\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\textwidth]{image/ch4/clbs dashboard.png}
-    \caption{Dashboard CLBS montrant une migration déclenchée automatiquement.}
-    \label{fig:clbs-migration-event}
+    \includegraphics[width=1\textwidth]{image/ch4/CSLB dashboard.png}
+    \caption{Dashboard CSLB montrant une migration déclenchée automatiquement.}
+    \label{fig:CSLB-migration-event}
 \end{figure}
 
-\par La Figure~\ref{fig:clbs-migration-event} présente le dashboard Grafana du service CLBS après le déclenchement d'une migration automatique. On y observe l'historique de charge des nœuds par bande (heavy/moderate/light), la migration enregistrée dans la section ``Migration Activity'', ainsi que le cooldown restant avant le prochain cycle d'évaluation.\\
+\par La Figure~\ref{fig:CSLB-migration-event} présente le dashboard Grafana du service CSLB après le déclenchement d'une migration automatique. On y observe l'historique de charge des nœuds par bande (heavy/moderate/light), la migration enregistrée dans la section ``Migration Activity'', ainsi que le cooldown restant avant le prochain cycle d'évaluation.\\
 
 \subsection{Déploiement de l'application Sona-Web}
 
@@ -760,7 +760,7 @@ iface vxlan90-int inet static
     ovs_bridge vmbr0
 \end{lstlisting}
 
-\par La Figure~\ref{lst:pve01-vxlan-405090} présente les interfaces internes des VxLAN 40, 50 et 90 sur PVE-01. La séparation du réseau public Ceph (VxLAN 40) du réseau de réplication interne (VxLAN 30) suit les recommandations de Ceph : le trafic client et le trafic OSD-OSD n'entrent pas en contention. Le VxLAN 50, dédié aux migrations live, préserve la qualité de service lors des déplacements de VMs par le mécanisme CLBS. La configuration complète des trois nœuds est disponible en Annexe~\ref{ann:vxlan}.\\
+\par La Figure~\ref{lst:pve01-vxlan-405090} présente les interfaces internes des VxLAN 40, 50 et 90 sur PVE-01. La séparation du réseau public Ceph (VxLAN 40) du réseau de réplication interne (VxLAN 30) suit les recommandations de Ceph : le trafic client et le trafic OSD-OSD n'entrent pas en contention. Le VxLAN 50, dédié aux migrations live, préserve la qualité de service lors des déplacements de VMs par le mécanisme CSLB. La configuration complète des trois nœuds est disponible en Annexe~\ref{ann:vxlan}.\\
 
 \paragraph{Partie 4: Réseaux applicatifs (clés 60, 70, 80) et bridges Linux}
 
@@ -1242,25 +1242,25 @@ Requete (PromQL, instantanee) : ceph_osd_apply_latency_ms
 \end{lstlisting}
 
 \medskip
-\par \textbf{\textcolor{bleu}{Migrations excessives / circuit breaker CLBS}}: comptage des migrations sur 5 minutes via \texttt{increase(clbs\_migrations\_total[5m])}, déclenché au-delà de 5 migrations (Figure~\ref{lst:alert-clbs-migrations}).\\
+\par \textbf{\textcolor{bleu}{Migrations excessives / circuit breaker CSLB}}: comptage des migrations sur 5 minutes via \texttt{increase(CSLB\_migrations\_total[5m])}, déclenché au-delà de 5 migrations (Figure~\ref{lst:alert-CSLB-migrations}).\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte - Migrations excessives / circuit breaker CLBS},label={lst:alert-clbs-migrations}]
-Requete (PromQL, instantanee) : increase(clbs_migrations_total[5m])
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte - Migrations excessives / circuit breaker CSLB},label={lst:alert-CSLB-migrations}]
+Requete (PromQL, instantanee) : increase(CSLB_migrations_total[5m])
 \end{lstlisting}
 
 \medskip
-\par \textbf{\textcolor{bleu}{Erreurs API Proxmox / InfluxDB côté CLBS}}: comptage des erreurs de cycle sur 5 minutes via \texttt{increase(clbs\_cycle\_errors\_total[5m])}, déclenché dès qu'une erreur est détectée (Figure~\ref{lst:alert-clbs-errors}).\\
+\par \textbf{\textcolor{bleu}{Erreurs API Proxmox / InfluxDB côté CSLB}}: comptage des erreurs de cycle sur 5 minutes via \texttt{increase(CSLB\_cycle\_errors\_total[5m])}, déclenché dès qu'une erreur est détectée (Figure~\ref{lst:alert-CSLB-errors}).\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte - Erreurs API Proxmox / InfluxDB côté CLBS},label={lst:alert-clbs-errors}]
-Requete (PromQL, instantanee) : increase(clbs_cycle_errors_total[5m])
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte - Erreurs API Proxmox / InfluxDB côté CSLB},label={lst:alert-CSLB-errors}]
+Requete (PromQL, instantanee) : increase(CSLB_cycle_errors_total[5m])
 \end{lstlisting}
-\par \textbf{\textcolor{bleu}{Service CLBS indisponible}}: requête PromQL instantanée sur \texttt{up\{job="clbs"\}}, déclenchée lorsque la cible n'est plus joignable (Figure~\ref{lst:alert-clbs-down}).\\
+\par \textbf{\textcolor{bleu}{Service CSLB indisponible}}: requête PromQL instantanée sur \texttt{up\{job="CSLB"\}}, déclenchée lorsque la cible n'est plus joignable (Figure~\ref{lst:alert-CSLB-down}).\\
 
-\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte - Service CLBS indisponible},label={lst:alert-clbs-down}]
-Requete (PromQL, instantanee) : up{job="clbs"}
+\begin{lstlisting}[style=sonacode,language={},caption={Règle d'alerte - Service CSLB indisponible},label={lst:alert-CSLB-down}]
+Requete (PromQL, instantanee) : up{job="CSLB"}
 \end{lstlisting}
 
-\par Ces règles couvrent les scénarios de défaillance les plus critiques de l'infrastructure : surcharge des nœuds Proxmox, dégradation du cluster de stockage Ceph et indisponibilité du service d'équilibrage de charge CLBS.\\
+\par Ces règles couvrent les scénarios de défaillance les plus critiques de l'infrastructure : surcharge des nœuds Proxmox, dégradation du cluster de stockage Ceph et indisponibilité du service d'équilibrage de charge CSLB.\\
 
 \subsubsection{Configuration du contact point Gmail}
 
@@ -1399,11 +1399,11 @@ driftfile /var/lib/chrony/drift
 
 \subsubsection{Création des dépôts}
 
-\par Deux dépôts ont été créés dans l'instance GitLab pour couvrir les besoins de versionnement de l'infrastructure. Le dépôt \texttt{clbs} contient le code source du service d'équilibrage de charge développé en Go, y compris les fichiers de configuration, les tests unitaires et le fichier de pipeline CI/CD. Le dépôt \texttt{ansible-infra} regroupe l'ensemble des playbooks Ansible, l'inventaire et les fichiers de secrets chiffrés avec Ansible Vault.\\
+\par Deux dépôts ont été créés dans l'instance GitLab pour couvrir les besoins de versionnement de l'infrastructure. Le dépôt \texttt{CSLB} contient le code source du service d'équilibrage de charge développé en Go, y compris les fichiers de configuration, les tests unitaires et le fichier de pipeline CI/CD. Le dépôt \texttt{ansible-infra} regroupe l'ensemble des playbooks Ansible, l'inventaire et les fichiers de secrets chiffrés avec Ansible Vault.\\
 
 \subsubsection{Configuration des pipelines CI/CD}
 
-\par Un fichier \texttt{.gitlab-ci.yml} a été défini dans chaque dépôt pour automatiser les vérifications à chaque push. Pour le projet \texttt{clbs}, le pipeline comprend les stages ``Lint'' (vérification syntaxique du code Go avec \texttt{golint}), ``Tests'' (exécution des tests unitaires avec \texttt{go test}) et ``Build'' (compilation du binaire). Pour le projet \texttt{ansible-infra}, le pipeline effectue une vérification syntaxique des playbooks avec \texttt{ansible-lint}.
+\par Un fichier \texttt{.gitlab-ci.yml} a été défini dans chaque dépôt pour automatiser les vérifications à chaque push. Pour le projet \texttt{CSLB}, le pipeline comprend les stages ``Lint'' (vérification syntaxique du code Go avec \texttt{golint}), ``Tests'' (exécution des tests unitaires avec \texttt{go test}) et ``Build'' (compilation du binaire). Pour le projet \texttt{ansible-infra}, le pipeline effectue une vérification syntaxique des playbooks avec \texttt{ansible-lint}.
 
 \subsubsection{Validation}
 

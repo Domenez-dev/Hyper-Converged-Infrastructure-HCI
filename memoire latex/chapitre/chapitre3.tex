@@ -4,7 +4,7 @@
 
 \section{Introduction}
 
-\par Ce chapitre présente la conception détaillée de l'infrastructure Cloud privée hyperconvergée proposée. Sur la base des technologies retenues dans le chapitre précédent (Proxmox VE, Ceph et Open vSwitch), nous décrivons ici les choix architecturaux guidant la construction de chaque couche de l'infrastructure. Nous présentons également la conception du mécanisme d'équilibrage dynamique de charge CLBS, ainsi que les outils d'automatisation retenus pour le déploiement et le provisionnement.\\
+\par Ce chapitre présente la conception détaillée de l'infrastructure Cloud privée hyperconvergée proposée. Sur la base des technologies retenues dans le chapitre précédent (Proxmox VE, Ceph et Open vSwitch), nous décrivons ici les choix architecturaux guidant la construction de chaque couche de l'infrastructure. Nous présentons également la conception du mécanisme d'équilibrage dynamique de charge CSLB, ainsi que les outils d'automatisation retenus pour le déploiement et le provisionnement.\\
 
 \par L'objectif de ce chapitre est de fournir une vision complète et cohérente de l'architecture avant toute phase d'implémentation, en justifiant chaque décision par des contraintes techniques, des recommandations officielles ou des exigences fonctionnelles identifiées précédemment.\\
 
@@ -16,7 +16,7 @@
 
 \par La deuxième couche est la \textbf{couche de virtualisation et de cluster}, composée des trois nœuds Proxmox (PVE-01, PVE-02, PVE-03) interconnectés via le réseau Sonatrach. Ces nœuds formeront un cluster haute disponibilité géré par Corosync. Chaque nœud exécutera simultanément les daemons Ceph pour le stockage distribué et une instance Open vSwitch avec des tunnels VxLAN pour la segmentation réseau. Cette convergence des rôles est l'expression directe du principe HCI.\\
 
-\par La troisième couche est la \textbf{couche applicative et de services}, hébergeant la VM OPNsense pour le routage et le pare-feu, les VMs de démonstration Sona-Web, le mécanisme CLBS, la stack de monitoring, et les outils d'automatisation Ansible.\\
+\par La troisième couche est la \textbf{couche applicative et de services}, hébergeant la VM OPNsense pour le routage et le pare-feu, les VMs de démonstration Sona-Web, le mécanisme CSLB, la stack de monitoring, et les outils d'automatisation Ansible.\\
 
 \begin{figure}[H]
     \begin{center}
@@ -33,7 +33,7 @@
 \section{Organisation de la Solution}
 % ============================================================
 
-\par La conception de l'infrastructure hyperconvergée a été structurée en trois parties complémentaires et interdépendantes : le \textbf{Calcul}, le \textbf{Stockage} et le \textbf{Réseau}. Cette partition reflète les trois piliers fondamentaux de tout système HCI, chacun apportant une dimension essentielle à l'ensemble. Les choix effectués dans chaque partie influencent directement les deux autres : le stockage distribué Ceph repose sur le réseau pour la réplication, le mécanisme CLBS dépend du stockage partagé pour les migrations à chaud, et la segmentation réseau conditionne la sécurité de l'ensemble. Le schéma ci-dessous illustre cette organisation ainsi que les interactions entre les trois parties.\\
+\par La conception de l'infrastructure hyperconvergée a été structurée en trois parties complémentaires et interdépendantes : le \textbf{Calcul}, le \textbf{Stockage} et le \textbf{Réseau}. Cette partition reflète les trois piliers fondamentaux de tout système HCI, chacun apportant une dimension essentielle à l'ensemble. Les choix effectués dans chaque partie influencent directement les deux autres : le stockage distribué Ceph repose sur le réseau pour la réplication, le mécanisme CSLB dépend du stockage partagé pour les migrations à chaud, et la segmentation réseau conditionne la sécurité de l'ensemble. Le schéma ci-dessous illustre cette organisation ainsi que les interactions entre les trois parties.\\
 
 \begin{figure}[H]
 \centering
@@ -42,13 +42,13 @@
 \label{fig:organigramme-solution}
 \end{figure}
 
-\par La figure~\ref{fig:organigramme-solution} met en évidence les flux entre les parties : la partie Calcul s'appuie sur le Stockage pour les volumes RBD des VMs et pour les migrations à chaud réalisées par CLBS, le Stockage utilise le Réseau pour transporter les flux de réplication Ceph sur les VxLAN 30 et 40, et le Réseau fournit la segmentation applicative qui conditionne l'isolation et la sécurité de toutes les couches. Les relations détaillées au niveau composant (CLBS vers VxLAN 50, VMs Sona-Web vers pool RBD, Monitoring vers endpoint Ceph, Ansible vers OPNsense) illustrent le niveau d'interdépendance réel entre les trois parties.\\
+\par La figure~\ref{fig:organigramme-solution} met en évidence les flux entre les parties : la partie Calcul s'appuie sur le Stockage pour les volumes RBD des VMs et pour les migrations à chaud réalisées par CSLB, le Stockage utilise le Réseau pour transporter les flux de réplication Ceph sur les VxLAN 30 et 40, et le Réseau fournit la segmentation applicative qui conditionne l'isolation et la sécurité de toutes les couches. Les relations détaillées au niveau composant (CSLB vers VxLAN 50, VMs Sona-Web vers pool RBD, Monitoring vers endpoint Ceph, Ansible vers OPNsense) illustrent le niveau d'interdépendance réel entre les trois parties.\\
 
 % ============================================================
 \section{Partie I : Calcul}
 % ============================================================
 
-\par Cette partie traite de la couche de calcul de l'infrastructure. Elle présente les serveurs physiques constituant les nœuds du cluster, l'organisation du cluster Proxmox et ses mécanismes de haute disponibilité via Corosync, le mécanisme d'équilibrage de charge CLBS développé spécifiquement pour ce projet, l'application de démonstration Sona-Web, la stack de monitoring déployée pour superviser l'ensemble de la plateforme, et enfin les outils d'automatisation Ansible et PXE permettant le déploiement et le provisionnement sans intervention manuelle.\\
+\par Cette partie traite de la couche de calcul de l'infrastructure. Elle présente les serveurs physiques constituant les nœuds du cluster, l'organisation du cluster Proxmox et ses mécanismes de haute disponibilité via Corosync, le mécanisme d'équilibrage de charge CSLB développé spécifiquement pour ce projet, l'application de démonstration Sona-Web, la stack de monitoring déployée pour superviser l'ensemble de la plateforme, et enfin les outils d'automatisation Ansible et PXE permettant le déploiement et le provisionnement sans intervention manuelle.\\
 
 \subsection{Infrastructure Physique}
 
@@ -145,14 +145,14 @@ Panne VM OPNsense & VM routeur/pare-feu & Proxmox HA redémarre la VM sur un nœ
 \hline
 Split-brain & Réseau VxLAN 20 & Le groupe minoritaire perd le quorum et se gèle. Le groupe majoritaire continue d'opérer. & Aucune coupure côté majoritaire \\
 \hline
-Panne CLBS & VM CLBS & Aucun impact applicatif. Le service redémarre automatiquement (\texttt{Restart=always} systemd). & Aucune coupure \\
+Panne CSLB & VM CSLB & Aucun impact applicatif. Le service redémarre automatiquement (\texttt{Restart=always} systemd). & Aucune coupure \\
 \hline
 \end{tabular}
 \end{table}
 
-\subsection{Mécanisme d'Équilibrage Dynamique : CLBS}
+\subsection{Mécanisme d'Équilibrage Dynamique : CSLB}
 
-\par Cette section présente le mécanisme d'équilibrage dynamique de charge CLBS développé pour ce projet : le besoin auquel il répond, sa base algorithmique, les adaptations apportées à l'algorithme d'origine et sa logique de décision.\\
+\par Cette section présente le mécanisme d'équilibrage dynamique de charge CSLB développé pour ce projet : le besoin auquel il répond, sa base algorithmique, les adaptations apportées à l'algorithme d'origine et sa logique de décision.\\
 
 \subsubsection{Contexte et Besoin}
 
@@ -160,7 +160,7 @@ Panne CLBS & VM CLBS & Aucun impact applicatif. Le service redémarre automatiqu
 
 \subsubsection{Base Algorithmique : CSLB}
 
-\par Notre mécanisme, nommé \textbf{CLBS}, est une adaptation du CSLB~\cite{ref38}. L'algorithme original repose sur cinq phases : évaluation de charge, détermination de rentabilité, calcul du vecteur de transfert, sélection de VM, et exécution de la migration~\cite{ref17}. La charge CPU de chaque nœud est évaluée par rapport à un seuil dynamique (moyenne des charges de tous les nœuds) :
+\par Notre mécanisme, nommé \textbf{CSLB}, est une adaptation du CSLB~\cite{ref38}. L'algorithme original repose sur cinq phases : évaluation de charge, détermination de rentabilité, calcul du vecteur de transfert, sélection de VM, et exécution de la migration~\cite{ref17}. La charge CPU de chaque nœud est évaluée par rapport à un seuil dynamique (moyenne des charges de tous les nœuds) :
 
 \[
 \text{seuil} = \frac{\sum_{i=1}^{n} \alpha_i}{n}\text{...(1)}, \quad \text{diff} = \left|\text{seuil} - \frac{\alpha_{min} + \alpha_{max}}{2} \text{...(2)}\right|
@@ -184,23 +184,23 @@ Panne CLBS & VM CLBS & Aucun impact applicatif. Le service redémarre automatiqu
     \[
     \text{score} = \Delta_{CPU} \times 0.7 + \Delta_{RAM} \times 0.3 \text{...(3)}
     \]
-    Avant validation, CLBS simule l'état post-migration du nœud cible en appliquant le score pondéré défini par l'équation~(3) pour s'assurer que l'ajout de la VM ne le fait pas dépasser la bande haute.
+    Avant validation, CSLB simule l'état post-migration du nœud cible en appliquant le score pondéré défini par l'équation~(3) pour s'assurer que l'ajout de la VM ne le fait pas dépasser la bande haute.
 
 
-    \item \textbf{Exclusion des VMs système :} OPNsense, la VM monitoring et la VM CLBS sont explicitement exclues du périmètre de migration.
+    \item \textbf{Exclusion des VMs système :} OPNsense, la VM monitoring et la VM CSLB sont explicitement exclues du périmètre de migration.
 
-    \item \textbf{Cadence et unicité :} CLBS s'exécute toutes les 60 secondes et ne peut déclencher qu'une seule migration par cycle.
+    \item \textbf{Cadence et unicité :} CSLB s'exécute toutes les 60 secondes et ne peut déclencher qu'une seule migration par cycle.
 
     \item \textbf{Cooldown post-migration :} une période de repos de 5 minutes est appliquée après chaque migration, le temps que les métriques InfluxDB intègrent l'impact du changement.
 
     \item \textbf{Mécanismes anti-oscillation :} si une même VM est migrée deux fois en moins de 10 minutes, elle est gelée 30 minutes et l'administrateur est notifié. Si 6 migrations ou plus sont enregistrées en 30 minutes, le service se suspend automatiquement pendant une heure (circuit breaker).
 
-    \item \textbf{Collecte des métriques :} CLBS combine l'API REST Proxmox pour les métriques courantes, et InfluxDB via le client Go officiel pour les moyennes glissantes sur 5 minutes, garantissant des décisions fondées sur des données lissées plutôt que sur des pics instantanés.
+    \item \textbf{Collecte des métriques :} CSLB combine l'API REST Proxmox pour les métriques courantes, et InfluxDB via le client Go officiel pour les moyennes glissantes sur 5 minutes, garantissant des décisions fondées sur des données lissées plutôt que sur des pics instantanés.
 \end{itemize}
 
 \subsubsection{Algorithme de Décision (Pseudocode)}
 
-\begin{lstlisting}[style=sonacode,language={},caption={Pseudocode de l'algorithme CLBS},label={lst:clbs-pseudo}]
+\begin{lstlisting}[style=sonacode,language={},caption={Pseudocode de l'algorithme CSLB},label={lst:CSLB-pseudo}]
 toutes les 60 secondes :
   recuperer metriques CPU et RAM moyennees (5 min) depuis InfluxDB
   calculer seuil_cpu, bande_moderee_cpu
@@ -225,18 +225,18 @@ toutes les 60 secondes :
         appliquer cooldown anti-oscillation (10 min sur vm_cible)
 \end{lstlisting}
 
-\par La figure~\ref{lst:clbs-pseudo} présente le pseudocode de l'algorithme CLBS sous sa forme condensée. Chaque cycle commence par la récupération des métriques CPU et RAM lissées sur 5 minutes depuis InfluxDB, afin d'éviter les décisions basées sur des pics instantanés. Le double critère de déclenchement (dépassement de la bande modérée ET seuil absolu de 50\%) garantit qu'aucune migration n'est effectuée dans un cluster globalement sous-chargé. La sélection de la VM cible repose sur le vecteur de transfert du CSLB, et le score pondéré 0.7/0.3 en faveur du CPU reflète le fait que la pression CPU est généralement plus contraignante que la RAM dans les charges de virtualisation.\\
+\par La figure~\ref{lst:CSLB-pseudo} présente le pseudocode de l'algorithme CSLB sous sa forme condensée. Chaque cycle commence par la récupération des métriques CPU et RAM lissées sur 5 minutes depuis InfluxDB, afin d'éviter les décisions basées sur des pics instantanés. Le double critère de déclenchement (dépassement de la bande modérée ET seuil absolu de 50\%) garantit qu'aucune migration n'est effectuée dans un cluster globalement sous-chargé. La sélection de la VM cible repose sur le vecteur de transfert du CSLB, et le score pondéré 0.7/0.3 en faveur du CPU reflète le fait que la pression CPU est généralement plus contraignante que la RAM dans les charges de virtualisation.\\
 
 \begin{figure}[H]
     \begin{center}
-        % Alt: Organigramme de décision du service CLBS (évaluation, classification, sélection VM, migration)
-        \input{image/ch3/clbs-flowchart.tex}
-        \caption{Logique de Décision du Mécanisme CLBS}
-        \label{fig:clbs-flowchart}
+        % Alt: Organigramme de décision du service CSLB (évaluation, classification, sélection VM, migration)
+        \input{image/ch3/CSLB-flowchart.tex}
+        \caption{Logique de Décision du Mécanisme CSLB}
+        \label{fig:CSLB-flowchart}
     \end{center}
 \end{figure}
 
-\par La figure~\ref{fig:clbs-flowchart} présente le cycle de décision complet du service CLBS. A chaque intervalle de 60 secondes, le service évalue la charge de chaque noeud par rapport aux bandes modérées calculées dynamiquement, sélectionne la VM la mieux adaptée au transfert selon le vecteur de charge, choisit le noeud destination en maximisant le score pondéré CPU/RAM, et déclenche la migration via l'API Proxmox si toutes les conditions sont réunies. Les mécanismes anti-oscillation et le circuit breaker sont également représentés.\\
+\par La figure~\ref{fig:CSLB-flowchart} présente le cycle de décision complet du service CSLB. A chaque intervalle de 60 secondes, le service évalue la charge de chaque noeud par rapport aux bandes modérées calculées dynamiquement, sélectionne la VM la mieux adaptée au transfert selon le vecteur de charge, choisit le noeud destination en maximisant le score pondéré CPU/RAM, et déclenche la migration via l'API Proxmox si toutes les conditions sont réunies. Les mécanismes anti-oscillation et le circuit breaker sont également représentés.\\
 
 \subsection{Application de Démonstration : Sona-Web}
 
@@ -275,11 +275,11 @@ toutes les 60 secondes :
 
 \par La stack de monitoring sera déployée dans un conteneur LXC dédié à l'adresse \texttt{192.168.10.99}. Elle comprend trois composants complémentaires couvrant des périmètres de métriques distincts.\\
 
-\par \textbf{InfluxDB} recevra les métriques générales de Proxmox (CPU, RAM, réseau, stockage des nœuds et des VMs) via le mécanisme natif ``Metric Server'', sans agent supplémentaire. Cet historique sera utilisé à la fois par Grafana pour la visualisation et par le service CLBS pour ses décisions de migration.\\
+\par \textbf{InfluxDB} recevra les métriques générales de Proxmox (CPU, RAM, réseau, stockage des nœuds et des VMs) via le mécanisme natif ``Metric Server'', sans agent supplémentaire. Cet historique sera utilisé à la fois par Grafana pour la visualisation et par le service CSLB pour ses décisions de migration.\\
 
-\par \textbf{Prometheus} collectera les métriques détaillées du cluster Ceph via l'endpoint exposé par le nœud MGR actif sur le port \texttt{9283}. Les métriques applicatives du service CLBS seront également exposées sur le port \texttt{9101} de la VM dédiée.\\
+\par \textbf{Prometheus} collectera les métriques détaillées du cluster Ceph via l'endpoint exposé par le nœud MGR actif sur le port \texttt{9283}. Les métriques applicatives du service CSLB seront également exposées sur le port \texttt{9101} de la VM dédiée.\\
 
-\par \textbf{Grafana} sera connecté à InfluxDB et à Prometheus comme sources de données, permettant de construire des tableaux de bord unifiés couvrant l'ensemble de l'infrastructure : utilisation des ressources par nœud, état du cluster Ceph, historique des migrations CLBS, et alertes de surcharge~\cite{ref25}.\\
+\par \textbf{Grafana} sera connecté à InfluxDB et à Prometheus comme sources de données, permettant de construire des tableaux de bord unifiés couvrant l'ensemble de l'infrastructure : utilisation des ressources par nœud, état du cluster Ceph, historique des migrations CSLB, et alertes de surcharge~\cite{ref25}.\\
 
 \subsection{Automatisation}
 
@@ -409,7 +409,7 @@ PostgreSQL VM & 100 GB \\
 \hline
 VM Monitoring (InfluxDB + Prometheus + Grafana + Loki) & 150 GB \\
 \hline
-VM CLBS & 32 GB \\
+VM CSLB & 32 GB \\
 \hline
 LXC GitLab & 200 GB \\
 \hline
@@ -519,7 +519,7 @@ Facteur de réplication (\texttt{size}) & 3 (une réplique par nœud physique) \
     \item \textbf{VxLAN 20, Corosync (192.168.20.0/24) :} Heartbeats et quorum cluster.
     \item \textbf{VxLAN 30, Ceph Cluster (10.10.30.0/24) :} Réplication OSD interne.
     \item \textbf{VxLAN 40, Ceph Public (10.10.40.0/24) :} Accès des VMs au stockage RBD.
-    \item \textbf{VxLAN 50, Live Migration (10.10.50.0/24) :} Migrations à chaud et CLBS.
+    \item \textbf{VxLAN 50, Live Migration (10.10.50.0/24) :} Migrations à chaud et CSLB.
 \end{itemize}
 
 \par \textbf{Réseaux applicatifs internes :}
@@ -651,7 +651,7 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
   (7.0, 0.0) rectangle (13.5,-6.00);
 \node[font=\small\bfseries\color{bleu}] at (10.25,-0.38) {PVE-02};
 \node[vm,  anchor=west] at (7.45,-1.20) {VM~Flask app-1};
-\node[vm,  anchor=west] at (7.45,-2.05) {VM~CLBS};
+\node[vm,  anchor=west] at (7.45,-2.05) {VM~CSLB};
 \node[lxc, anchor=west] at (7.45,-2.90) {LXC~GitLab CE};
 \node[lxc, anchor=west] at (7.45,-3.75) {LXC~Rundeck};
 \node[osd, anchor=west] at (7.45,-4.60) {OSD $\times$ 4~(sdb--sde)};
@@ -687,7 +687,7 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \label{fig:uml-deployment}
 \end{figure}
 
-\par La figure~\ref{fig:uml-deployment} présente la répartition des services virtualisés sur les trois nœuds physiques du cluster. PVE-01 concentrera les services réseau et de monitoring. PVE-02 hébergera les services applicatifs de développement (GitLab, Rundeck, OpenLDAP) et le service CLBS. PVE-03 prendra en charge les instances de l'application de démonstration et le GitLab Runner. Chaque nœud contribuera avec quatre OSDs au pool Ceph partagé et hébergera un Monitor Ceph. Les Managers actif et standby seront respectivement sur PVE-02 et PVE-03.\\
+\par La figure~\ref{fig:uml-deployment} présente la répartition des services virtualisés sur les trois nœuds physiques du cluster. PVE-01 concentrera les services réseau et de monitoring. PVE-02 hébergera les services applicatifs de développement (GitLab, Rundeck, OpenLDAP) et le service CSLB. PVE-03 prendra en charge les instances de l'application de démonstration et le GitLab Runner. Chaque nœud contribuera avec quatre OSDs au pool Ceph partagé et hébergera un Monitor Ceph. Les Managers actif et standby seront respectivement sur PVE-02 et PVE-03.\\
 
 % ============================================================
 \subsection{Système de Notification : Grafana Alertmanager}
@@ -700,7 +700,7 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \begin{itemize}
     \item \textbf{Cluster Ceph :} OSD en état down, pool en état degraded, espace disponible inférieur à 20\,\%.
     \item \textbf{Nœuds Proxmox :} charge CPU supérieure à 85\,\%, mémoire disponible inférieure à 10\,\%, perte de quorum Corosync.
-    \item \textbf{Service CLBS :} nombre de migrations excessif déclenchant le circuit breaker, impossibilité de contacter l'API Proxmox ou InfluxDB.
+    \item \textbf{Service CSLB :} nombre de migrations excessif déclenchant le circuit breaker, impossibilité de contacter l'API Proxmox ou InfluxDB.
     \item \textbf{Application Sona-Web :} backend HAProxy hors service, taux d'erreurs HTTP 5xx anormal.
 \end{itemize}
 
@@ -870,11 +870,11 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \par Les projets hébergés sur cette instance GitLab seront les suivants :\\
 
 \begin{itemize}
-    \item \textbf{clbs :} code source du service d'équilibrage de charge en Go.
+    \item \textbf{CSLB :} code source du service d'équilibrage de charge en Go.
     \item \textbf{ansible-infra :} ensemble des playbooks Ansible d'automatisation de l'infrastructure.
 \end{itemize}
 
-\par Des pipelines CI/CD GitLab seront configurés pour automatiser les vérifications de qualité de code et les tests unitaires du service CLBS, ainsi que la validation des syntaxes des playbooks Ansible. Les GitLab Runners seront déployés sous forme de conteneurs LXC sur le cluster et enregistrés dans l'instance GitLab.
+\par Des pipelines CI/CD GitLab seront configurés pour automatiser les vérifications de qualité de code et les tests unitaires du service CSLB, ainsi que la validation des syntaxes des playbooks Ansible. Les GitLab Runners seront déployés sous forme de conteneurs LXC sur le cluster et enregistrés dans l'instance GitLab.
 
 
 \begin{figure}[H]
@@ -906,7 +906,7 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
   \draw[arrowstyle] (build)  -- (deploy);
 \end{tikzpicture}%
 }
-\caption{Pipeline CI/CD GitLab pour les projets \texttt{clbs} et \texttt{ansible-infra}}
+\caption{Pipeline CI/CD GitLab pour les projets \texttt{CSLB} et \texttt{ansible-infra}}
 \label{fig:gitlab-cicd}
 \end{figure}
 
@@ -924,6 +924,6 @@ PVE-03 & 192.168.10.84  & 192.168.20.13 & 10.10.30.13 & 10.10.40.13 & 10.10.50.1
 \section{Conclusion}
 % ============================================================
 
-\par Ce chapitre a présenté la conception complète de l'infrastructure Cloud privée hyperconvergée. La partie Calcul couvre les serveurs physiques (5 disques SAS par nœud), le cluster Proxmox avec Corosync et HA, le mécanisme CLBS, l'application Sona-Web, la stack de monitoring et l'automatisation via Ansible et PXE. La partie Stockage détaille le cluster Ceph avec ses douze OSDs, la capacité utilisable de 2,05 TB et la politique CRUSH. La partie Réseau expose l'architecture VxLAN gérée par Open vSwitch, le plan d'adressage complet, le routage centralisé via OPNsense et le plan de pare-feu à deux niveaux. Enfin, les services complémentaires (Alertmanager, Loki, NTP, GitLab, Rundeck) complètent l'infrastructure pour en assurer la supervision, la sécurité et la gestion unifiée.\\
+\par Ce chapitre a présenté la conception complète de l'infrastructure Cloud privée hyperconvergée. La partie Calcul couvre les serveurs physiques (5 disques SAS par nœud), le cluster Proxmox avec Corosync et HA, le mécanisme CSLB, l'application Sona-Web, la stack de monitoring et l'automatisation via Ansible et PXE. La partie Stockage détaille le cluster Ceph avec ses douze OSDs, la capacité utilisable de 2,05 TB et la politique CRUSH. La partie Réseau expose l'architecture VxLAN gérée par Open vSwitch, le plan d'adressage complet, le routage centralisé via OPNsense et le plan de pare-feu à deux niveaux. Enfin, les services complémentaires (Alertmanager, Loki, NTP, GitLab, Rundeck) complètent l'infrastructure pour en assurer la supervision, la sécurité et la gestion unifiée.\\
 
 \par L'ensemble de ces choix de conception constitue une base cohérente et documentée pour la phase d'implémentation présentée dans le chapitre suivant.\\
